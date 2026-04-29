@@ -18,7 +18,7 @@
   - 型定義ファイルをインポートした TypeScript ファイルが型エラーなくコンパイルされることを確認する
   - _Requirements: 1.1, 1.2, 1.6, 2.1, 3.2, 3.3_
 
-- [ ] 2. Foundation: SSR 安全な汎用ストレージフックの実装
+- [x] 2. Foundation: SSR 安全な汎用ストレージフックの実装
   - Next.js の SSR フェーズでは `defaultValue` を返し、クライアント mount 後に localStorage の値を反映するフックを実装する
   - 任意の JSON シリアライズ可能な型 `T` に対してジェネリクスで型安全な読み書きを提供する
   - `QuotaExceededError` および `JSON.parse` 失敗を `StorageResult<T>` の `ok: false` として返す

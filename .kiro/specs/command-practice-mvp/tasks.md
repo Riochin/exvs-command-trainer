@@ -9,7 +9,7 @@
   - パスエイリアスが `import { ButtonType } from '@/types'` の形式で解決できることを確認する
   - _Requirements: 1.1, 2.1_
 
-- [ ] 1.2 ドメイン型の定義
+- [x] 1.2 ドメイン型の定義
   - ボタン種別（射撃・格闘・ジャンプ・覚醒）を表す `ButtonType` 型を定義する
   - 同時押しを含む1ステップを表す `CommandStep` 型を定義する（`buttons: ButtonType[]`）
   - 登録済みコマンド（`Command`）、練習試行結果（`PracticeAttempt`）、練習ログ（`PracticeLog`）の型を定義する

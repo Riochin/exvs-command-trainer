@@ -62,8 +62,8 @@
   - _Requirements: 1.3, 1.4_
   - _Boundary: useLandscapeMode_
 
-- [ ] 5. Core: アーケードコントローラ UI コンポーネントの実装
-- [ ] 5.1 個別ボタンコンポーネント（ControllerButton）の実装
+- [x] 5. Core: アーケードコントローラ UI コンポーネントの実装
+- [x] 5.1 個別ボタンコンポーネント（ControllerButton）の実装
   - ボタン種別に対応した日本語ラベル（射撃・格闘・ジャンプ・覚醒）を表示する
   - `touch-action: none` を CSS で設定し、ブラウザのデフォルトタッチ動作を抑制する
   - 押下中（`activeButtons` に含まれる）の場合、視覚的に押下状態スタイルを適用する

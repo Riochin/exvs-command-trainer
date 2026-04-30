@@ -79,7 +79,7 @@
   - 4ボタンがスマートフォン横画面（320×568px 相当のビューポート）でスクロールなく表示されることを確認する
   - _Requirements: 1.1, 1.2, 1.3, 1.6_
 
-- [ ] 6. (P) Core: 縦画面ガードコンポーネント（LandscapeGuard）の実装
+- [x] 6. (P) Core: 縦画面ガードコンポーネント（LandscapeGuard）の実装
   - `useLandscapeMode` を内部で使用し、縦画面（`isLandscape === false`）の場合にコンテンツをブロックする
   - 縦画面時は横向きへの回転を促すメッセージと回転アイコンを表示する
   - SSR hydration 前（`isLandscape === null`）は CLS を防ぐためコンテンツをそのまま表示する

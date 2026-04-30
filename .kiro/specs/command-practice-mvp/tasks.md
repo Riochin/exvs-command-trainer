@@ -54,7 +54,7 @@
   - _Requirements: 1.2, 1.6, 1.7_
   - _Boundary: useControllerInput_
 
-- [ ] 4.2 (P) 横画面状態を検出する useLandscapeMode の実装
+- [x] 4.2 (P) 横画面状態を検出する useLandscapeMode の実装
   - `window.matchMedia("(orientation: landscape)")` を使ってリアクティブに横/縦画面を検出する
   - Safari の `screen.orientation` 非対応を回避するため `matchMedia` API のみを使用する
   - SSR フェーズでは `isLandscape: null` を返し、クライアント mount 後に実際の向きを反映する

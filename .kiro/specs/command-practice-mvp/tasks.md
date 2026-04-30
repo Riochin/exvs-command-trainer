@@ -71,7 +71,7 @@
   - タッチ・マウスの両入力で押下スタイルが正しく切り替わることを確認する
   - _Requirements: 1.1, 1.2_
 
-- [ ] 5.2 コントローラ全体レイアウトコンポーネント（ArcadeController）の実装
+- [x] 5.2 コントローラ全体レイアウトコンポーネント（ArcadeController）の実装
   - 射撃・格闘・ジャンプ・覚醒の4ボタンを横画面レイアウトに配置する
   - 練習モードと登録モードを `onButtonPress`（練習）と `onStepAdded`（登録）Props で切り替える
   - `useControllerInput` を内部で使用し、`onButtonPress`/`onStepAdded` をコールバックとして接続する

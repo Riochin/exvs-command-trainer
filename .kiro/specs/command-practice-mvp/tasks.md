@@ -88,8 +88,8 @@
   - _Boundary: LandscapeGuard_
   - _Depends: 4.2_
 
-- [ ] 7. Core: コマンド管理 UI コンポーネントの実装
-- [ ] 7.1 (P) コマンド一覧と削除確認（CommandList + ConfirmDialog）の実装
+- [x] 7. Core: コマンド管理 UI コンポーネントの実装
+- [x] 7.1 (P) コマンド一覧と削除確認（CommandList + ConfirmDialog）の実装
   - 登録済みコマンドを機体名でグループ化し一覧表示する
   - 各コマンドの削除操作をクリックすると確認ダイアログを表示する
   - ユーザーが確認した場合のみ `useCommandStore.removeCommand` を呼び出してコマンドを削除する
@@ -97,7 +97,7 @@
   - _Requirements: 2.2, 2.4_
   - _Boundary: CommandList, ConfirmDialog_
 
-- [ ] 7.2 (P) コマンド登録フォーム（CommandForm）の実装
+- [x] 7.2 (P) コマンド登録フォーム（CommandForm）の実装
   - 機体名・コマンド名の入力フィールドと、`ArcadeController` を組み込んだシーケンス構築エリアを提供する
   - ボタンをタップするたびに `CommandStep` がシーケンスプレビューに追加される
   - 機体名・コマンド名が未入力、またはシーケンスが空の場合は保存ボタンを無効化する
@@ -106,7 +106,7 @@
   - _Requirements: 2.1, 2.5, 2.6_
   - _Boundary: CommandForm_
 
-- [ ] 7.3 (P) コマンド詳細表示（CommandDetail）の実装
+- [x] 7.3 (P) コマンド詳細表示（CommandDetail）の実装
   - コマンド名・機体名・ボタンシーケンスを視覚的に表示する
   - ボタンシーケンスは各ステップの同時押しボタンを区別できる形で表現する
   - 存在しないコマンド ID を指定した場合は「コマンドが見つかりません」メッセージを表示する

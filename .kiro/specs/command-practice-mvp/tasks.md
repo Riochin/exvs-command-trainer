@@ -114,8 +114,8 @@
   - _Requirements: 2.3_
   - _Boundary: CommandDetail_
 
-- [ ] 8. (P) Core: 練習セッション機能の実装
-- [ ] 8.1 コマンドシーケンス照合ステートマシン（usePracticeSession）の実装
+- [x] 8. (P) Core: 練習セッション機能の実装
+- [x] 8.1 コマンドシーケンス照合ステートマシン（usePracticeSession）の実装
   - `useReducer` で練習セッション状態（`idle`/`active`/`completed`）を管理する
   - ボタン押下イベントを受け取り、現在のシーケンスステップと照合する（同時押しは集合の部分集合判定）
   - 照合成功でインデックスを進め、最終ステップ到達で成功判定・自動リセットする
@@ -125,21 +125,21 @@
   - _Requirements: 3.2, 3.3, 3.4, 3.5, 4.2, 4.3_
   - _Boundary: usePracticeSession_
 
-- [ ] 8.2 (P) 次ボタンハイライト表示（CommandHint）の実装
+- [x] 8.2 (P) 次ボタンハイライト表示（CommandHint）の実装
   - 目標コマンドのステップ列を表示し、現在のインデックスに対応するボタンをハイライトする
   - セッション状態の `currentIndex` が変化すると、ハイライト位置がリアクティブに更新される
   - 誤入力によるリセット後は先頭ステップが再ハイライトされることを確認する
   - _Requirements: 4.1, 4.2, 4.3_
   - _Boundary: CommandHint_
 
-- [ ] 8.3 (P) セッション終了サマリ（SessionResult）の実装
+- [x] 8.3 (P) セッション終了サマリ（SessionResult）の実装
   - セッション内の総試行数・成功数・成功率（%）を計算して表示する
   - 「もう一度」（セッション再開）と「終了」（一覧へ戻る）のアクションを提供する
   - 試行が0回の場合でも表示がクラッシュせず「まだ練習していません」等を表示することを確認する
   - _Requirements: 5.2_
   - _Boundary: SessionResult_
 
-- [ ] 8.4 練習セッションコンテナ（PracticeSession）の実装
+- [x] 8.4 練習セッションコンテナ（PracticeSession）の実装
   - コマンド選択後に練習を開始し、`ArcadeController`・`CommandHint`・試行カウンタを統合する
   - セッション中はリアルタイムで試行回数と成功数を表示する
   - セッション終了操作で `usePracticeSession.end()` を呼び出し、`SessionResult` に遷移する

@@ -45,7 +45,7 @@
   - _Boundary: usePracticeLog_
 
 - [ ] 4. (P) Core: タッチ入力と横画面検出フック
-- [ ] 4.1 (P) マルチタッチ入力を追跡する useControllerInput の実装
+- [x] 4.1 (P) マルチタッチ入力を追跡する useControllerInput の実装
   - Pointer Events API（`onPointerDown`/`onPointerUp`/`onPointerCancel`）で各ボタンの押下状態を追跡する
   - `pointerId` を使って複数タッチポイントを独立管理し、同時に複数ボタンを押下できる
   - 各ボタンコンポーネントに渡す Pointer Events ハンドラをボタン種別ごとに返すファクトリ関数を提供する

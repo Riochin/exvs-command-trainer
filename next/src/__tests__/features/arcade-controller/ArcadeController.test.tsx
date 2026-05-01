@@ -4,18 +4,17 @@ import { ArcadeController } from '@/features/arcade-controller/ArcadeController'
 import type { ButtonType } from '@/types';
 
 describe('ArcadeController', () => {
-  it('4つのボタン（射撃・格闘・ジャンプ・覚醒）が表示される', () => {
+  it('3つのボタン（射撃・格闘・ジャンプ）が表示される', () => {
     render(<ArcadeController />);
     expect(screen.getByText('射撃')).toBeTruthy();
     expect(screen.getByText('格闘')).toBeTruthy();
     expect(screen.getByText('ジャンプ')).toBeTruthy();
-    expect(screen.getByText('覚醒')).toBeTruthy();
   });
 
-  it('ボタンが4つ存在する', () => {
+  it('ボタンが3つ存在する', () => {
     render(<ArcadeController />);
     const buttons = screen.getAllByRole('button');
-    expect(buttons).toHaveLength(4);
+    expect(buttons).toHaveLength(3);
   });
 
   describe('onButtonPress モード（練習モード）', () => {
@@ -40,12 +39,6 @@ describe('ArcadeController', () => {
       expect(onButtonPress).toHaveBeenCalledWith('jump');
     });
 
-    it('覚醒ボタン押下で onButtonPress が "awaken" で呼ばれる', () => {
-      const onButtonPress = vi.fn();
-      render(<ArcadeController onButtonPress={onButtonPress} />);
-      fireEvent.pointerDown(screen.getByText('覚醒'));
-      expect(onButtonPress).toHaveBeenCalledWith('awaken');
-    });
   });
 
   describe('onStepAdded モード（登録モード）', () => {

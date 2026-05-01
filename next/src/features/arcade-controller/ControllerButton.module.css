@@ -1,0 +1,30 @@
+.button {
+  width: var(--btn-size, min(22vw, 110px));
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  border: 3px solid rgba(0, 0, 0, 0.6);
+  font-size: calc(var(--btn-size, min(22vw, 110px)) * 0.2);
+  font-weight: bold;
+  color: #fff;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  transition: filter 0.08s ease, transform 0.06s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.button[data-button="shot"]  { background: #d42f2f; }
+.button[data-button="melee"] { background: #2b5cb8; }
+.button[data-button="jump"]  { background: #27ae60; }
+
+.button[aria-pressed="true"] {
+  filter: brightness(1.4);
+  transform: scale(0.93);
+}
+
+.button[data-highlighted="true"] {
+  box-shadow: 0 0 0 4px #fff, 0 0 0 7px #ffd700;
+}

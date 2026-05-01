@@ -30,14 +30,6 @@ describe('ControllerButton', () => {
     expect(screen.getByText(label)).toBeTruthy();
   });
 
-  it('touch-action: none の CSS が設定されている', () => {
-    const { container } = render(
-      <ControllerButton button="shot" isActive={false} handlers={makeHandlers()} />
-    );
-    const el = container.firstChild as HTMLElement;
-    expect(el.style.touchAction).toBe('none');
-  });
-
   it('isActive=true のとき aria-pressed が true', () => {
     render(
       <ControllerButton button="shot" isActive={true} handlers={makeHandlers()} />

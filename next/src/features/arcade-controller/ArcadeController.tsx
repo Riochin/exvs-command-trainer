@@ -4,8 +4,9 @@ import { useEffect } from 'react';
 import { useControllerInput } from '@/hooks/useControllerInput';
 import { ControllerButton } from './ControllerButton';
 import type { ButtonType, CommandStep } from '@/types';
+import styles from './ArcadeController.module.css';
 
-const BUTTONS: ButtonType[] = ['shot', 'melee', 'jump', 'awaken'];
+const BUTTONS: ButtonType[] = ['shot', 'melee', 'jump'];
 
 export interface ArcadeControllerProps {
   onButtonPress?: (button: ButtonType) => void;
@@ -29,7 +30,7 @@ export function ArcadeController({ onButtonPress, onStepAdded, highlightedButton
   }, [onButtonPress, onStepAdded, setOnButtonPress]);
 
   return (
-    <div data-testid="arcade-controller">
+    <div data-testid="arcade-controller" className={styles.controller}>
       {BUTTONS.map((button) => (
         <ControllerButton
           key={button}
@@ -37,6 +38,7 @@ export function ArcadeController({ onButtonPress, onStepAdded, highlightedButton
           isActive={activeButtons.has(button)}
           highlighted={highlightedButton === button}
           handlers={getButtonHandlers(button)}
+          className={styles[`btn-${button}`]}
         />
       ))}
     </div>

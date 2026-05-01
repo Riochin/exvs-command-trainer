@@ -147,7 +147,7 @@
   - _Requirements: 3.1, 3.2, 3.6, 5.1_
   - _Boundary: PracticeSession_
 
-- [ ] 9. (P) Core: 練習履歴コンポーネント（PracticeHistory）の実装
+- [x] 9. (P) Core: 練習履歴コンポーネント（PracticeHistory）の実装
   - コマンドごとの練習履歴（成功率・最終練習日時・試行回数）を一覧表示する
   - `usePracticeLog.getLog` でログを取得し、統計値を計算して表示する
   - 指定コマンドの練習ログが存在しない場合は「まだ練習していません」メッセージを表示する

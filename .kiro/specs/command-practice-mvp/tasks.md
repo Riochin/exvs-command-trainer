@@ -156,20 +156,20 @@
   - _Boundary: PracticeHistory_
   - _Depends: 3.2_
 
-- [ ] 10. Integration: App Route ページの実装
-- [ ] 10.1 ホームページ（コマンド一覧）の実装
+- [x] 10. Integration: App Route ページの実装
+- [x] 10.1 ホームページ（コマンド一覧）の実装
   - `/` ルートに `CommandList` と `LandscapeGuard` を組み込み、登録コマンドの一覧と練習開始への導線を提供する
   - コマンドが0件の場合は登録を促すメッセージと登録ページへのリンクを表示する
   - `/` にアクセスするとコマンドが機体名でグループ化されて表示されることを確認する
   - _Requirements: 1.4, 2.2, 2.4_
 
-- [ ] 10.2 コマンド登録・詳細ページの実装
+- [x] 10.2 コマンド登録・詳細ページの実装
   - `/commands/new` に `CommandForm` を配置し、コマンド登録から一覧へのリダイレクトを実装する
   - `/commands/[id]` に `CommandDetail` と `PracticeHistory` を配置し、練習開始ボタンへの導線を提供する
   - 存在しないコマンド ID のページを開くと 404 相当のメッセージが表示されることを確認する
   - _Requirements: 2.1, 2.3, 2.6, 5.3, 5.4_
 
-- [ ] 10.3 練習セッションページの実装
+- [x] 10.3 練習セッションページの実装
   - `/practice/[commandId]` に `PracticeSession` と `LandscapeGuard` を配置する
   - 縦画面時は `LandscapeGuard` が練習UIをブロックし回転促進メッセージを表示する
   - URL でコマンド ID を直接指定して練習セッションが正常に開始されることを確認する

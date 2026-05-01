@@ -7,9 +7,10 @@ import type { Command } from '@/types';
 export interface CommandListProps {
   commands: Command[];
   onDelete: (id: string) => void;
+  onSelect?: (id: string) => void;
 }
 
-export function CommandList({ commands, onDelete }: CommandListProps) {
+export function CommandList({ commands, onDelete, onSelect }: CommandListProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   if (commands.length === 0) {
@@ -47,7 +48,11 @@ export function CommandList({ commands, onDelete }: CommandListProps) {
           <ul>
             {cmds.map((cmd) => (
               <li key={cmd.id}>
-                <span>{cmd.name}</span>
+                {onSelect ? (
+                  <button type="button" onClick={() => onSelect(cmd.id)}>{cmd.name}</button>
+                ) : (
+                  <span>{cmd.name}</span>
+                )}
                 <button type="button" aria-label={`${cmd.name}を削除`} onClick={() => handleDeleteClick(cmd.id)}>
                   削除
                 </button>

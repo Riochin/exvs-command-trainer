@@ -198,6 +198,53 @@ describe('useChargeInput', () => {
     });
   });
 
+  describe('deferSoloEmitMs（同時押し向け遅延）', () => {
+    it('pointerUp 直後はコールバックされず、遅延後に tap が届く', () => {
+      const deferMs = 40;
+      const { result } = renderHook(() => useChargeInput({ deferSoloEmitMs: deferMs }));
+      const callback = vi.fn();
+      act(() => {
+        result.current.setOnInput(callback);
+      });
+      const startTime = Date.now();
+      act(() => {
+        result.current.getChargeHandlers('shot').onPointerDown(makePointerEvent(1));
+      });
+      vi.setSystemTime(startTime + 50);
+      act(() => {
+        result.current.getChargeHandlers('shot').onPointerUp(makePointerEvent(1));
+      });
+      expect(callback).not.toHaveBeenCalled();
+      act(() => {
+        vi.advanceTimersByTime(deferMs);
+      });
+      expect(callback).toHaveBeenCalledTimes(1);
+      expect(callback).toHaveBeenCalledWith('shot');
+    });
+
+    it('cancelDeferredSoloEmitForChordPartner("shot") で格闘由来の遅延発火が止まる', () => {
+      const deferMs = 50;
+      const { result } = renderHook(() => useChargeInput({ deferSoloEmitMs: deferMs }));
+      const callback = vi.fn();
+      act(() => {
+        result.current.setOnInput(callback);
+      });
+      const t = Date.now();
+      act(() => {
+        result.current.getChargeHandlers('melee').onPointerDown(makePointerEvent(1));
+      });
+      vi.setSystemTime(t + 80);
+      act(() => {
+        result.current.getChargeHandlers('melee').onPointerUp(makePointerEvent(1));
+      });
+      act(() => {
+        result.current.cancelDeferredSoloEmitForChordPartner('shot');
+        vi.advanceTimersByTime(deferMs + 10);
+      });
+      expect(callback).not.toHaveBeenCalled();
+    });
+  });
+
   describe('マルチタッチ', () => {
     it('melee と shot を同時に保持できる', () => {
       const { result } = renderHook(() => useChargeInput());

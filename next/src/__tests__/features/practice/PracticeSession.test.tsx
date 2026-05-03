@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { PracticeSession } from '@/features/practice/PracticeSession';
+import { PracticeSession, practiceStepToPhysicalHighlights } from '@/features/practice/PracticeSession';
 import type { Command } from '@/types';
 
 const zundaCommand: Command = {
@@ -88,6 +88,73 @@ describe('PracticeSession', () => {
       });
       const counter = screen.getByTestId('attempt-counter');
       expect(counter.textContent).toContain('1'); // 試行1回
+    });
+  });
+
+  describe('練習ヒント（ハイライト）', () => {
+    it('melee-charge ステップで格闘ボタンに data-highlighted が付く', () => {
+      const command: Command = {
+        ...zundaCommand,
+        id: 'c1',
+        sequence: [{ buttons: ['melee-charge'] }],
+      };
+      render(<PracticeSession command={command} onExit={vi.fn()} />);
+      expect(getControllerButton('格闘').getAttribute('data-highlighted')).toBe('true');
+      expect(getControllerButton('射撃').getAttribute('data-highlighted')).toBeNull();
+    });
+
+    it('shot-charge ステップで射撃ボタンに data-highlighted が付く', () => {
+      const command: Command = {
+        ...zundaCommand,
+        id: 'c2',
+        sequence: [{ buttons: ['shot-charge'] }],
+      };
+      render(<PracticeSession command={command} onExit={vi.fn()} />);
+      expect(getControllerButton('射撃').getAttribute('data-highlighted')).toBe('true');
+    });
+
+    it('sub ステップで射撃と格闘に data-highlighted が付く', () => {
+      const command: Command = {
+        ...zundaCommand,
+        id: 'c3',
+        sequence: [{ buttons: ['sub'] }],
+      };
+      render(<PracticeSession command={command} onExit={vi.fn()} />);
+      expect(getControllerButton('射撃').getAttribute('data-highlighted')).toBe('true');
+      expect(getControllerButton('格闘').getAttribute('data-highlighted')).toBe('true');
+      expect(getControllerButton('ジャンプ').getAttribute('data-highlighted')).toBeNull();
+    });
+
+    it('special-shot は射撃とジャンプがハイライトされる', () => {
+      const command: Command = {
+        ...zundaCommand,
+        id: 'c4',
+        sequence: [{ buttons: ['special-shot'] }],
+      };
+      render(<PracticeSession command={command} onExit={vi.fn()} />);
+      expect(getControllerButton('射撃').getAttribute('data-highlighted')).toBe('true');
+      expect(getControllerButton('ジャンプ').getAttribute('data-highlighted')).toBe('true');
+    });
+
+    it('special-melee は格闘とジャンプがハイライトされる', () => {
+      const command: Command = {
+        ...zundaCommand,
+        id: 'c5',
+        sequence: [{ buttons: ['special-melee'] }],
+      };
+      render(<PracticeSession command={command} onExit={vi.fn()} />);
+      expect(getControllerButton('格闘').getAttribute('data-highlighted')).toBe('true');
+      expect(getControllerButton('ジャンプ').getAttribute('data-highlighted')).toBe('true');
+    });
+  });
+
+  describe('practiceStepToPhysicalHighlights', () => {
+    it('チャージ・複合入力を物理ボタン配列にマップする', () => {
+      expect(practiceStepToPhysicalHighlights('melee-charge')).toEqual(['melee']);
+      expect(practiceStepToPhysicalHighlights('shot-charge')).toEqual(['shot']);
+      expect(practiceStepToPhysicalHighlights('sub')).toEqual(['shot', 'melee']);
+      expect(practiceStepToPhysicalHighlights('special-shot')).toEqual(['shot', 'jump']);
+      expect(practiceStepToPhysicalHighlights('special-melee')).toEqual(['melee', 'jump']);
     });
   });
 

@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import CommandNewPage from '@/app/commands/new/page';
+import { flushChargeDeferredInput } from '@/__tests__/utils/flushChargeDeferredInput';
 
 vi.mock('@/hooks/useCommandStore', () => ({
   useCommandStore: vi.fn(),
@@ -55,6 +56,7 @@ describe('CommandNewPage', () => {
       fireEvent.pointerDown(screen.getByText('射撃'));
       fireEvent.pointerUp(screen.getByText('射撃'));
     });
+    await flushChargeDeferredInput();
     fireEvent.click(screen.getByRole('button', { name: /保存/ }));
     expect(push).toHaveBeenCalledWith('/');
   });

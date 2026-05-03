@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useCommandStore } from '@/hooks/useCommandStore';
 import { CommandForm } from '@/features/command-editor/CommandForm';
 import { CommandList } from '@/features/command-editor/CommandList';
+import { flushChargeDeferredInput } from '@/__tests__/utils/flushChargeDeferredInput';
 import type { Command } from '@/types';
 
 // 実フックに接続したラッパーコンポーネント
@@ -40,6 +41,7 @@ describe('コマンド登録フロー 統合テスト', () => {
         fireEvent.pointerDown(screen.getByRole('button', { name: '射撃' }));
         fireEvent.pointerUp(screen.getByRole('button', { name: '射撃' }));
       });
+      await flushChargeDeferredInput();
       fireEvent.click(screen.getByRole('button', { name: /保存/ }));
 
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -59,6 +61,7 @@ describe('コマンド登録フロー 統合テスト', () => {
         fireEvent.pointerDown(screen.getByRole('button', { name: '射撃' }));
         fireEvent.pointerUp(screen.getByRole('button', { name: '射撃' }));
       });
+      await flushChargeDeferredInput();
       fireEvent.click(screen.getByRole('button', { name: /保存/ }));
 
       const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]') as Command[];
@@ -76,6 +79,7 @@ describe('コマンド登録フロー 統合テスト', () => {
         fireEvent.pointerDown(screen.getByRole('button', { name: '射撃' }));
         fireEvent.pointerUp(screen.getByRole('button', { name: '射撃' }));
       });
+      await flushChargeDeferredInput();
       fireEvent.click(screen.getByRole('button', { name: /保存/ }));
       expect(onSuccess).toHaveBeenCalledOnce();
     });

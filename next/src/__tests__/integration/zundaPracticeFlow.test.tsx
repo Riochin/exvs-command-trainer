@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { PracticeSession } from '@/features/practice/PracticeSession';
+import { flushChargeDeferredInput } from '@/__tests__/utils/flushChargeDeferredInput';
 import type { Command } from '@/types';
 
 const zundaCommand: Command = {
@@ -20,6 +21,9 @@ async function pressControllerButton(label: string) {
     fireEvent.pointerDown(screen.getByRole('button', { name: label }));
     fireEvent.pointerUp(screen.getByRole('button', { name: label }));
   });
+  if (label === '射撃' || label === '格闘') {
+    await flushChargeDeferredInput();
+  }
 }
 
 describe('ズンダコマンド練習 E2E テスト', () => {

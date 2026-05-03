@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { CommandForm } from '@/features/command-editor/CommandForm';
+import { flushChargeDeferredInput } from '@/__tests__/utils/flushChargeDeferredInput';
 import type { CommandStep, StorageResult, Command } from '@/types';
 
 const makeAddCommand = (result: StorageResult<Command> = { ok: true, value: { id: '1', mobileSuit: 'ν', name: 'test', sequence: [{ buttons: ['shot'] }], createdAt: '' } }) =>
@@ -53,6 +54,7 @@ describe('CommandForm', () => {
         fireEvent.pointerDown(screen.getByText('射撃'));
         fireEvent.pointerUp(screen.getByText('射撃'));
       });
+      await flushChargeDeferredInput();
       const button = screen.getByRole('button', { name: /保存/ }) as HTMLButtonElement;
       expect(button.disabled).toBe(false);
     });
@@ -79,6 +81,7 @@ describe('CommandForm', () => {
         fireEvent.pointerDown(screen.getByText('射撃'));
         fireEvent.pointerUp(screen.getByText('射撃'));
       });
+      await flushChargeDeferredInput();
       const preview = screen.getByTestId('sequence-preview');
       const steps = preview.querySelectorAll('[data-testid="sequence-step"]');
       expect(steps).toHaveLength(2);
@@ -95,6 +98,7 @@ describe('CommandForm', () => {
         fireEvent.pointerDown(screen.getByText('射撃'));
         fireEvent.pointerUp(screen.getByText('射撃'));
       });
+      await flushChargeDeferredInput();
       fireEvent.click(screen.getByRole('button', { name: /保存/ }));
       expect(onAdd).toHaveBeenCalledWith({
         mobileSuit: 'νガンダム',
@@ -113,6 +117,7 @@ describe('CommandForm', () => {
         fireEvent.pointerDown(screen.getByText('射撃'));
         fireEvent.pointerUp(screen.getByText('射撃'));
       });
+      await flushChargeDeferredInput();
       fireEvent.click(screen.getByRole('button', { name: /保存/ }));
       expect(onSuccess).toHaveBeenCalledOnce();
     });
@@ -129,6 +134,7 @@ describe('CommandForm', () => {
         fireEvent.pointerDown(screen.getByText('射撃'));
         fireEvent.pointerUp(screen.getByText('射撃'));
       });
+      await flushChargeDeferredInput();
       fireEvent.click(screen.getByRole('button', { name: /保存/ }));
       expect(screen.getByRole('alert')).toBeTruthy();
       expect(screen.getByRole('alert').textContent).toContain('ストレージ容量が不足しています');
@@ -146,6 +152,7 @@ describe('CommandForm', () => {
         fireEvent.pointerDown(screen.getByText('射撃'));
         fireEvent.pointerUp(screen.getByText('射撃'));
       });
+      await flushChargeDeferredInput();
       fireEvent.click(screen.getByRole('button', { name: /保存/ }));
       expect((screen.getByLabelText('機体名') as HTMLInputElement).value).toBe('νガンダム');
       expect((screen.getByLabelText('コマンド名') as HTMLInputElement).value).toBe('ズンダ');

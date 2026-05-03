@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { PracticeSession, practiceStepToPhysicalHighlights } from '@/features/practice/PracticeSession';
+import { flushChargeDeferredInput } from '@/__tests__/utils/flushChargeDeferredInput';
 import type { Command } from '@/types';
 
 const zundaCommand: Command = {
@@ -60,6 +61,7 @@ describe('PracticeSession', () => {
         fireEvent.pointerDown(getControllerButton('射撃'));
         fireEvent.pointerUp(getControllerButton('射撃'));
       });
+      await flushChargeDeferredInput();
       expect(screen.getByTestId('result-success')).toBeTruthy();
     });
 
@@ -69,6 +71,7 @@ describe('PracticeSession', () => {
         fireEvent.pointerDown(getControllerButton('射撃')); // 最初は jump が正解
         fireEvent.pointerUp(getControllerButton('射撃'));
       });
+      await flushChargeDeferredInput();
       expect(screen.getByTestId('result-failure')).toBeTruthy();
     });
 
@@ -86,6 +89,7 @@ describe('PracticeSession', () => {
         fireEvent.pointerDown(getControllerButton('射撃'));
         fireEvent.pointerUp(getControllerButton('射撃'));
       });
+      await flushChargeDeferredInput();
       const counter = screen.getByTestId('attempt-counter');
       expect(counter.textContent).toContain('1'); // 試行1回
     });

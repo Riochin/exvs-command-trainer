@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { ArcadeController } from '@/features/arcade-controller/ArcadeController';
+import { ArcadeController, SIMULTANEOUS_INPUT_DEFER_MS } from '@/features/arcade-controller/ArcadeController';
 import { CHARGE_THRESHOLD_MS } from '@/hooks/useChargeInput';
 
 describe('ArcadeController', () => {
@@ -18,28 +18,64 @@ describe('ArcadeController', () => {
 
   describe('onButtonPress モード（練習モード）', () => {
     it('射撃を短押しで onButtonPress が "shot" で呼ばれる', () => {
+      vi.useFakeTimers();
       const onButtonPress = vi.fn();
       render(<ArcadeController onButtonPress={onButtonPress} />);
       const el = screen.getByText('射撃').closest('button')!;
       fireEvent.pointerDown(el, { pointerId: 1 });
       fireEvent.pointerUp(el, { pointerId: 1 });
+      act(() => {
+        vi.advanceTimersByTime(SIMULTANEOUS_INPUT_DEFER_MS);
+      });
       expect(onButtonPress).toHaveBeenCalledWith('shot');
+      vi.useRealTimers();
     });
 
     it('格闘を短押しで onButtonPress が "melee" で呼ばれる', () => {
+      vi.useFakeTimers();
       const onButtonPress = vi.fn();
       render(<ArcadeController onButtonPress={onButtonPress} />);
       const el = screen.getByText('格闘').closest('button')!;
       fireEvent.pointerDown(el, { pointerId: 1 });
       fireEvent.pointerUp(el, { pointerId: 1 });
+      act(() => {
+        vi.advanceTimersByTime(SIMULTANEOUS_INPUT_DEFER_MS);
+      });
       expect(onButtonPress).toHaveBeenCalledWith('melee');
+      vi.useRealTimers();
     });
 
-    it('ジャンプボタン押下で onButtonPress が "jump" で呼ばれる', () => {
+    it('ジャンプのタップで onButtonPress が "jump" で呼ばれる', () => {
       const onButtonPress = vi.fn();
       render(<ArcadeController onButtonPress={onButtonPress} />);
-      fireEvent.pointerDown(screen.getByText('ジャンプ'));
+      const jump = screen.getByText('ジャンプ').closest('button')!;
+      fireEvent.pointerDown(jump, { pointerId: 1 });
+      fireEvent.pointerUp(jump, { pointerId: 1 });
       expect(onButtonPress).toHaveBeenCalledWith('jump');
+    });
+
+    it('ジャンプ→格闘の順でも onButtonPress は "special-melee" のみ（先行ジャンプ誤検知しない）', () => {
+      const onButtonPress = vi.fn();
+      render(<ArcadeController onButtonPress={onButtonPress} />);
+      const melee = screen.getByText('格闘').closest('button')!;
+      const jump = screen.getByText('ジャンプ').closest('button')!;
+      fireEvent.pointerDown(jump, { pointerId: 2 });
+      fireEvent.pointerDown(melee, { pointerId: 1 });
+      expect(onButtonPress).toHaveBeenCalledTimes(1);
+      expect(onButtonPress).toHaveBeenCalledWith('special-melee');
+      expect(onButtonPress).not.toHaveBeenCalledWith('jump');
+    });
+
+    it('ジャンプ→射撃の順でも onButtonPress は "special-shot" のみ（先行ジャンプ誤検知しない）', () => {
+      const onButtonPress = vi.fn();
+      render(<ArcadeController onButtonPress={onButtonPress} />);
+      const shot = screen.getByText('射撃').closest('button')!;
+      const jump = screen.getByText('ジャンプ').closest('button')!;
+      fireEvent.pointerDown(jump, { pointerId: 2 });
+      fireEvent.pointerDown(shot, { pointerId: 1 });
+      expect(onButtonPress).toHaveBeenCalledTimes(1);
+      expect(onButtonPress).toHaveBeenCalledWith('special-shot');
+      expect(onButtonPress).not.toHaveBeenCalledWith('jump');
     });
 
     it('射撃+格闘の同時押しで onButtonPress が "sub" で1回呼ばれる', () => {
@@ -83,39 +119,69 @@ describe('ArcadeController', () => {
       expect(onButtonPress).toHaveBeenCalledWith('special-melee');
     });
 
+    it('射撃を離した直後に格闘を押すと遅延中の shot は発火しない', () => {
+      vi.useFakeTimers();
+      const onButtonPress = vi.fn();
+      render(<ArcadeController onButtonPress={onButtonPress} />);
+      const shot = screen.getByText('射撃').closest('button')!;
+      const melee = screen.getByText('格闘').closest('button')!;
+      fireEvent.pointerDown(shot, { pointerId: 1 });
+      fireEvent.pointerUp(shot, { pointerId: 1 });
+      fireEvent.pointerDown(melee, { pointerId: 2 });
+      act(() => {
+        vi.advanceTimersByTime(SIMULTANEOUS_INPUT_DEFER_MS + 20);
+      });
+      expect(onButtonPress).not.toHaveBeenCalledWith('shot');
+      vi.useRealTimers();
+    });
+
     describe('keyboard debug (f / y / i)', () => {
       it('f の keyDown→keyUp で onButtonPress が "shot" で呼ばれる', () => {
+        vi.useFakeTimers();
         const onButtonPress = vi.fn();
         render(<ArcadeController onButtonPress={onButtonPress} />);
         fireEvent.keyDown(window, { key: 'f' });
         fireEvent.keyUp(window, { key: 'f' });
+        act(() => {
+          vi.advanceTimersByTime(SIMULTANEOUS_INPUT_DEFER_MS);
+        });
         expect(onButtonPress).toHaveBeenCalledWith('shot');
+        vi.useRealTimers();
       });
 
       it('y の keyDown→keyUp で onButtonPress が "melee" で呼ばれる', () => {
+        vi.useFakeTimers();
         const onButtonPress = vi.fn();
         render(<ArcadeController onButtonPress={onButtonPress} />);
         fireEvent.keyDown(window, { key: 'y' });
         fireEvent.keyUp(window, { key: 'y' });
+        act(() => {
+          vi.advanceTimersByTime(SIMULTANEOUS_INPUT_DEFER_MS);
+        });
         expect(onButtonPress).toHaveBeenCalledWith('melee');
+        vi.useRealTimers();
       });
 
-      it('i の keyDown で onButtonPress が "jump" で呼ばれ、keyUp で重複しない', () => {
+      it('i の keyDown→keyUp で onButtonPress が "jump" で1回だけ呼ばれる', () => {
         const onButtonPress = vi.fn();
         render(<ArcadeController onButtonPress={onButtonPress} />);
         fireEvent.keyDown(window, { key: 'i' });
-        expect(onButtonPress).toHaveBeenCalledTimes(1);
-        expect(onButtonPress).toHaveBeenCalledWith('jump');
         fireEvent.keyUp(window, { key: 'i' });
         expect(onButtonPress).toHaveBeenCalledTimes(1);
+        expect(onButtonPress).toHaveBeenCalledWith('jump');
       });
 
       it('大文字 F でも射撃として扱う', () => {
+        vi.useFakeTimers();
         const onButtonPress = vi.fn();
         render(<ArcadeController onButtonPress={onButtonPress} />);
         fireEvent.keyDown(window, { key: 'F' });
         fireEvent.keyUp(window, { key: 'F' });
+        act(() => {
+          vi.advanceTimersByTime(SIMULTANEOUS_INPUT_DEFER_MS);
+        });
         expect(onButtonPress).toHaveBeenCalledWith('shot');
+        vi.useRealTimers();
       });
     });
   });
@@ -124,7 +190,9 @@ describe('ArcadeController', () => {
     it('ボタン押下で onStepAdded が CommandStep として呼ばれる', () => {
       const onStepAdded = vi.fn();
       render(<ArcadeController onStepAdded={onStepAdded} />);
-      fireEvent.pointerDown(screen.getByText('ジャンプ'));
+      const jump = screen.getByText('ジャンプ').closest('button')!;
+      fireEvent.pointerDown(jump, { pointerId: 1 });
+      fireEvent.pointerUp(jump, { pointerId: 1 });
       expect(onStepAdded).toHaveBeenCalledWith({ buttons: ['jump'] });
     });
 
@@ -139,19 +207,26 @@ describe('ArcadeController', () => {
     });
 
     it('格闘を短押しで onStepAdded が { buttons: ["melee"] } で呼ばれる', () => {
+      vi.useFakeTimers();
       const onStepAdded = vi.fn();
       render(<ArcadeController onStepAdded={onStepAdded} />);
       const el = screen.getByText('格闘').closest('button')!;
       fireEvent.pointerDown(el, { pointerId: 1 });
       fireEvent.pointerUp(el, { pointerId: 1 });
+      act(() => {
+        vi.advanceTimersByTime(SIMULTANEOUS_INPUT_DEFER_MS);
+      });
       expect(onStepAdded).toHaveBeenCalledWith({ buttons: ['melee'] });
+      vi.useRealTimers();
     });
 
     it('onButtonPress と onStepAdded の両方が渡された場合、onButtonPress が優先される', () => {
       const onButtonPress = vi.fn();
       const onStepAdded = vi.fn();
       render(<ArcadeController onButtonPress={onButtonPress} onStepAdded={onStepAdded} />);
-      fireEvent.pointerDown(screen.getByText('ジャンプ'));
+      const jump = screen.getByText('ジャンプ').closest('button')!;
+      fireEvent.pointerDown(jump, { pointerId: 1 });
+      fireEvent.pointerUp(jump, { pointerId: 1 });
       expect(onButtonPress).toHaveBeenCalledWith('jump');
       expect(onStepAdded).not.toHaveBeenCalled();
     });
@@ -246,6 +321,7 @@ describe('ArcadeController', () => {
       vi.setSystemTime(start + CHARGE_THRESHOLD_MS + 50);
       act(() => {
         fireEvent.pointerUp(el, { pointerId: 1 });
+        vi.advanceTimersByTime(SIMULTANEOUS_INPUT_DEFER_MS);
       });
       expect(onButtonPress).toHaveBeenCalledWith('melee-charge');
     });
@@ -261,6 +337,7 @@ describe('ArcadeController', () => {
       vi.setSystemTime(start + CHARGE_THRESHOLD_MS - 1);
       act(() => {
         fireEvent.pointerUp(el, { pointerId: 1 });
+        vi.advanceTimersByTime(SIMULTANEOUS_INPUT_DEFER_MS);
       });
       expect(onButtonPress).toHaveBeenCalledWith('melee');
     });
@@ -290,6 +367,7 @@ describe('ArcadeController', () => {
       vi.setSystemTime(start + CHARGE_THRESHOLD_MS + 1);
       act(() => {
         fireEvent.pointerUp(el, { pointerId: 3 });
+        vi.advanceTimersByTime(SIMULTANEOUS_INPUT_DEFER_MS);
       });
       expect(onStepAdded).toHaveBeenCalledWith({ buttons: ['shot-charge'] });
     });

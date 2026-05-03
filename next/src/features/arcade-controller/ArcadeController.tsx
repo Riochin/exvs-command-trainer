@@ -10,6 +10,9 @@ import styles from './ArcadeController.module.css';
 
 export type ArcadePhysicalButton = 'shot' | 'melee' | 'jump';
 
+/** 同時押し判定用の短い遅延（ジャンプ単独／射撃・格闘の tap・charge を、相手ボタンが続く場合に誤発火しないため） */
+export const SIMULTANEOUS_INPUT_DEFER_MS = 50;
+
 const BUTTONS = ['shot', 'melee', 'jump'] as const satisfies readonly ArcadePhysicalButton[];
 
 /** PC デバッグ用キー（f/y/i）。実ポインターと衝突しない負の ID。 */
@@ -83,12 +86,27 @@ export function ArcadeController({
     setOnInput,
     getHeldChargeableSync,
     suppressChainedOutputForChargeableButton,
-  } = useChargeInput();
+    cancelDeferredSoloEmitForChordPartner,
+    cancelAllDeferredSoloEmits,
+  } = useChargeInput({ deferSoloEmitMs: SIMULTANEOUS_INPUT_DEFER_MS });
 
   const inputHandlerRef = useRef<((button: ButtonType) => void) | null>(null);
   const subComboPrevRef = useRef(false);
   const specialShotComboPrevRef = useRef(false);
   const specialMeleeComboPrevRef = useRef(false);
+  /** ジャンプ単独の遅延発火（特格/特射の直前ジャンプ誤検知防止） */
+  const soloJumpTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** 特射・特格がこのジャンプ押しを消費した — pointerUp で jump を出さない */
+  const jumpChordConsumedRef = useRef(false);
+  /** 遅延タイマーで既に jump を出したポインター（長押し後の離しで二重にしない） */
+  const jumpSoloEmittedPointerIdsRef = useRef<Set<number>>(new Set());
+
+  const clearSoloJumpSchedule = useCallback(() => {
+    if (soloJumpTimerRef.current !== null) {
+      clearTimeout(soloJumpTimerRef.current);
+      soloJumpTimerRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     const handler =
@@ -97,6 +115,12 @@ export function ArcadeController({
     setOnButtonPress(handler);
     setOnInput(handler);
   }, [onButtonPress, onStepAdded, setOnButtonPress, setOnInput]);
+
+  useEffect(() => {
+    return () => {
+      if (soloJumpTimerRef.current) clearTimeout(soloJumpTimerRef.current);
+    };
+  }, []);
 
   const syncChordInputs = useCallback(() => {
     const ch = getHeldChargeableSync();
@@ -115,6 +139,7 @@ export function ArcadeController({
     }
 
     if (subCombo && !subComboPrevRef.current) {
+      cancelAllDeferredSoloEmits();
       cb('sub');
       suppressChainedOutputForChargeableButton('shot');
       suppressChainedOutputForChargeableButton('melee');
@@ -122,23 +147,34 @@ export function ArcadeController({
     subComboPrevRef.current = subCombo;
 
     if (specialShotCombo && !specialShotComboPrevRef.current) {
+      cancelAllDeferredSoloEmits();
+      jumpChordConsumedRef.current = true;
       cb('special-shot');
       suppressChainedOutputForChargeableButton('shot');
     }
     specialShotComboPrevRef.current = specialShotCombo;
 
     if (specialMeleeCombo && !specialMeleeComboPrevRef.current) {
+      cancelAllDeferredSoloEmits();
+      jumpChordConsumedRef.current = true;
       cb('special-melee');
       suppressChainedOutputForChargeableButton('melee');
     }
     specialMeleeComboPrevRef.current = specialMeleeCombo;
-  }, [getHeldChargeableSync, getHeldButtonsSync, suppressChainedOutputForChargeableButton]);
+  }, [
+    getHeldChargeableSync,
+    getHeldButtonsSync,
+    suppressChainedOutputForChargeableButton,
+    cancelAllDeferredSoloEmits,
+  ]);
 
   const wrapChargeHandlers = useCallback(
     (btn: ChargeableButton) => {
       const inner = getChargeHandlers(btn);
       return {
         onPointerDown(event: Parameters<typeof inner.onPointerDown>[0]) {
+          clearSoloJumpSchedule();
+          cancelDeferredSoloEmitForChordPartner(btn);
           inner.onPointerDown(event);
           syncChordInputs();
         },
@@ -152,28 +188,70 @@ export function ArcadeController({
         },
       };
     },
-    [getChargeHandlers, syncChordInputs],
+    [getChargeHandlers, syncChordInputs, clearSoloJumpSchedule, cancelDeferredSoloEmitForChordPartner],
   );
 
   const wrapJumpHandlers = useCallback(() => {
     return {
       onPointerDown(event: React.PointerEvent<HTMLElement>) {
+        jumpChordConsumedRef.current = false;
+        cancelDeferredSoloEmitForChordPartner('jump');
+        getButtonHandlers('jump', { suppressCallbackOnPointerDown: true }).onPointerDown(event);
+        syncChordInputs();
+
         const shotHeld = getHeldChargeableSync().has('shot');
         const meleeHeld = getHeldChargeableSync().has('melee');
-        const suppressJump = shotHeld || meleeHeld;
-        getButtonHandlers('jump', { suppressCallbackOnPointerDown: suppressJump }).onPointerDown(event);
-        syncChordInputs();
+        if (shotHeld || meleeHeld) {
+          clearSoloJumpSchedule();
+          return;
+        }
+
+        clearSoloJumpSchedule();
+        const pid = event.pointerId;
+        soloJumpTimerRef.current = setTimeout(() => {
+          soloJumpTimerRef.current = null;
+          const ch = getHeldChargeableSync();
+          const ctrl = getHeldButtonsSync();
+          if (!inputHandlerRef.current || !ctrl.has('jump')) return;
+          if (ch.size > 0) return;
+          jumpSoloEmittedPointerIdsRef.current.add(pid);
+          inputHandlerRef.current('jump');
+        }, SIMULTANEOUS_INPUT_DEFER_MS);
       },
       onPointerUp(event: React.PointerEvent<HTMLElement>) {
+        clearSoloJumpSchedule();
+        const pid = event.pointerId;
+        if (jumpSoloEmittedPointerIdsRef.current.delete(pid)) {
+          getButtonHandlers('jump').onPointerUp(event);
+          syncChordInputs();
+          return;
+        }
+        if (jumpChordConsumedRef.current) {
+          jumpChordConsumedRef.current = false;
+          getButtonHandlers('jump').onPointerUp(event);
+          syncChordInputs();
+          return;
+        }
+        inputHandlerRef.current?.('jump');
         getButtonHandlers('jump').onPointerUp(event);
         syncChordInputs();
       },
       onPointerCancel(event: React.PointerEvent<HTMLElement>) {
+        clearSoloJumpSchedule();
+        jumpSoloEmittedPointerIdsRef.current.delete(event.pointerId);
+        if (jumpChordConsumedRef.current) jumpChordConsumedRef.current = false;
         getButtonHandlers('jump').onPointerCancel(event);
         syncChordInputs();
       },
     };
-  }, [getButtonHandlers, getHeldChargeableSync, syncChordInputs]);
+  }, [
+    getButtonHandlers,
+    getHeldChargeableSync,
+    getHeldButtonsSync,
+    syncChordInputs,
+    clearSoloJumpSchedule,
+    cancelDeferredSoloEmitForChordPartner,
+  ]);
 
   const getHandlers = useCallback(
     (button: ButtonType) => {

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { ArcadeController } from '@/features/arcade-controller/ArcadeController';
 import type { Command, CommandStep, StorageResult } from '@/types';
+import styles from './CommandForm.module.css';
 
 const BUTTON_LABELS: Record<string, string> = {
   shot: '射撃',
@@ -39,37 +40,41 @@ export function CommandForm({ onAdd, onSuccess }: CommandFormProps) {
   };
 
   return (
-    <div>
-      <div>
-        <label htmlFor="mobile-suit">機体名</label>
-        <input
-          id="mobile-suit"
-          type="text"
-          value={mobileSuit}
-          onChange={(e) => setMobileSuit(e.target.value)}
-        />
+    <div className={styles.form}>
+      <div className={styles.header}>
+        <div>
+          <label htmlFor="mobile-suit">機体名</label>
+          <input
+            id="mobile-suit"
+            type="text"
+            value={mobileSuit}
+            onChange={(e) => setMobileSuit(e.target.value)}
+          />
+        </div>
+        <div>
+          <label htmlFor="command-name">コマンド名</label>
+          <input
+            id="command-name"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </div>
+        <div data-testid="sequence-preview">
+          {sequence.map((step, i) => (
+            <span key={i} data-testid="sequence-step">
+              {step.buttons.map((b) => BUTTON_LABELS[b] ?? b).join('+')}
+            </span>
+          ))}
+        </div>
+        {errorMessage && <div role="alert">{errorMessage}</div>}
+        <button type="button" disabled={!isValid} onClick={handleSubmit}>
+          保存
+        </button>
       </div>
-      <div>
-        <label htmlFor="command-name">コマンド名</label>
-        <input
-          id="command-name"
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
+      <div className={styles.controllerArea}>
+        <ArcadeController onStepAdded={handleStepAdded} />
       </div>
-      <ArcadeController onStepAdded={handleStepAdded} />
-      <div data-testid="sequence-preview">
-        {sequence.map((step, i) => (
-          <span key={i} data-testid="sequence-step">
-            {step.buttons.map((b) => BUTTON_LABELS[b] ?? b).join('+')}
-          </span>
-        ))}
-      </div>
-      {errorMessage && <div role="alert">{errorMessage}</div>}
-      <button type="button" disabled={!isValid} onClick={handleSubmit}>
-        保存
-      </button>
     </div>
   );
 }

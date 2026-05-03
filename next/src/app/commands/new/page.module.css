@@ -1,0 +1,19 @@
+.main {
+  display: flex;
+  flex-direction: column;
+}
+
+.title {
+  flex-shrink: 0;
+}
+
+@media (orientation: landscape) {
+  .main {
+    height: 100svh;
+    overflow: hidden;
+  }
+
+  .title {
+    display: none;
+  }
+}

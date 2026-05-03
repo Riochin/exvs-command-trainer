@@ -8,20 +8,20 @@
 
 **Purpose**: チャージ技と複合技を含むエクバコマンドをプレイヤーが登録・練習できるようにし、実機に近い練習体験を提供する。
 **Users**: コマンド登録ユーザー（CommandForm）と練習セッションユーザー（PracticeSession）の両方が対象。
-**Impact**: `ButtonType` union を5種拡張し、新規フック `useChargeInput` を追加、`ArcadeController` を8ボタン対応に拡張する。既存コマンドデータおよびテストの互換性は完全に保たれる。
+**Impact**: `ButtonType` union を5種拡張し、新規フック `useChargeInput` を追加、`ArcadeController` で射撃・格闘・ジャンプの3ボタンに加え**同時押し検出**でサブ・特射・特格を発火する。既存コマンドデータおよびテストの互換性は完全に保たれる。
 
 ### Goals
 
 - `ButtonType` に `'melee-charge' | 'shot-charge' | 'sub' | 'special-shot' | 'special-melee'` を追加（完全な型安全）
 - 保持時間に基づくチャージ検出（300ms しきい値）を `useChargeInput` フックとして実装
-- `ArcadeController` UI に8種の入力ボタンを表示
-- 既存の `useControllerInput`・`usePracticeSession` のコードおよびテストをゼロ変更で保つ
+- `ArcadeController` UI は3物理ボタン＋同時押しによるサブ（射撃+格闘）・特射（射撃+ジャンプ）・特格（格闘+ジャンプ）
+- `usePracticeSession` の判定ロジックは変更しない（`useControllerInput` は同時押し連携用APIを最小限追加してよい）
 
 ### Non-Goals
 
 - チャージしきい値のユーザー設定UI
 - `awaken` ボタンのUI表示（型は保持）
-- 物理同時押し検出によるサブ/特射/特格判定
+- サブ・特射・特格の**専用UIボタン**（要件どおり3ボタンの同時押しで表現する）
 - Firebase・ランキング連携
 
 ---
@@ -32,14 +32,14 @@
 
 - `ButtonType` 型定義の拡張と `isButtonType` 型ガード
 - `useChargeInput` フックのインターフェースと動作契約
-- `ArcadeController` の8ボタン対応と2フック統合
+- `ArcadeController` の3ボタン＋同時押し合成と2フック統合
 - 全コンポーネントの `BUTTON_LABELS` 更新
 - 上記に対するユニット・統合テスト
 
 ### Out of Boundary
 
 - `usePracticeSession` の判定ロジック（変更なし）
-- `useControllerInput` のコード（変更なし）
+- `useControllerInput` の既存挙動は維持しつつ、同時押し連携用にオプション引数・同期参照APIを追加してよい
 - CSS/スタイリングの最終デザイン（実装フェーズで決定）
 - ローカルストレージの既存データマイグレーション（後方互換性あり）
 
@@ -64,9 +64,9 @@
 | 層 | 現状 | 本機能の変更 |
 |----|------|------------|
 | 型 | `ButtonType` 4種 | 9種に拡張 + 型ガード追加 |
-| フック（入力） | `useControllerInput`（pointerDown 即時発火） | 変更なし。新規 `useChargeInput` を並置 |
+| フック（入力） | `useControllerInput`（pointerDown 即時発火） | 同時押し用に `getHeldButtonsSync` 等を最小追加。新規 `useChargeInput` を並置 |
 | フック（練習） | `usePracticeSession`（`handleButtonPress(button)` で評価） | 変更なし |
-| UI（コントローラ） | `ArcadeController`（3ボタン固定） | 8ボタン対応、`useChargeInput` 統合 |
+| UI（コントローラ） | `ArcadeController`（3ボタン固定） | 3ボタン＋同時押しで複合3種を検出、`useChargeInput` 統合 |
 | UI（編集・ヒント） | `CommandForm`, `CommandHint`（ラベル辞書あり） | ラベル追加のみ |
 
 ### Architecture Pattern & Boundary Map
@@ -80,7 +80,7 @@ graph TB
     end
 
     subgraph Hooks_Layer
-        UCI[useControllerInput\n既存 変更なし]
+        UCI[useControllerInput\n同時押し連携API]
         UCH[useChargeInput\n新規]
     end
 
@@ -135,11 +135,11 @@ next/src/
 ├── types/
 │   └── index.ts                    # ButtonType 拡張 + isButtonType 追加
 ├── hooks/
-│   ├── useControllerInput.ts       # 変更なし
+│   ├── useControllerInput.ts       # 同時押し連携用API
 │   └── useChargeInput.ts           # 新規: チャージ検出フック
 ├── features/
 │   ├── arcade-controller/
-│   │   ├── ArcadeController.tsx    # BUTTONS 拡張 + useChargeInput 統合
+│   │   ├── ArcadeController.tsx    # 同時押し合成 + useChargeInput 統合
 │   │   └── ControllerButton.tsx    # BUTTON_LABELS 拡張
 │   ├── command-editor/
 │   │   └── CommandForm.tsx         # BUTTON_LABELS 型強化 + ラベル追加
@@ -156,8 +156,9 @@ next/src/
 ### Modified Files
 
 - `src/types/index.ts` — `ButtonType` union に5種追加、`isButtonType` 型ガードを新規公開
-- `src/hooks/useChargeInput.ts` — **新規作成**。チャージ検出ロジック
-- `src/features/arcade-controller/ArcadeController.tsx` — `BUTTONS` 定数を拡張、`useChargeInput` を組み込み
+- `src/hooks/useControllerInput.ts` — 同時押し連携用に `getHeldButtonsSync`・`suppressCallbackOnPointerDown` 等
+- `src/hooks/useChargeInput.ts` — チャージ検出＋`getHeldChargeableSync`・`suppressChainedOutputForChargeableButton`
+- `src/features/arcade-controller/ArcadeController.tsx` — 3ボタン＋同時押し合成、`useChargeInput` 統合
 - `src/features/arcade-controller/ControllerButton.tsx` — `BUTTON_LABELS` に5種ラベル追加
 - `src/features/command-editor/CommandForm.tsx` — `BUTTON_LABELS` の型を `Record<string, string>` から `Record<ButtonType, string>` に変更＋ラベル追加
 - `src/features/practice/CommandHint.tsx` — `BUTTON_LABELS` に5種ラベル追加
@@ -192,9 +193,15 @@ sequenceDiagram
     UCH->>AC: activeChargeButtons.delete(melee)
 ```
 
-### 複合ボタン入力フロー（専用ボタン、即時発火）
+### 複合ボタン入力フロー（物理同時押し）
 
-複合ボタン（`sub`, `special-shot`, `special-melee`）は `useControllerInput.getButtonHandlers(button)` を通じて通常ボタンと同一の即時発火フローをたどる。既存フローのため図を省略。
+- **サブ** (`sub`): 射撃＋格闘が両方押下された瞬間に1回だけ `sub` を発火（`useChargeInput` の両ボタン押下状態を同期参照）。
+- **特射** (`special-shot`): 射撃＋ジャンプが両方押下の瞬間に1回だけ発火（ジャンプは `useControllerInput`、射撃は `useChargeInput`）。
+- **特格** (`special-melee`): 格闘＋ジャンプが両方押下の瞬間に1回だけ発火。
+
+合成が成立したあとは、各指の `pointerUp` で単体の tap/charge コールバックが重複しないよう、該当ポインタを `suppressChainedOutputForChargeableButton` 等で抑止する。
+
+**注意**: ジャンプを先に押してから射撃／格闘を後から押すと、ジャンプの単発が先にコールバックされる場合がある（二番目のボタン押下で複合が追加発火する）。実機同時押しに寄せる操作では、チャージ側を先に押し込んでからジャンプを入れると期待どおり複合のみが成立しやすい。
 
 ---
 
@@ -210,14 +217,14 @@ sequenceDiagram
 | 2.3 | タップ時はチャージ発火しない | `useChargeInput` | `getChargeHandlers` | チャージフロー |
 | 2.4 | 保持時間しきい値で区別 | `useChargeInput` | `CHARGE_THRESHOLD_MS` | チャージフロー |
 | 2.5 | 固定しきい値（設定UI不要） | `useChargeInput` | `CHARGE_THRESHOLD_MS = 300` | — |
-| 3.1 | sub/special-shot/special-melee の入力手段 | `ArcadeController` | `BUTTONS` 配列拡張 | 複合フロー |
+| 3.1 | sub/special-shot/special-melee の入力手段 | `ArcadeController` | 射撃・格闘・ジャンプの同時押し検出 | 複合フロー |
 | 3.2–3.4 | 各複合型を単一 CommandStep として発火 | `ArcadeController` | `onStepAdded({ buttons: [type] })` | 複合フロー |
-| 3.5 | 個別ボタンを別々に押さなくてよい | `ArcadeController` | 専用ボタン実装 | — |
-| 4.1 | 編集フォームに全8種表示 | `ArcadeController`, `CommandForm` | `BUTTONS` 拡張 | — |
+| 3.5 | 個別ボタンを別々に押さなくてよい | `ArcadeController` | 同時押しで1ステップとして発火 | — |
+| 4.1 | 編集フォームに全8種表示 | `ArcadeController`, `CommandForm` | フォームのステップ追加UI | — |
 | 4.2 | 新型ステップの追加 | `CommandForm` | `onStepAdded` | — |
 | 4.3 | 日本語ラベル表示 | `CommandForm`, `ControllerButton` | `BUTTON_LABELS` | — |
 | 4.4 | ストレージへの正常保存 | `useCommandStore` | `addCommand` | — |
-| 5.1 | 新8種のUI表示 | `ArcadeController`, `ControllerButton` | `BUTTONS` 配列 | — |
+| 5.1 | 新型の操作・表示 | `ArcadeController`, `ControllerButton` | 3ボタン＋同時押し | — |
 | 5.2 | 新型入力のイベント発火 | `ArcadeController` | `onButtonPress` / `onStepAdded` | — |
 | 5.3 | チャージ保持中のビジュアル | `useChargeInput`, `ControllerButton` | `activeChargeButtons` | — |
 | 5.4 | onStepAdded モードでの動作 | `ArcadeController` | `onStepAdded` | — |
@@ -236,7 +243,7 @@ sequenceDiagram
 |-----------|-------|--------|--------------|------------------|-----------|
 | `ButtonType` + `isButtonType` | Types | 9種 union + 実行時ガード | 1.1–1.3 | — | State |
 | `useChargeInput` | Hook | 保持時間に基づくチャージ検出 | 2.1–2.5, 5.3, 6.3 | `ButtonType`, `PointerHandlers` | Service |
-| `ArcadeController` | UI | 8ボタン統合コントローラ | 3.1–3.5, 4.1–4.4, 5.1–5.5 | `useControllerInput`, `useChargeInput` | State |
+| `ArcadeController` | UI | 3ボタン＋同時押し合成コントローラ | 3.1–3.5, 4.1–4.4, 5.1–5.5 | `useControllerInput`, `useChargeInput` | State |
 | `ControllerButton` | UI | 個別ボタン + ラベル表示 | 4.3, 5.1, 5.3 | `ButtonType`, `BUTTON_LABELS` | — |
 | `CommandForm` | UI | ラベル型強化 | 4.1–4.4 | `ArcadeController` | — |
 | `CommandHint` | UI | ヒントラベル拡張 | 6.4–6.5 | `ButtonType`, `BUTTON_LABELS` | — |
@@ -297,7 +304,7 @@ export function isButtonType(value: unknown): value is ButtonType {
 | Requirements | 2.1, 2.2, 2.3, 2.4, 2.5, 5.3, 6.3 |
 
 **Responsibilities & Constraints**
-- `melee`, `shot` のみを担当（`jump`, `sub`, `special-shot`, `special-melee` は `useControllerInput` が担当）
+- `melee`, `shot` のみを担当（`jump` は `useControllerInput`）。`sub` / `special-shot` / `special-melee` は専用ボタンを持たず、`ArcadeController` が本フックと `useControllerInput` の押下状態を突き合わせて合成する
 - `pointerDown` でホールド開始時刻を記録し、`pointerUp`/`pointerCancel` で判定して発火
 - `pointerCancel` はタップ扱い（チャージとしない）— スクロール等による意図しないキャンセルへの配慮
 - 視覚フィードバック用に `activeChargeButtons` を公開
@@ -326,11 +333,10 @@ const CHARGE_TYPE_MAP: Record<ChargeableButton, { tap: ButtonType; charge: Butto
 };
 
 export interface UseChargeInputReturn {
-  /** 現在押下中のチャージ対象ボタンセット（ControllerButton の aria-pressed / isActive に使用）*/
   activeChargeButtons: ReadonlySet<ChargeableButton>;
-  /** melee または shot に対応する PointerHandlers を返す */
   getChargeHandlers(button: ChargeableButton): PointerHandlers;
-  /** ArcadeController から共通コールバックを登録する */
+  getHeldChargeableSync(): ReadonlySet<ChargeableButton>;
+  suppressChainedOutputForChargeableButton(button: ChargeableButton): void;
   setOnInput(callback: ((button: ButtonType) => void) | null): void;
 }
 
@@ -363,13 +369,13 @@ export function useChargeInput(): UseChargeInputReturn;
 
 | Field | Detail |
 |-------|--------|
-| Intent | 8種の入力ボタンを持つ統合アーケードコントローラUI |
+| Intent | 射撃・格闘・ジャンプの3ボタンと、同時押しによるサブ・特射・特格の統合アーケードコントローラUI |
 | Requirements | 3.1–3.5, 4.1–4.2, 5.1–5.5 |
 
 **Responsibilities & Constraints**
-- `useControllerInput` を `jump`, `sub`, `special-shot`, `special-melee` 用に使用（即時発火）
-- `useChargeInput` を `melee`, `shot` 用に使用（pointerUp 発火）
-- 両フックのコールバックを `onButtonPress` / `onStepAdded` に統一的に渡す
+- `useControllerInput` を `jump` のみに使用（pointerDown 即時）。`getHeldButtonsSync` / `suppressCallbackOnPointerDown` で同時押し連携
+- `useChargeInput` を `melee`, `shot` に使用（pointerUp で tap/charge）。`getHeldChargeableSync` / `suppressChainedOutputForChargeableButton` で合成後の重複発火を防ぐ
+- `ArcadeController` 内で「両方押下になった瞬間」のエッジを検出し、`sub` / `special-shot` / `special-melee` を1回だけコールバックする
 - 既存の `ArcadeControllerProps` インターフェースに変更なし
 
 **Contracts**: State [x]
@@ -385,34 +391,30 @@ export interface ArcadeControllerProps {
 }
 ```
 
-**ボタン分類と担当フック**:
+**入力分類と担当フック**:
 
-| ボタン | ButtonType | 担当フック | 発火タイミング |
-|-------|-----------|-----------|--------------|
-| 射撃 | `shot` | `useChargeInput` | pointerUp（tap/charge判定） |
-| 格闘 | `melee` | `useChargeInput` | pointerUp（tap/charge判定） |
-| ジャンプ | `jump` | `useControllerInput` | pointerDown 即時 |
-| 射撃チャージ | `shot-charge` | ※自動発火（useChargeInput 経由） | — |
-| 格闘チャージ | `melee-charge` | ※自動発火（useChargeInput 経由） | — |
-| サブ | `sub` | `useControllerInput` | pointerDown 即時 |
-| 特射 | `special-shot` | `useControllerInput` | pointerDown 即時 |
-| 特格 | `special-melee` | `useControllerInput` | pointerDown 即時 |
+| 入力 | ButtonType | 検出方法 |
+|-----|-----------|---------|
+| 射撃タップ／チャージ | `shot` / `shot-charge` | `useChargeInput`（`shot` の pointerUp） |
+| 格闘タップ／チャージ | `melee` / `melee-charge` | `useChargeInput`（`melee` の pointerUp） |
+| ジャンプ | `jump` | `useControllerInput`（`jump` の pointerDown） |
+| サブ | `sub` | 射撃＋格闘が同時押下になった瞬間（エッジ） |
+| 特射 | `special-shot` | 射撃＋ジャンプが同時押下になった瞬間（エッジ） |
+| 特格 | `special-melee` | 格闘＋ジャンプが同時押下になった瞬間（エッジ） |
 
-※ `shot-charge` / `melee-charge` は独立ボタンとして表示しない。`useChargeInput` が `shot`/`melee` ボタン長押しを内部で変換して発火する。
+※ `shot-charge` / `melee-charge` は独立ボタンとして表示しない。
 
 **`isActive` の計算**:
 - `shot`, `melee` ボタン: `activeChargeButtons.has(button)` を使用
 - その他: `activeButtons.has(button)` を使用
 
 **`onButtonPress` / `onStepAdded` の統一処理（useEffect）**:
-- `useControllerInput.setOnButtonPress(sharedCallback)` でインスタント系ボタンのコールバックを登録
-- `useChargeInput.setOnInput(sharedCallback)` でチャージ系ボタンのコールバックを登録
-- `sharedCallback` は `onButtonPress` または `(button) => onStepAdded({ buttons: [button] })` の共通ロジック
+- `useControllerInput.setOnButtonPress` と `useChargeInput.setOnInput` に同一 `sharedCallback` を渡す
+- 合成入力（`sub` 等）は `syncChordInputs` 系のロジックから `sharedCallback` を直接呼ぶ（`inputHandlerRef` 等で参照）
 
 **Implementation Notes**
-- `shot-charge` / `melee-charge` は UI ボタンとして独立表示しない（`useChargeInput` が自動生成）
-- `BUTTONS_INSTANT: ButtonType[]` と `BUTTONS_CHARGE: ChargeableButton[]` を別定数で管理するか、単に `useChargeInput` の担当ボタンを内部で固定するか、実装判断に委ねる
-- `highlightedButton` は既存のまま変更不要（新型 ButtonType も `button === highlightedButton` で正しく動作）
+- `BUTTONS` 配列は `['shot','melee','jump']` のみ（複合型はUIに出さない）
+- 練習モードの `highlightedButton` が `sub` 等を指す場合、別タスク（例: 構成キーへのマップ）でハイライトを調整してよい
 
 ---
 

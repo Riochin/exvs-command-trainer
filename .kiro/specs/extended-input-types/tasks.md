@@ -42,16 +42,15 @@
 
 ---
 
-- [ ] 3. Integration: ArcadeController の8ボタン対応
-- [ ] 3.1 ArcadeController に複合ボタン（サブ・特射・特格）を追加する
-  - `ArcadeController.tsx` の `BUTTONS` 定数に `sub`, `special-shot`, `special-melee` を追加する（`jump` と同じく `useControllerInput` で管理される即時発火ボタン）
-  - 各複合ボタンが `useControllerInput.getButtonHandlers` 経由で `onButtonPress` または `onStepAdded` に接続され、押下で対応する ButtonType イベントが発火されること
-  - コマンド登録モード（`onStepAdded`）でサブボタンを押すと `{ buttons: ['sub'] }` がシーケンスに追加されること
-  - `ArcadeController.test.tsx` に複合ボタンの表示・発火テストを追加してパスすること
+- [x] 3. Integration: ArcadeController の8ボタン対応
+- [x] 3.1 ArcadeController で複合入力（サブ・特射・特格）の**同時押し検出**を実装する
+  - 要件どおり **サブ＝射撃+格闘**、**特射＝射撃+ジャンプ**、**特格＝格闘+ジャンプ** の2キー同時押下で1回だけ対応する `ButtonType` を `onButtonPress` / `onStepAdded` に送る（専用ボタンは置かない）
+  - 合成成立後の `pointerUp` で単体の tap/charge が重複しないよう抑止すること
+  - `ArcadeController.test.tsx` に同時押しの表示（3ボタンのみ）・発火テストを追加してパスすること
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 5.1, 5.2, 5.4_
   - _Depends: 2.2_
 
-- [ ] 3.2 ArcadeController に useChargeInput を統合してチャージボタン検出を実装する
+- [x] 3.2 ArcadeController に useChargeInput を統合してチャージボタン検出を実装する
   - `ArcadeController.tsx` で `useChargeInput` をインスタンス化し、`melee`/`shot` ボタンを `useChargeInput.getChargeHandlers` で管理する（`useControllerInput.getButtonHandlers` からの切り替え）
   - `onButtonPress`/`onStepAdded` 共通コールバックを `useControllerInput.setOnButtonPress` と `useChargeInput.setOnInput` の両方に登録する
   - `melee`/`shot` ボタンの `isActive` 計算を `activeChargeButtons.has(button)` に変更する

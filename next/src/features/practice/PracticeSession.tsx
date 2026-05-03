@@ -6,6 +6,7 @@ import { ArcadeController } from '@/features/arcade-controller/ArcadeController'
 import { CommandHint } from './CommandHint';
 import { SessionResult } from './SessionResult';
 import type { ButtonType, Command } from '@/types';
+import styles from './PracticeSession.module.css';
 
 export interface PracticeSessionProps {
   command: Command;
@@ -38,15 +39,21 @@ export function PracticeSession({ command, onExit }: PracticeSessionProps) {
     state.command?.sequence[state.currentIndex]?.buttons[0] ?? null;
 
   return (
-    <div data-testid="practice-session">
-      <CommandHint sequence={command.sequence} currentIndex={state.currentIndex} />
-      <div data-testid="attempt-counter">
-        試行: {totalAttempts} / 成功: {successCount}
+    <div data-testid="practice-session" className={styles.session}>
+      <div className={styles.header}>
+        <CommandHint sequence={command.sequence} currentIndex={state.currentIndex} />
+        <div data-testid="attempt-counter">
+          試行: {totalAttempts} / 成功: {successCount}
+        </div>
+        {state.lastResult === 'success' && <div data-testid="result-success">成功!</div>}
+        {state.lastResult === 'failure' && <div data-testid="result-failure">失敗...</div>}
       </div>
-      {state.lastResult === 'success' && <div data-testid="result-success">成功!</div>}
-      {state.lastResult === 'failure' && <div data-testid="result-failure">失敗...</div>}
-      <ArcadeController onButtonPress={handleButtonPress} highlightedButton={highlightedButton} />
-      <button onClick={end}>練習終了</button>
+      <div className={styles.controllerArea}>
+        <ArcadeController onButtonPress={handleButtonPress} highlightedButton={highlightedButton} />
+      </div>
+      <div className={styles.footer}>
+        <button onClick={end}>練習終了</button>
+      </div>
     </div>
   );
 }

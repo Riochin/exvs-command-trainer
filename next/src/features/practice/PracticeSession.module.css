@@ -1,0 +1,25 @@
+.session {
+  height: 100svh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  flex-shrink: 0;
+  padding: 0.4rem 1rem;
+}
+
+.controllerArea {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.footer {
+  flex-shrink: 0;
+  padding: 0.4rem 1rem;
+}

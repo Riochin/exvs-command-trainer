@@ -61,8 +61,8 @@
 
 ---
 
-- [ ] 4. Validation: テストと練習セッション確認
-- [ ] 4.1 (P) ArcadeController のチャージ・複合入力統合テストを追加する
+- [x] 4. Validation: テストと練習セッション確認
+- [x] 4.1 (P) ArcadeController のチャージ・複合入力統合テストを追加する
   - 格闘ボタン長押し（300ms以上）→ `onButtonPress` が `'melee-charge'` で呼ばれること
   - 格闘ボタン短押し（300ms未満）→ `onButtonPress` が `'melee'` で呼ばれること
   - サブボタン押下 → `onButtonPress` が `'sub'` で呼ばれること
@@ -72,7 +72,7 @@
   - _Requirements: 3.2, 3.3, 3.4, 5.2, 5.3, 5.4, 6.1, 6.2_
   - _Boundary: ArcadeController.test_
 
-- [ ] 4.2 (P) PracticeSession でチャージステップのハイライト表示を調整する
+- [x] 4.2 (P) PracticeSession でチャージステップのハイライト表示を調整する
   - `PracticeSession.tsx` の `highlightedButton` 計算ロジックに、チャージ型を対応する基本ボタン型にマップする処理を追加する（`melee-charge` → `melee`, `shot-charge` → `shot`）
   - `melee-charge` ステップ練習中に格闘ボタンがハイライト（`data-highlighted="true"`）されること
   - `shot-charge` ステップ練習中に射撃ボタンがハイライトされること
@@ -80,7 +80,7 @@
   - _Requirements: 5.5_
   - _Boundary: PracticeSession_
 
-- [ ] 4.3 新入力タイプを使ったコマンドの登録・練習フローを統合テストで検証する
+- [x] 4.3 新入力タイプを使ったコマンドの登録・練習フローを統合テストで検証する
   - `melee-charge` ステップを含むコマンドを登録し、格闘長押しで成功判定・タップで失敗判定されることを確認するテストを作成する
   - `sub` ステップを含むコマンドを登録し、サブボタン押下で成功判定されることを確認する
   - 新型 ButtonType を含むコマンドがローカルストレージに正しく保存・読み込みできることを確認する

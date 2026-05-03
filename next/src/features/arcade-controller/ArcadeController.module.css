@@ -1,16 +1,23 @@
-/* prototype.js の弧状配置を再現 */
-/* yIndex = marginTop + r*0.3, yMiddle = marginTop, yRing = marginTop + r*0.6 */
 .controller {
   --btn-size: min(22vw, 110px);
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  justify-content: center;
   gap: calc(var(--btn-size) * 0.15);
   padding: calc(var(--btn-size) * 0.5) calc(var(--btn-size) * 0.3);
 }
 
-/* 射撃（人差し指）: 格闘より少し下 */
-.btn-shot  { transform: translateY(calc(var(--btn-size) * 0.15)); }
-/* 格闘（中指）: 最も高い位置 */
-.btn-melee { transform: translateY(0); }
-/* ジャンプ（薬指）: 最も下 */
-.btn-jump  { transform: translateY(calc(var(--btn-size) * 0.3)); }
+/* 人差し指: 中間, 親指: 最高, 薬指: 最低 */
+.btn-shot  { --btn-y: calc(var(--btn-size) * 0.15); }
+.btn-melee { --btn-y: 0px; }
+.btn-jump  { --btn-y: calc(var(--btn-size) * 0.3); }
+
+@media (orientation: landscape) {
+  .controller {
+    --btn-size: min(38vh, 150px);
+    flex: 1;
+    width: 100%;
+    padding: 0;
+    gap: calc(var(--btn-size) * 0.1);
+  }
+}

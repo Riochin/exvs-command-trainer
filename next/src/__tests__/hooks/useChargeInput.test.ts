@@ -160,6 +160,26 @@ describe('useChargeInput', () => {
     });
   });
 
+  describe('suppressChainedOutputForChargeableButton', () => {
+    it('指定ボタンの pointerUp でコールバックが抑止される', () => {
+      const { result } = renderHook(() => useChargeInput());
+      const callback = vi.fn();
+      act(() => {
+        result.current.setOnInput(callback);
+      });
+      act(() => {
+        result.current.getChargeHandlers('melee').onPointerDown(makePointerEvent(1));
+      });
+      act(() => {
+        result.current.suppressChainedOutputForChargeableButton('melee');
+      });
+      act(() => {
+        result.current.getChargeHandlers('melee').onPointerUp(makePointerEvent(1));
+      });
+      expect(callback).not.toHaveBeenCalled();
+    });
+  });
+
   describe('setOnInput', () => {
     it('setOnInput(null) のとき pointerUp 後もコールバックが呼ばれない', () => {
       const { result } = renderHook(() => useChargeInput());

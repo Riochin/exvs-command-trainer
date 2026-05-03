@@ -75,6 +75,31 @@ describe('useControllerInput', () => {
       expect(result.current.activeButtons.has('shot')).toBe(false);
       expect(result.current.activeButtons.has('jump')).toBe(true);
     });
+
+    it('suppressCallbackOnPointerDown 指定時は pointerDown でコールバックが呼ばれない', () => {
+      const { result } = renderHook(() => useControllerInput());
+      const callback = vi.fn();
+      act(() => {
+        result.current.setOnButtonPress(callback);
+      });
+      act(() => {
+        result.current
+          .getButtonHandlers('jump', { suppressCallbackOnPointerDown: true })
+          .onPointerDown(makePointerEvent(1));
+      });
+      expect(callback).not.toHaveBeenCalled();
+      expect(result.current.activeButtons.has('jump')).toBe(true);
+    });
+  });
+
+  describe('getHeldButtonsSync', () => {
+    it('pointerDown 後、同期で押下中ボタン集合が取れる', () => {
+      const { result } = renderHook(() => useControllerInput());
+      act(() => {
+        result.current.getButtonHandlers('shot').onPointerDown(makePointerEvent(1));
+      });
+      expect(result.current.getHeldButtonsSync().has('shot')).toBe(true);
+    });
   });
 
   describe('setOnButtonPress', () => {

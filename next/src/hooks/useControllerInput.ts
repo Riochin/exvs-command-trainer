@@ -10,9 +10,16 @@ export type PointerHandlers = {
   onPointerCancel(event: React.PointerEvent<HTMLElement>): void;
 };
 
+export type GetButtonHandlersOptions = {
+  /** 同時押し合成などで pointerDown 時の即時コールバックを抑止する */
+  suppressCallbackOnPointerDown?: boolean;
+};
+
 export interface UseControllerInputReturn {
   activeButtons: ReadonlySet<ButtonType>;
-  getButtonHandlers(button: ButtonType): PointerHandlers;
+  getButtonHandlers(button: ButtonType, options?: GetButtonHandlersOptions): PointerHandlers;
+  /** pointerMapRef と同期した現在押下中のボタン（同時押し判定用） */
+  getHeldButtonsSync(): ReadonlySet<ButtonType>;
   onButtonPress: ((button: ButtonType) => void) | null;
   setOnButtonPress(callback: ((button: ButtonType) => void) | null): void;
 }
@@ -31,8 +38,10 @@ export function useControllerInput(): UseControllerInputReturn {
     setOnButtonPressState(() => callback);
   }, []);
 
+  const getHeldButtonsSync = useCallback(() => new Set(pointerMapRef.current.values()), []);
+
   const getButtonHandlers = useCallback(
-    (button: ButtonType): PointerHandlers => ({
+    (button: ButtonType, options?: GetButtonHandlersOptions): PointerHandlers => ({
       onPointerDown(event: React.PointerEvent<HTMLElement>) {
         pointerMapRef.current.set(event.pointerId, button);
         setActiveButtons((prev) => {
@@ -40,7 +49,9 @@ export function useControllerInput(): UseControllerInputReturn {
           next.add(button);
           return next;
         });
-        callbackRef.current?.(button);
+        if (!options?.suppressCallbackOnPointerDown) {
+          callbackRef.current?.(button);
+        }
       },
       onPointerUp(event: React.PointerEvent<HTMLElement>) {
         const pressed = pointerMapRef.current.get(event.pointerId);
@@ -68,5 +79,5 @@ export function useControllerInput(): UseControllerInputReturn {
     [],
   );
 
-  return { activeButtons, getButtonHandlers, onButtonPress, setOnButtonPress };
+  return { activeButtons, getButtonHandlers, getHeldButtonsSync, onButtonPress, setOnButtonPress };
 }

@@ -276,5 +276,35 @@ describe('useCommandStore', () => {
 
       expect(result.current.lastError).toBeNull();
     });
+
+    it('拡張 ButtonType を含むコマンドが localStorage から読み込み後もシーケンスを保持する', async () => {
+      const sequence = [
+        { buttons: ['melee-charge'] },
+        { buttons: ['sub'] },
+        { buttons: ['special-shot'] },
+        { buttons: ['special-melee'] },
+        { buttons: ['shot-charge'] },
+      ] as const;
+      const validData = [
+        {
+          id: 'ext-full',
+          mobileSuit: 'ガンダム',
+          name: '拡張シーケンス',
+          sequence: [...sequence],
+          createdAt: '2026-01-01T00:00:00.000Z',
+        },
+      ];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(validData));
+
+      const { result } = renderHook(() => useCommandStore());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(result.current.lastError).toBeNull();
+      expect(result.current.commands).toHaveLength(1);
+      expect(result.current.commands[0].sequence).toEqual(validData[0].sequence);
+    });
   });
 });

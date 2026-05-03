@@ -121,7 +121,7 @@ describe('ArcadeController', () => {
     });
   });
 
-  describe('highlightedButton', () => {
+  describe('highlightedButton / highlightedPhysicalButtons', () => {
     it('highlightedButton に指定されたボタンに data-highlighted が設定される', () => {
       render(<ArcadeController highlightedButton="jump" />);
       const jumpButton = screen.getByText('ジャンプ').closest('button');
@@ -139,6 +139,19 @@ describe('ArcadeController', () => {
       screen.getAllByRole('button').forEach((btn) => {
         expect(btn.getAttribute('data-highlighted')).toBeNull();
       });
+    });
+
+    it('highlightedPhysicalButtons で複数ボタンに data-highlighted が付く', () => {
+      render(<ArcadeController highlightedPhysicalButtons={['shot', 'melee']} />);
+      expect(screen.getByText('射撃').closest('button')?.getAttribute('data-highlighted')).toBe('true');
+      expect(screen.getByText('格闘').closest('button')?.getAttribute('data-highlighted')).toBe('true');
+      expect(screen.getByText('ジャンプ').closest('button')?.getAttribute('data-highlighted')).toBeNull();
+    });
+
+    it('highlightedPhysicalButtons が優先され highlightedButton は無視される', () => {
+      render(<ArcadeController highlightedButton="jump" highlightedPhysicalButtons={['shot']} />);
+      expect(screen.getByText('射撃').closest('button')?.getAttribute('data-highlighted')).toBe('true');
+      expect(screen.getByText('ジャンプ').closest('button')?.getAttribute('data-highlighted')).toBeNull();
     });
   });
 
@@ -199,6 +212,35 @@ describe('ArcadeController', () => {
         fireEvent.pointerUp(el, { pointerId: 1 });
       });
       expect(onButtonPress).toHaveBeenCalledWith('melee-charge');
+    });
+
+    it('格闘を短押し（しきい値未満）して離すと onButtonPress が melee で呼ばれる', () => {
+      const onButtonPress = vi.fn();
+      render(<ArcadeController onButtonPress={onButtonPress} />);
+      const el = screen.getByText('格闘').closest('button')!;
+      const start = Date.now();
+      act(() => {
+        fireEvent.pointerDown(el, { pointerId: 1 });
+      });
+      vi.setSystemTime(start + CHARGE_THRESHOLD_MS - 1);
+      act(() => {
+        fireEvent.pointerUp(el, { pointerId: 1 });
+      });
+      expect(onButtonPress).toHaveBeenCalledWith('melee');
+    });
+
+    it('格闘保持中、しきい値経過後も離すまで aria-pressed が true', () => {
+      render(<ArcadeController />);
+      const el = screen.getByText('格闘').closest('button')!;
+      const start = Date.now();
+      act(() => {
+        fireEvent.pointerDown(el, { pointerId: 1 });
+      });
+      expect(el.getAttribute('aria-pressed')).toBe('true');
+      act(() => {
+        vi.setSystemTime(start + CHARGE_THRESHOLD_MS + 100);
+      });
+      expect(el.getAttribute('aria-pressed')).toBe('true');
     });
 
     it('onStepAdded で射撃を長押しすると shot-charge が記録される', () => {

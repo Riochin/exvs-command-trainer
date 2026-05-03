@@ -104,13 +104,13 @@ export function useCommandStore(): UseCommandStoreReturn {
   );
 
   const getCommand = useCallback(
-    (id: string): Command | undefined => readCurrentCommands().find((c) => c.id === id),
-    [readCurrentCommands],
+    (id: string): Command | undefined => commands.find((c) => c.id === id),
+    [commands],
   );
 
   const getCommandsByMobileSuit = useCallback(
-    (mobileSuit: string): Command[] => readCurrentCommands().filter((c) => c.mobileSuit === mobileSuit),
-    [readCurrentCommands],
+    (mobileSuit: string): Command[] => commands.filter((c) => c.mobileSuit === mobileSuit),
+    [commands],
   );
 
   return { commands, isLoading, lastError, addCommand, removeCommand, getCommand, getCommandsByMobileSuit };

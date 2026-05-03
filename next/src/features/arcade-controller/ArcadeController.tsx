@@ -12,6 +12,38 @@ export type ArcadePhysicalButton = 'shot' | 'melee' | 'jump';
 
 const BUTTONS = ['shot', 'melee', 'jump'] as const satisfies readonly ArcadePhysicalButton[];
 
+/** PC デバッグ用キー（f/y/i）。実ポインターと衝突しない負の ID。 */
+const KEYBOARD_DEBUG_POINTER_IDS: Record<ArcadePhysicalButton, number> = {
+  shot: -91_001,
+  melee: -91_002,
+  jump: -91_003,
+};
+
+function syntheticKeyboardPointerEvent(pointerId: number): React.PointerEvent<HTMLElement> {
+  return { pointerId } as React.PointerEvent<HTMLElement>;
+}
+
+function isEditableKeyboardTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  if (target.isContentEditable || target.closest('[contenteditable="true"]')) return true;
+  const tag = target.tagName;
+  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+}
+
+function debugKeyToPhysicalButton(key: string): ArcadePhysicalButton | null {
+  if (key.length !== 1) return null;
+  switch (key.toLowerCase()) {
+    case 'f':
+      return 'shot';
+    case 'y':
+      return 'melee';
+    case 'i':
+      return 'jump';
+    default:
+      return null;
+  }
+}
+
 function isChargeable(button: ButtonType): button is ChargeableButton {
   return button === 'shot' || button === 'melee';
 }
@@ -152,6 +184,38 @@ export function ArcadeController({
     },
     [wrapChargeHandlers, wrapJumpHandlers, getButtonHandlers],
   );
+
+  const getHandlersRef = useRef(getHandlers);
+  getHandlersRef.current = getHandlers;
+
+  useEffect(() => {
+    const pointerFor = (physical: ArcadePhysicalButton) =>
+      syntheticKeyboardPointerEvent(KEYBOARD_DEBUG_POINTER_IDS[physical]);
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (isEditableKeyboardTarget(e.target)) return;
+      const physical = debugKeyToPhysicalButton(e.key);
+      if (physical === null) return;
+      if (e.repeat) return;
+      e.preventDefault();
+      getHandlersRef.current(physical).onPointerDown(pointerFor(physical));
+    };
+
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (isEditableKeyboardTarget(e.target)) return;
+      const physical = debugKeyToPhysicalButton(e.key);
+      if (physical === null) return;
+      e.preventDefault();
+      getHandlersRef.current(physical).onPointerUp(pointerFor(physical));
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+    };
+  }, []);
 
   const isButtonActive = useCallback(
     (button: ButtonType) => {

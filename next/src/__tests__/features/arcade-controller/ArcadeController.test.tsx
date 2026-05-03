@@ -82,6 +82,42 @@ describe('ArcadeController', () => {
       fireEvent.pointerDown(jump, { pointerId: 2 });
       expect(onButtonPress).toHaveBeenCalledWith('special-melee');
     });
+
+    describe('keyboard debug (f / y / i)', () => {
+      it('f の keyDown→keyUp で onButtonPress が "shot" で呼ばれる', () => {
+        const onButtonPress = vi.fn();
+        render(<ArcadeController onButtonPress={onButtonPress} />);
+        fireEvent.keyDown(window, { key: 'f' });
+        fireEvent.keyUp(window, { key: 'f' });
+        expect(onButtonPress).toHaveBeenCalledWith('shot');
+      });
+
+      it('y の keyDown→keyUp で onButtonPress が "melee" で呼ばれる', () => {
+        const onButtonPress = vi.fn();
+        render(<ArcadeController onButtonPress={onButtonPress} />);
+        fireEvent.keyDown(window, { key: 'y' });
+        fireEvent.keyUp(window, { key: 'y' });
+        expect(onButtonPress).toHaveBeenCalledWith('melee');
+      });
+
+      it('i の keyDown で onButtonPress が "jump" で呼ばれ、keyUp で重複しない', () => {
+        const onButtonPress = vi.fn();
+        render(<ArcadeController onButtonPress={onButtonPress} />);
+        fireEvent.keyDown(window, { key: 'i' });
+        expect(onButtonPress).toHaveBeenCalledTimes(1);
+        expect(onButtonPress).toHaveBeenCalledWith('jump');
+        fireEvent.keyUp(window, { key: 'i' });
+        expect(onButtonPress).toHaveBeenCalledTimes(1);
+      });
+
+      it('大文字 F でも射撃として扱う', () => {
+        const onButtonPress = vi.fn();
+        render(<ArcadeController onButtonPress={onButtonPress} />);
+        fireEvent.keyDown(window, { key: 'F' });
+        fireEvent.keyUp(window, { key: 'F' });
+        expect(onButtonPress).toHaveBeenCalledWith('shot');
+      });
+    });
   });
 
   describe('onStepAdded モード（登録モード）', () => {

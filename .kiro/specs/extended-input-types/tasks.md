@@ -4,15 +4,15 @@
 
 ---
 
-- [ ] 1. Foundation: ButtonType 型システムの拡張
-- [ ] 1.1 ButtonType union に5種を追加し isButtonType 型ガードを実装する
+- [x] 1. Foundation: ButtonType 型システムの拡張
+- [x] 1.1 ButtonType union に5種を追加し isButtonType 型ガードを実装する
   - `src/types/index.ts` の `ButtonType` に `melee-charge`, `shot-charge`, `sub`, `special-shot`, `special-melee` を追加する
   - `isButtonType(value: unknown): value is ButtonType` 型ガード関数を公開する
   - `Record<ButtonType, string>` 型の `BUTTON_LABELS` を持つファイル（`ControllerButton.tsx`, `CommandHint.tsx`）にコンパイルエラーが発生することを確認し、型安全の自動検証が機能していることを確かめる
   - `pnpm typecheck` がラベル追加前はエラーを出し、追加後にエラーなしでビルドが通ること
   - _Requirements: 1.1, 1.2_
 
-- [ ] 1.2 useCommandStore でストレージ読み込み時の ButtonType バリデーションを追加する
+- [x] 1.2 useCommandStore でストレージ読み込み時の ButtonType バリデーションを追加する
   - `isButtonType` を使って `useCommandStore` が読み込んだコマンドの `sequence[].buttons[]` を検証する処理を追加する
   - 不正な ButtonType 値を含む要素を含むコマンドを `parse_error` として `StorageResult` に返す
   - 不正な ButtonType 文字列（例: `"unknown-type"`）を含む保存データを読み込んだ場合にエラーが返却されるユニットテストを追加する

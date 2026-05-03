@@ -1,4 +1,4 @@
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useCommandStore } from '@/hooks/useCommandStore';
 import type { CommandStep } from '@/types';
@@ -230,6 +230,51 @@ describe('useCommandStore', () => {
     it('該当機体がない場合は空配列を返す', () => {
       const { result } = renderHook(() => useCommandStore());
       expect(result.current.getCommandsByMobileSuit('存在しない機体')).toEqual([]);
+    });
+  });
+
+  describe('ButtonType バリデーション（ストレージ読み込み時）', () => {
+    it('不正な ButtonType を含むコマンドを読み込むと lastError が parse_error になる', async () => {
+      const invalidData = [
+        {
+          id: 'abc',
+          mobileSuit: 'ガンダム',
+          name: 'テスト',
+          sequence: [{ buttons: ['unknown-type'] }],
+          createdAt: '2026-01-01T00:00:00.000Z',
+        },
+      ];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(invalidData));
+
+      const { result } = renderHook(() => useCommandStore());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(result.current.lastError).not.toBeNull();
+      expect(result.current.lastError?.type).toBe('parse_error');
+    });
+
+    it('正常な ButtonType のみのコマンドでは lastError が設定されない', async () => {
+      const validData = [
+        {
+          id: 'abc',
+          mobileSuit: 'ガンダム',
+          name: 'テスト',
+          sequence: [{ buttons: ['melee-charge'] }, { buttons: ['sub'] }],
+          createdAt: '2026-01-01T00:00:00.000Z',
+        },
+      ];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(validData));
+
+      const { result } = renderHook(() => useCommandStore());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(result.current.lastError).toBeNull();
     });
   });
 });

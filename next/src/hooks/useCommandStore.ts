@@ -1,5 +1,6 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { isButtonType } from '@/types';
 import type { Command, StorageError, StorageResult } from '@/types';
 
 const COMMANDS_KEY = 'ct_commands';
@@ -19,9 +20,18 @@ export function useCommandStore(): UseCommandStoreReturn {
   const { value: commands, setValue, isLoading } = useLocalStorage<Command[]>(COMMANDS_KEY, []);
   const [lastError, setLastError] = useState<StorageError | null>(null);
 
-  // stale closure を避けるため常に最新の commands を ref で保持する
   const commandsRef = useRef(commands);
   commandsRef.current = commands;
+
+  useEffect(() => {
+    if (isLoading) return;
+    const hasInvalidButtonType = commands.some((cmd) =>
+      cmd.sequence.some((step) => step.buttons.some((b) => !isButtonType(b))),
+    );
+    if (hasInvalidButtonType) {
+      setLastError({ type: 'parse_error', message: '不正な ButtonType が保存データに含まれています' });
+    }
+  }, [commands, isLoading]);
 
   // setValue は localStorage を即時書き込むため、次の同期呼び出しで最新値を読める
   const readCurrentCommands = useCallback((): Command[] => {

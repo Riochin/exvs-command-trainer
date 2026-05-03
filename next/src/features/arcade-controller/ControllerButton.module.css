@@ -20,6 +20,9 @@
 .button[data-button="shot"]  { background: #d42f2f; }
 .button[data-button="melee"] { background: #2b5cb8; }
 .button[data-button="jump"]  { background: #27ae60; }
+.button[data-button="sub"] { background: #9b59b6; }
+.button[data-button="special-shot"] { background: #e67e22; }
+.button[data-button="special-melee"] { background: #1abc9c; }
 
 .button[aria-pressed="true"] {
   transform: translateY(var(--btn-y, 0px)) scale(0.93);

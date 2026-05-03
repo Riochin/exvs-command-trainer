@@ -9,6 +9,11 @@ const BUTTON_LABELS: Record<ButtonType, string> = {
   melee: '格闘',
   jump: 'ジャンプ',
   awaken: '覚醒',
+  'shot-charge': '射撃チャージ',
+  'melee-charge': '格闘チャージ',
+  sub: 'サブ',
+  'special-shot': '特射',
+  'special-melee': '特格',
 };
 
 export interface ControllerButtonProps {

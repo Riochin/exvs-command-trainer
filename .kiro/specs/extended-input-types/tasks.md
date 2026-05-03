@@ -20,8 +20,8 @@
 
 ---
 
-- [ ] 2. Core: useChargeInput フックとラベル辞書整備
-- [ ] 2.1 (P) useChargeInput フックを実装する
+- [x] 2. Core: useChargeInput フックとラベル辞書整備
+- [x] 2.1 (P) useChargeInput フックを実装する
   - `src/hooks/useChargeInput.ts` を新規作成し、`CHARGE_THRESHOLD_MS = 300` 定数を公開する
   - `ChargeableButton = 'melee' | 'shot'` 型を定義する
   - `pointerDown` で保持開始時刻（`Date.now()`）を `pointerId` をキーにした Map に記録する
@@ -32,7 +32,7 @@
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
   - _Boundary: useChargeInput_
 
-- [ ] 2.2 (P) BUTTON_LABELS を全コンシューマで新5種に拡張する
+- [x] 2.2 (P) BUTTON_LABELS を全コンシューマで新5種に拡張する
   - `src/features/arcade-controller/ControllerButton.tsx` の `BUTTON_LABELS` に `melee-charge: '格闘チャージ'`, `shot-charge: '射撃チャージ'`, `sub: 'サブ'`, `special-shot: '特射'`, `special-melee: '特格'` を追加する
   - `src/features/practice/CommandHint.tsx` の `BUTTON_LABELS` に同5種のラベルを追加する
   - `src/features/command-editor/CommandForm.tsx` の `BUTTON_LABELS` 型を `Record<string, string>` から `Record<ButtonType, string>` に変更し同5種を追加する

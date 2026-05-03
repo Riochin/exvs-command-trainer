@@ -10,11 +10,45 @@ import type {
   StorageError,
   StorageResult,
 } from '@/types';
+import { isButtonType } from '@/types';
 
 describe('ButtonType', () => {
-  it('4種類のボタン値を受け付ける', () => {
-    const buttons: ButtonType[] = ['shot', 'melee', 'jump', 'awaken'];
-    expect(buttons).toHaveLength(4);
+  it('9種類のボタン値を受け付ける', () => {
+    const buttons: ButtonType[] = [
+      'shot', 'melee', 'jump', 'awaken',
+      'melee-charge', 'shot-charge', 'sub', 'special-shot', 'special-melee',
+    ];
+    expect(buttons).toHaveLength(9);
+  });
+});
+
+describe('isButtonType', () => {
+  it('既存4種に対して true を返す', () => {
+    expect(isButtonType('shot')).toBe(true);
+    expect(isButtonType('melee')).toBe(true);
+    expect(isButtonType('jump')).toBe(true);
+    expect(isButtonType('awaken')).toBe(true);
+  });
+
+  it('新規5種に対して true を返す', () => {
+    expect(isButtonType('melee-charge')).toBe(true);
+    expect(isButtonType('shot-charge')).toBe(true);
+    expect(isButtonType('sub')).toBe(true);
+    expect(isButtonType('special-shot')).toBe(true);
+    expect(isButtonType('special-melee')).toBe(true);
+  });
+
+  it('不正な文字列に対して false を返す', () => {
+    expect(isButtonType('')).toBe(false);
+    expect(isButtonType('unknown-type')).toBe(false);
+    expect(isButtonType('Shot')).toBe(false);
+  });
+
+  it('非文字列値に対して false を返す', () => {
+    expect(isButtonType(null)).toBe(false);
+    expect(isButtonType(undefined)).toBe(false);
+    expect(isButtonType(42)).toBe(false);
+    expect(isButtonType({})).toBe(false);
   });
 });
 

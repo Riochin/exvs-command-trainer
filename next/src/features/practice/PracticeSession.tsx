@@ -6,7 +6,30 @@ import { ArcadeController } from '@/features/arcade-controller/ArcadeController'
 import { CommandHint } from './CommandHint';
 import { SessionResult } from './SessionResult';
 import type { ButtonType, Command } from '@/types';
+import type { ArcadePhysicalButton } from '@/features/arcade-controller/ArcadeController';
 import styles from './PracticeSession.module.css';
+
+/** 現在ステップの ButtonType を、アケコン上で灯す物理ボタンに展開する */
+export function practiceStepToPhysicalHighlights(stepButton: ButtonType): ArcadePhysicalButton[] {
+  switch (stepButton) {
+    case 'melee-charge':
+      return ['melee'];
+    case 'shot-charge':
+      return ['shot'];
+    case 'sub':
+      return ['shot', 'melee'];
+    case 'special-shot':
+      return ['shot', 'jump'];
+    case 'special-melee':
+      return ['melee', 'jump'];
+    case 'shot':
+    case 'melee':
+    case 'jump':
+      return [stepButton];
+    default:
+      return [];
+  }
+}
 
 export interface PracticeSessionProps {
   command: Command;
@@ -35,8 +58,11 @@ export function PracticeSession({ command, onExit }: PracticeSessionProps) {
 
   const totalAttempts = state.attempts.length;
   const successCount = state.attempts.filter((a) => a.success).length;
-  const highlightedButton: ButtonType | null =
+  const currentStepButton: ButtonType | null =
     state.command?.sequence[state.currentIndex]?.buttons[0] ?? null;
+  const highlightedPhysicalButtons: ArcadePhysicalButton[] = currentStepButton
+    ? practiceStepToPhysicalHighlights(currentStepButton)
+    : [];
 
   return (
     <div data-testid="practice-session" className={styles.session}>
@@ -49,7 +75,10 @@ export function PracticeSession({ command, onExit }: PracticeSessionProps) {
         {state.lastResult === 'failure' && <div data-testid="result-failure">失敗...</div>}
       </div>
       <div className={styles.controllerArea}>
-        <ArcadeController onButtonPress={handleButtonPress} highlightedButton={highlightedButton} />
+        <ArcadeController
+          onButtonPress={handleButtonPress}
+          highlightedPhysicalButtons={highlightedPhysicalButtons}
+        />
       </div>
       <div className={styles.footer}>
         <button onClick={end}>練習終了</button>

@@ -8,19 +8,42 @@ import { ControllerButton } from './ControllerButton';
 import type { ButtonType, CommandStep } from '@/types';
 import styles from './ArcadeController.module.css';
 
-const BUTTONS: ButtonType[] = ['shot', 'melee', 'jump'];
+export type ArcadePhysicalButton = 'shot' | 'melee' | 'jump';
+
+const BUTTONS = ['shot', 'melee', 'jump'] as const satisfies readonly ArcadePhysicalButton[];
 
 function isChargeable(button: ButtonType): button is ChargeableButton {
   return button === 'shot' || button === 'melee';
+}
+
+function resolveHighlightedPhysical(
+  highlightedPhysicalButtons: ReadonlyArray<ArcadePhysicalButton> | null | undefined,
+  highlightedButton: ButtonType | null | undefined,
+): ArcadePhysicalButton[] {
+  if (highlightedPhysicalButtons != null) {
+    return [...highlightedPhysicalButtons];
+  }
+  const b = highlightedButton;
+  if (b === 'shot' || b === 'melee' || b === 'jump') {
+    return [b];
+  }
+  return [];
 }
 
 export interface ArcadeControllerProps {
   onButtonPress?: (button: ButtonType) => void;
   onStepAdded?: (step: CommandStep) => void;
   highlightedButton?: ButtonType | null;
+  /** 練習ヒント用。指定時は highlightedButton より優先（チャージ・複合入力の複数灯） */
+  highlightedPhysicalButtons?: ReadonlyArray<ArcadePhysicalButton> | null;
 }
 
-export function ArcadeController({ onButtonPress, onStepAdded, highlightedButton }: ArcadeControllerProps) {
+export function ArcadeController({
+  onButtonPress,
+  onStepAdded,
+  highlightedButton,
+  highlightedPhysicalButtons,
+}: ArcadeControllerProps) {
   const { activeButtons, getButtonHandlers, setOnButtonPress, getHeldButtonsSync } = useControllerInput();
   const {
     activeChargeButtons,
@@ -138,6 +161,8 @@ export function ArcadeController({ onButtonPress, onStepAdded, highlightedButton
     [activeButtons, activeChargeButtons],
   );
 
+  const physicalHighlights = resolveHighlightedPhysical(highlightedPhysicalButtons, highlightedButton);
+
   return (
     <div data-testid="arcade-controller" className={styles.controller}>
       {BUTTONS.map((button) => (
@@ -145,7 +170,7 @@ export function ArcadeController({ onButtonPress, onStepAdded, highlightedButton
           key={button}
           button={button}
           isActive={isButtonActive(button)}
-          highlighted={highlightedButton === button}
+          highlighted={physicalHighlights.includes(button)}
           handlers={getHandlers(button)}
           className={styles[`btn-${button}`]}
         />

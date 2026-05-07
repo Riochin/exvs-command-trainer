@@ -79,8 +79,8 @@
   - _Requirements: 2.2, 4.1, 4.3, 7.2_
   - _Boundary: src/features/practice/, src/features/practice-history/_
 
-- [ ] 5. 統合: CapsuleButton のページ適用と ControllerButton 状態連携
-- [ ] 5.1 ホームページと詳細ページへの CapsuleButton 統合
+- [x] 5. 統合: CapsuleButton のページ適用と ControllerButton 状態連携
+- [x] 5.1 ホームページと詳細ページへの CapsuleButton 統合
   - `src/app/page.tsx` でコマンドリストの遷移リンクを `CapsuleButton`（`href` prop）に変更する
   - `src/app/commands/[id]/CommandDetailContent.tsx` のアクションボタンを `CapsuleButton` に変更する
   - `src/app/page.module.css` をサイバーパンクホームページスタイルに更新する（カードレイアウト・HUD スタイル）
@@ -89,7 +89,7 @@
   - _Requirements: 1.4, 3.1, 3.2, 3.3, 3.4, 3.5_
   - _Depends: 2.1_
 
-- [ ] 5.2 ControllerButton の成功・失敗状態を練習セッションから接続
+- [x] 5.2 ControllerButton の成功・失敗状態を練習セッションから接続
   - `ArcadeController` または `PracticeSession` の既存状態（練習判定結果）を確認し、`ControllerButton` の `state` prop（`'success'` / `'fail'` / `'neutral'`）に渡すロジックを追加する
   - 成功判定時に対象ボタンへ `state='success'`（緑グロー）、失敗判定時に `state='fail'`（赤グロー）が適用されることを確認する
   - 次のコマンド入力開始時に `state` を `'neutral'` に戻す

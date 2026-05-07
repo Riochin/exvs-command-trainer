@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { usePracticeSession } from '@/hooks/usePracticeSession';
 import { ArcadeController } from '@/features/arcade-controller/ArcadeController';
+import type { ControllerButtonState } from '@/features/arcade-controller/ControllerButton';
 import { CommandHint } from './CommandHint';
 import { SessionResult } from './SessionResult';
 import type { ButtonType, Command } from '@/types';
@@ -38,12 +39,31 @@ export interface PracticeSessionProps {
 
 export function PracticeSession({ command, onExit }: PracticeSessionProps) {
   const { state, start, end, handleButtonPress } = usePracticeSession();
+  const [controllerFeedback, setControllerFeedback] = useState<ControllerButtonState>('neutral');
 
   useEffect(() => {
     start(command);
     // command が変わった場合だけ再開始する
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [command.id]);
+
+  useEffect(() => {
+    if (state.lastResult === 'success') {
+      setControllerFeedback('success');
+    } else if (state.lastResult === 'failure') {
+      setControllerFeedback('fail');
+    } else {
+      setControllerFeedback('neutral');
+    }
+  }, [state.lastResult]);
+
+  const wrappedHandleButtonPress = useCallback(
+    (button: ButtonType) => {
+      setControllerFeedback('neutral');
+      handleButtonPress(button);
+    },
+    [handleButtonPress],
+  );
 
   if (state.status === 'completed') {
     return (
@@ -76,8 +96,9 @@ export function PracticeSession({ command, onExit }: PracticeSessionProps) {
       </div>
       <div className={styles.controllerArea}>
         <ArcadeController
-          onButtonPress={handleButtonPress}
+          onButtonPress={wrappedHandleButtonPress}
           highlightedPhysicalButtons={highlightedPhysicalButtons}
+          buttonStateOverride={controllerFeedback}
         />
       </div>
       <div className={styles.footer}>

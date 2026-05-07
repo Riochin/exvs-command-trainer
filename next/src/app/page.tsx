@@ -1,10 +1,10 @@
 'use client';
 
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCommandStore } from '@/hooks/useCommandStore';
 import { CommandList } from '@/features/command-editor/CommandList';
 import { LandscapeGuard } from '@/components/LandscapeGuard';
+import { CapsuleButton } from '@/components/CapsuleButton';
 
 export default function HomePage() {
   const { commands, removeCommand } = useCommandStore();
@@ -15,12 +15,12 @@ export default function HomePage() {
       <main>
         <header>
           <h1>コマンド練習</h1>
-          <Link href="/commands/new">コマンドを登録する</Link>
+          <CapsuleButton href="/commands/new">コマンドを登録する</CapsuleButton>
         </header>
         {commands.length === 0 ? (
           <div>
             <p>コマンドが登録されていません</p>
-            <Link href="/commands/new">コマンドを登録する</Link>
+            <CapsuleButton href="/commands/new">コマンドを登録する</CapsuleButton>
           </div>
         ) : (
           <CommandList

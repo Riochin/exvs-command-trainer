@@ -71,6 +71,8 @@ export interface ArcadeControllerProps {
   highlightedButton?: ButtonType | null;
   /** 練習ヒント用。指定時は highlightedButton より優先（チャージ・複合入力の複数灯） */
   highlightedPhysicalButtons?: ReadonlyArray<ArcadePhysicalButton> | null;
+  /** 全ボタンに一括適用する状態フィードバック（success / fail / neutral） */
+  buttonStateOverride?: import('./ControllerButton').ControllerButtonState;
 }
 
 export function ArcadeController({
@@ -78,6 +80,7 @@ export function ArcadeController({
   onStepAdded,
   highlightedButton,
   highlightedPhysicalButtons,
+  buttonStateOverride,
 }: ArcadeControllerProps) {
   const { activeButtons, getButtonHandlers, setOnButtonPress, getHeldButtonsSync } = useControllerInput();
   const {
@@ -313,6 +316,7 @@ export function ArcadeController({
           button={button}
           isActive={isButtonActive(button)}
           highlighted={physicalHighlights.includes(button)}
+          state={buttonStateOverride}
           handlers={getHandlers(button)}
           className={styles[`btn-${button}`]}
         />

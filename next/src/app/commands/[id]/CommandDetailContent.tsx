@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useCommandStore } from '@/hooks/useCommandStore';
 import { CommandDetail } from '@/features/command-editor/CommandDetail';
 import { PracticeHistory } from '@/features/practice-history/PracticeHistory';
+import { CapsuleButton } from '@/components/CapsuleButton';
 
 export function CommandDetailContent({ commandId }: { commandId: string }) {
   const { getCommand } = useCommandStore();
@@ -18,9 +19,9 @@ export function CommandDetailContent({ commandId }: { commandId: string }) {
     <main>
       <CommandDetail command={command} />
       <PracticeHistory commandId={commandId} commandName={command.name} />
-      <button type="button" onClick={() => router.push(`/practice/${commandId}`)}>
+      <CapsuleButton onClick={() => router.push(`/practice/${commandId}`)}>
         練習を開始する
-      </button>
+      </CapsuleButton>
     </main>
   );
 }

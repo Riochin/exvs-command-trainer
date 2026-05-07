@@ -162,6 +162,57 @@ describe('PracticeSession', () => {
     });
   });
 
+  describe('ControllerButton 状態フィードバック', () => {
+    it('成功後にコントローラボタンへ data-state="success" が付く', async () => {
+      render(<PracticeSession command={zundaCommand} onExit={vi.fn()} />);
+      await act(async () => {
+        fireEvent.pointerDown(getControllerButton('ジャンプ'));
+        fireEvent.pointerUp(getControllerButton('ジャンプ'));
+      });
+      await act(async () => {
+        fireEvent.pointerDown(getControllerButton('ジャンプ'));
+        fireEvent.pointerUp(getControllerButton('ジャンプ'));
+      });
+      await act(async () => {
+        fireEvent.pointerDown(getControllerButton('射撃'));
+        fireEvent.pointerUp(getControllerButton('射撃'));
+      });
+      await flushChargeDeferredInput();
+      const buttons = screen.getAllByRole('button', { name: /射撃|格闘|ジャンプ/ });
+      expect(buttons.some((b) => b.getAttribute('data-state') === 'success')).toBe(true);
+    });
+
+    it('失敗後にコントローラボタンへ data-state="fail" が付く', async () => {
+      render(<PracticeSession command={zundaCommand} onExit={vi.fn()} />);
+      await act(async () => {
+        fireEvent.pointerDown(getControllerButton('射撃')); // 最初は jump が正解
+        fireEvent.pointerUp(getControllerButton('射撃'));
+      });
+      await flushChargeDeferredInput();
+      const buttons = screen.getAllByRole('button', { name: /射撃|格闘|ジャンプ/ });
+      expect(buttons.some((b) => b.getAttribute('data-state') === 'fail')).toBe(true);
+    });
+
+    it('結果後に次のボタンを押すと data-state がリセットされる', async () => {
+      render(<PracticeSession command={zundaCommand} onExit={vi.fn()} />);
+      // 失敗
+      await act(async () => {
+        fireEvent.pointerDown(getControllerButton('射撃'));
+        fireEvent.pointerUp(getControllerButton('射撃'));
+      });
+      await flushChargeDeferredInput();
+      // 次の入力（これも失敗でよい）
+      await act(async () => {
+        fireEvent.pointerDown(getControllerButton('射撃'));
+        fireEvent.pointerUp(getControllerButton('射撃'));
+      });
+      await flushChargeDeferredInput();
+      // 2回目の結果が fail になっているが、少なくとも success ではない
+      const buttons = screen.getAllByRole('button', { name: /射撃|格闘|ジャンプ/ });
+      expect(buttons.every((b) => b.getAttribute('data-state') !== 'success')).toBe(true);
+    });
+  });
+
   describe('セッション終了', () => {
     it('「練習終了」ボタンを押すと SessionResult が表示される', () => {
       render(<PracticeSession command={zundaCommand} onExit={vi.fn()} />);

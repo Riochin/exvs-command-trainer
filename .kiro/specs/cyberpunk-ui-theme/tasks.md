@@ -1,7 +1,7 @@
 # Implementation Plan
 
-- [ ] 1. Foundation: デザイントークン基盤とグローバルスタイルの構築
-- [ ] 1.1 CSS カスタムプロパティ（デザイントークン）ファイルの新規作成
+- [x] 1. Foundation: デザイントークン基盤とグローバルスタイルの構築
+- [x] 1.1 CSS カスタムプロパティ（デザイントークン）ファイルの新規作成
   - `src/styles/` ディレクトリを作成し、`theme.css` に全カラー・タイポグラフィ・グロー・トランジション・スキャンラインのトークンを定義する
   - カラートークン（`--color-bg-base: #050a14`、`--color-bg-mid: #0a1628`、`--color-bg-card`、`--color-accent-primary: #4fc8e8`、`--color-accent-deep: #1a6080`、`--color-accent-glow`、`--color-text: #e8f4f8`、`--color-text-muted: #7ab8cc`、`--color-success: #39d98a`、`--color-error: #ff4560`、`--color-warning: #f59e0b`）を定義する
   - グロートークン（`--glow-cyan-sm/md/lg`、`--glow-success`、`--glow-error`、`--border-cyan`）とトランジショントークン（`--transition-fast: 150ms ease-out`、`--transition-base: 200ms ease-out`、`--transition-slow: 300ms ease-out`）を定義する
@@ -10,7 +10,7 @@
   - ブラウザ DevTools の `:root` で全 CSS 変数が確認できる状態になる
   - _Requirements: 1.1, 1.2, 2.4, 5.4, 7.1, 7.4_
 
-- [ ] 1.2 グローバルスタイルシートの全面刷新
+- [x] 1.2 グローバルスタイルシートの全面刷新
   - `globals.css` の先頭に `@import '../styles/theme.css'` を追加してトークンをカスケード展開する
   - `prefers-color-scheme` ブロックを削除し、常時ダークテーマとする
   - `body` の背景色を `var(--color-bg-base)` に、文字色を `var(--color-text)` に、フォントを `var(--font-body)` に設定する

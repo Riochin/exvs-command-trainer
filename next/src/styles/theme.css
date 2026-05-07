@@ -1,0 +1,53 @@
+:root {
+  /* カラートークン */
+  --color-bg-base: #050a14;
+  --color-bg-mid: #0a1628;
+  --color-bg-card: rgba(10, 22, 40, 0.85);
+  --color-accent-primary: #4fc8e8;
+  --color-accent-deep: #1a6080;
+  --color-accent-glow: rgba(79, 200, 232, 0.6);
+  --color-text: #e8f4f8;
+  --color-text-muted: #7ab8cc;
+  --color-success: #39d98a;
+  --color-error: #ff4560;
+  --color-warning: #f59e0b;
+
+  /* タイポグラフィトークン */
+  --font-mono: var(--font-geist-mono), 'Courier New', monospace;
+  --font-body: var(--font-geist-sans), system-ui, sans-serif;
+  --font-weight-heading: 700;
+  --letter-spacing-ui: 0.12em;
+  --letter-spacing-body: 0.02em;
+
+  /* グロー / シャドウトークン */
+  --glow-cyan-sm: 0 0 8px var(--color-accent-glow);
+  --glow-cyan-md: 0 0 16px var(--color-accent-glow), 0 0 32px rgba(79, 200, 232, 0.3);
+  --glow-cyan-lg: 0 0 24px var(--color-accent-glow), 0 0 48px rgba(79, 200, 232, 0.4);
+  --glow-success: 0 0 12px rgba(57, 217, 138, 0.7);
+  --glow-error: 0 0 12px rgba(255, 69, 96, 0.7);
+  --border-cyan: 1px solid rgba(79, 200, 232, 0.5);
+
+  /* トランジショントークン */
+  --transition-fast: 150ms ease-out;
+  --transition-base: 200ms ease-out;
+  --transition-slow: 300ms ease-out;
+
+  /* スキャンライントークン */
+  --scanline-opacity: 0.08;
+  --scanline-size: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --transition-fast: 0ms;
+    --transition-base: 0ms;
+    --transition-slow: 0ms;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

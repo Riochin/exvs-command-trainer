@@ -5,6 +5,9 @@
   justify-content: center;
   gap: calc(var(--btn-size) * 0.15);
   padding: calc(var(--btn-size) * 0.5) calc(var(--btn-size) * 0.3);
+  background: var(--color-bg-card, rgba(10, 22, 40, 0.85));
+  border: var(--border-cyan, 1px solid rgba(79, 200, 232, 0.5));
+  border-radius: 12px;
 }
 
 /* 人差し指: 中間, 親指: 最高, 薬指: 最低 */

@@ -9,12 +9,13 @@
   cursor: pointer;
   touch-action: none;
   user-select: none;
-  transition: transform 0.06s ease;
+  transition: transform 0.06s ease, box-shadow var(--transition-base, 200ms ease-out);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
   transform: translateY(var(--btn-y, 0px));
+  box-shadow: var(--glow-cyan-sm, 0 0 8px rgba(79, 200, 232, 0.6));
 }
 
 .button[data-button="shot"]  { background: #d42f2f; }
@@ -26,8 +27,17 @@
 
 .button[aria-pressed="true"] {
   transform: translateY(var(--btn-y, 0px)) scale(0.93);
+  box-shadow: var(--glow-cyan-md, 0 0 16px rgba(79, 200, 232, 0.6), 0 0 32px rgba(79, 200, 232, 0.3));
 }
 
 .button[data-highlighted="true"] {
-  box-shadow: 0 0 0 4px #fff, 0 0 0 7px #ffd700;
+  box-shadow: var(--glow-cyan-lg, 0 0 24px rgba(79, 200, 232, 0.6), 0 0 48px rgba(79, 200, 232, 0.4));
+}
+
+.button[data-state="success"] {
+  box-shadow: var(--glow-success, 0 0 12px rgba(57, 217, 138, 0.7));
+}
+
+.button[data-state="fail"] {
+  box-shadow: var(--glow-error, 0 0 12px rgba(255, 69, 96, 0.7));
 }

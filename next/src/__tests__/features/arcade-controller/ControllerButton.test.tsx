@@ -62,6 +62,38 @@ describe('ControllerButton', () => {
     expect(el.getAttribute('data-highlighted')).toBeNull();
   });
 
+  it('state="success" のとき data-state="success" 属性が設定される', () => {
+    render(
+      <ControllerButton button="shot" isActive={false} state="success" handlers={makeHandlers()} />
+    );
+    const el = screen.getByRole('button');
+    expect(el.getAttribute('data-state')).toBe('success');
+  });
+
+  it('state="fail" のとき data-state="fail" 属性が設定される', () => {
+    render(
+      <ControllerButton button="shot" isActive={false} state="fail" handlers={makeHandlers()} />
+    );
+    const el = screen.getByRole('button');
+    expect(el.getAttribute('data-state')).toBe('fail');
+  });
+
+  it('state="neutral" のとき data-state="neutral" 属性が設定される', () => {
+    render(
+      <ControllerButton button="shot" isActive={false} state="neutral" handlers={makeHandlers()} />
+    );
+    const el = screen.getByRole('button');
+    expect(el.getAttribute('data-state')).toBe('neutral');
+  });
+
+  it('state 未指定のとき data-state 属性がない', () => {
+    render(
+      <ControllerButton button="shot" isActive={false} handlers={makeHandlers()} />
+    );
+    const el = screen.getByRole('button');
+    expect(el.getAttribute('data-state')).toBeNull();
+  });
+
   it('pointerdown イベントで onPointerDown ハンドラが呼ばれる', () => {
     const onPointerDown = vi.fn();
     render(

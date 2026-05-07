@@ -39,7 +39,7 @@
   - テストが全件グリーンで通過する
   - _Requirements: 3.1, 3.4, 3.5_
 
-- [ ] 3. (P) ControllerButton のネオングロービジュアル実装
+- [x] 3. (P) ControllerButton のネオングロービジュアル実装
   - `ControllerButton.tsx` に `state?: 'success' | 'fail' | 'neutral'` prop を追加し、`data-state` 属性としてレンダリングする（既存の `isActive`・`highlighted` props と共存させる）
   - `ControllerButton.module.css` の `.button` セレクタに `box-shadow: var(--glow-cyan-sm)` を追加し、基本グロー効果を付与する
   - `[aria-pressed="true"]` セレクタに `box-shadow: var(--glow-cyan-md)` を強化適用し、`[data-highlighted="true"]` のグローを `var(--glow-cyan-lg)` に更新する

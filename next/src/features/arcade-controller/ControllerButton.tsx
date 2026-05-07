@@ -16,21 +16,25 @@ const BUTTON_LABELS: Record<ButtonType, string> = {
   'special-melee': '特格',
 };
 
+export type ControllerButtonState = 'success' | 'fail' | 'neutral';
+
 export interface ControllerButtonProps {
   button: ButtonType;
   isActive: boolean;
   highlighted?: boolean;
+  state?: ControllerButtonState;
   handlers: PointerHandlers;
   className?: string;
 }
 
-export function ControllerButton({ button, isActive, highlighted, handlers, className }: ControllerButtonProps) {
+export function ControllerButton({ button, isActive, highlighted, state, handlers, className }: ControllerButtonProps) {
   return (
     <button
       role="button"
       aria-pressed={isActive}
       data-button={button}
       {...(highlighted ? { 'data-highlighted': 'true' } : {})}
+      {...(state !== undefined ? { 'data-state': state } : {})}
       className={`${styles.button}${className ? ` ${className}` : ''}`}
       onPointerDown={handlers.onPointerDown}
       onPointerUp={handlers.onPointerUp}

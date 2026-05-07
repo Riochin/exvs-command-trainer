@@ -23,25 +23,50 @@
 }
 
 .sequenceList {
-  list-style: none;
   padding: 0;
   margin: 0;
   display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
 }
 
 .step {
-  font-family: var(--font-mono);
-  font-size: 0.875rem;
-  letter-spacing: var(--letter-spacing-ui);
-  color: var(--color-text, #e8f4f8);
-  padding: 0.35rem 0.75rem;
-  border-bottom: var(--border-cyan);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 4rem;
+  height: 4rem;
+  border-radius: 50%;
+  border: var(--border-cyan);
+  background: var(--color-bg-mid, #0a1628);
+  gap: 0.15rem;
+  padding: 0.25rem;
+  text-align: center;
+  transition: box-shadow var(--transition-fast);
 }
 
-.step:last-child {
-  border-bottom: none;
+.step:hover {
+  box-shadow: var(--glow-cyan-sm);
+}
+
+.stepIndex {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: var(--letter-spacing-ui);
+  color: var(--color-accent-primary, #4fc8e8);
+  line-height: 1;
+}
+
+.stepLabel {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  color: var(--color-text, #e8f4f8);
+  line-height: 1.2;
+  word-break: keep-all;
 }
 
 .notFound {

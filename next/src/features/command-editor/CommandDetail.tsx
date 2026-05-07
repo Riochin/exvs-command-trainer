@@ -23,13 +23,16 @@ export function CommandDetail({ command }: CommandDetailProps) {
     <div className={styles.container}>
       <h1 className={styles.title}>{command.name}</h1>
       <p className={styles.mobileSuit}>{command.mobileSuit}</p>
-      <ol className={styles.sequenceList}>
+      <div className={styles.sequenceList}>
         {command.sequence.map((step, i) => (
-          <li key={i} data-testid="detail-step" className={styles.step}>
-            {step.buttons.map((b) => BUTTON_LABELS[b] ?? b).join('+')}
-          </li>
+          <div key={i} data-testid="detail-step" className={styles.step}>
+            <span className={styles.stepIndex}>{i + 1}</span>
+            <span className={styles.stepLabel}>
+              {step.buttons.map((b) => BUTTON_LABELS[b] ?? b).join('+')}
+            </span>
+          </div>
         ))}
-      </ol>
+      </div>
     </div>
   );
 }

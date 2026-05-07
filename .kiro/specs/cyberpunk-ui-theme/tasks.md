@@ -22,8 +22,8 @@
   - ホームページをブラウザで開いてスキャンライン付きディープネイビー背景が全画面に表示される
   - _Requirements: 1.3, 2.1, 2.2, 2.3, 5.1, 5.2, 5.3, 5.4, 7.3_
 
-- [ ] 2. CapsuleButton 共有コンポーネントの実装
-- [ ] 2.1 カプセルボタンの TSX コンポーネントと CSS Module の作成
+- [x] 2. CapsuleButton 共有コンポーネントの実装
+- [x] 2.1 カプセルボタンの TSX コンポーネントと CSS Module の作成
   - `src/components/CapsuleButton.tsx` を新規作成し、`variant`（primary / danger）、`size`（sm / md / lg）、`disabled`、`onClick`、`href`、`type`、`className`、`children` の props を受け取る
   - `href` prop 指定時は `next/link` の `Link` コンポーネントとしてレンダリングし、未指定時は `<button>` としてレンダリングする
   - `CapsuleButton.module.css` で `border-radius: 9999px`・ダークネイビー縦グラデーション本体・`::before / ::after` 疑似要素による両端シアン縦帯アクセントを実装する
@@ -33,7 +33,7 @@
   - ブラウザで CapsuleButton を表示してカプセル形状・両端シアンキャップ・ホバーグロー効果が確認できる
   - _Requirements: 1.4, 3.1, 3.2, 3.3, 3.4, 3.5_
 
-- [ ]* 2.2 CapsuleButton の単体テスト
+- [x]* 2.2 CapsuleButton の単体テスト
   - `variant='primary'` / `'danger'` / `disabled` の各 props が正しい CSS クラスを付与することをテストする
   - `href` 指定時に `<a>` タグ（Link コンポーネント由来）としてレンダリングされることをテストする
   - テストが全件グリーンで通過する

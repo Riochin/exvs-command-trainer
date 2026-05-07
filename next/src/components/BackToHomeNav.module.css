@@ -1,0 +1,22 @@
+.nav {
+  padding: 0.5rem 1rem;
+}
+
+.link {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  font-weight: var(--font-weight-heading);
+  letter-spacing: var(--letter-spacing-ui);
+  color: var(--color-accent-primary, #4fc8e8);
+  text-decoration: none;
+  text-shadow: var(--glow-cyan-sm);
+  transition: color var(--transition-fast), text-shadow var(--transition-fast);
+}
+
+.link:hover,
+.link:focus-visible {
+  color: var(--color-text, #e8f4f8);
+  text-shadow: var(--glow-cyan-md);
+  outline: none;
+}

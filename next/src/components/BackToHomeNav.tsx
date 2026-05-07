@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import styles from './BackToHomeNav.module.css';
 
 export function BackToHomeNav() {
   const pathname = usePathname();
@@ -9,8 +10,8 @@ export function BackToHomeNav() {
     return null;
   }
   return (
-    <nav aria-label="パンくずではないメイン導線">
-      <Link href="/">コマンド一覧に戻る</Link>
+    <nav className={styles.nav} aria-label="パンくずではないメイン導線">
+      <Link href="/" className={styles.link}>コマンド一覧に戻る</Link>
     </nav>
   );
 }

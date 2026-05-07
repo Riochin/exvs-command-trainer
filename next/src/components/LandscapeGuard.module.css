@@ -1,0 +1,26 @@
+.warning {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100svh;
+  gap: 1rem;
+  padding: 2rem;
+  text-align: center;
+  background: var(--color-bg-base, #050a14);
+  color: var(--color-text, #e8f4f8);
+}
+
+.icon {
+  font-size: 3rem;
+  color: var(--color-accent-primary, #4fc8e8);
+  text-shadow: var(--glow-cyan-md);
+}
+
+.message {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  letter-spacing: var(--letter-spacing-ui);
+  color: var(--color-text-muted, #7ab8cc);
+  margin: 0;
+}

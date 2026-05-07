@@ -50,8 +50,8 @@
   - _Requirements: 6.1, 6.2, 6.3, 6.4_
   - _Boundary: ControllerButton, ArcadeController_
 
-- [ ] 4. (P) HUD パネルスタイル群の実装
-- [ ] 4.1 (P) 共有コンポーネントの HUD スタイル実装
+- [x] 4. (P) HUD パネルスタイル群の実装
+- [x] 4.1 (P) 共有コンポーネントの HUD スタイル実装
   - `BackToHomeNav.module.css` を新規作成し、メカゲーム HUD スタイルのナビゲーションリンク（シアン文字・ホバーグロー・`var(--letter-spacing-ui)` 字間）を実装する
   - `ConfirmDialog.module.css` を新規作成し、`var(--color-bg-card)` 半透明背景・`var(--border-cyan)` ボーダーのダイアログスタイルを実装する
   - `LandscapeGuard.module.css` を新規作成し、縦画面警告の HUD スタイルを実装する
@@ -60,7 +60,7 @@
   - _Requirements: 4.1, 4.2, 4.3_
   - _Boundary: src/components/ (BackToHomeNav, ConfirmDialog, LandscapeGuard)_
 
-- [ ] 4.2 (P) コマンド管理フィーチャーの HUD スタイル実装
+- [x] 4.2 (P) コマンド管理フィーチャーの HUD スタイル実装
   - `CommandList.module.css` を新規作成し、コマンドリストカードに `var(--color-bg-card)` 背景・`var(--border-cyan)` ボーダー・セクション区切り線（`border-bottom: var(--border-cyan)`）を実装する
   - `CommandDetail.module.css` を新規作成し、コマンド詳細パネルの HUD スタイル（カード背景・見出し `var(--font-mono)`・`var(--letter-spacing-ui)` 字間）を実装する
   - `CommandForm.module.css` を更新し、バリデーションエラー状態に `var(--color-error)` アクセントを適用する
@@ -69,7 +69,7 @@
   - _Requirements: 3.6, 4.1, 4.3_
   - _Boundary: src/features/command-editor/_
 
-- [ ] 4.3 (P) 練習・履歴フィーチャーの HUD スタイルとネオンアニメーション実装
+- [x] 4.3 (P) 練習・履歴フィーチャーの HUD スタイルとネオンアニメーション実装
   - `PracticeSession.module.css` を更新し、セッションコンテナに HUD カードスタイルを適用する
   - `CommandHint.module.css` を新規作成し、ヒントパネルに `var(--color-bg-card)` 背景と `var(--border-cyan)` ボーダーを実装する
   - `SessionResult.module.css` を新規作成し、結果見出しに `@keyframes neon-pulse`（`text-shadow` の強度を 0→max→min で繰り返すパルス、duration `var(--transition-slow)`）を実装する

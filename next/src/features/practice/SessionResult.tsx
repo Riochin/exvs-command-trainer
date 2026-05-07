@@ -1,5 +1,6 @@
 'use client';
 
+import { CapsuleButton } from '@/components/CapsuleButton';
 import type { PracticeAttempt } from '@/types';
 import styles from './SessionResult.module.css';
 
@@ -28,8 +29,8 @@ export function SessionResult({ attempts, commandName, onRetry, onExit }: Sessio
         </>
       )}
       <div className={styles.actions}>
-        <button className={styles.retryButton} onClick={onRetry}>もう一度</button>
-        <button className={styles.exitButton} onClick={onExit}>終了</button>
+        <CapsuleButton onClick={onRetry}>もう一度</CapsuleButton>
+        <CapsuleButton variant="danger" onClick={onExit}>終了</CapsuleButton>
       </div>
     </div>
   );

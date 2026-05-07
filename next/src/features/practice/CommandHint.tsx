@@ -1,6 +1,7 @@
 'use client';
 
 import type { ButtonType, CommandStep } from '@/types';
+import styles from './CommandHint.module.css';
 
 const BUTTON_LABELS: Record<ButtonType, string> = {
   shot: '射撃',
@@ -21,12 +22,13 @@ export interface CommandHintProps {
 
 export function CommandHint({ sequence, currentIndex }: CommandHintProps) {
   return (
-    <div data-testid="command-hint">
+    <div data-testid="command-hint" className={styles.hint}>
       {sequence.map((step, index) => (
         <span
           key={index}
           data-testid="hint-step"
           data-highlighted={index === currentIndex ? 'true' : 'false'}
+          className={styles.step}
         >
           {step.buttons.map((b) => BUTTON_LABELS[b]).join('+')}
         </span>

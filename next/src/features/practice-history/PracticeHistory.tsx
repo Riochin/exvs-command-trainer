@@ -1,6 +1,7 @@
 'use client';
 
 import { usePracticeLog } from '@/hooks/usePracticeLog';
+import styles from './PracticeHistory.module.css';
 
 export interface PracticeHistoryProps {
   commandId: string;
@@ -18,16 +19,16 @@ export function PracticeHistory({ commandId, commandName }: PracticeHistoryProps
   const lastTimestamp = total > 0 ? attempts[attempts.length - 1].timestamp : null;
 
   return (
-    <div data-testid="practice-history">
-      <h3>{commandName}</h3>
+    <div data-testid="practice-history" className={styles.history}>
+      <h3 className={styles.title}>{commandName}</h3>
       {total === 0 ? (
-        <p>まだ練習していません</p>
+        <p className={styles.emptyMessage}>まだ練習していません</p>
       ) : (
         <>
-          <p data-testid="total-attempts">試行回数: {total}</p>
-          <p data-testid="success-rate">成功率: {rate}%</p>
+          <p data-testid="total-attempts" className={styles.stat}>試行回数: {total}</p>
+          <p data-testid="success-rate" className={styles.stat}>成功率: {rate}%</p>
           {lastTimestamp && (
-            <p data-testid="last-practiced">
+            <p data-testid="last-practiced" className={styles.stat}>
               最終練習: {new Date(lastTimestamp).toLocaleString('ja-JP')}
             </p>
           )}

@@ -1,6 +1,7 @@
 'use client';
 
 import type { PracticeAttempt } from '@/types';
+import styles from './SessionResult.module.css';
 
 export interface SessionResultProps {
   attempts: PracticeAttempt[];
@@ -15,19 +16,21 @@ export function SessionResult({ attempts, commandName, onRetry, onExit }: Sessio
   const rate = total === 0 ? 0 : Math.round((successes / total) * 100);
 
   return (
-    <div data-testid="session-result">
-      <h2>{commandName}</h2>
+    <div data-testid="session-result" className={styles.result}>
+      <h2 className={styles.title}>{commandName}</h2>
       {total === 0 ? (
-        <p>まだ練習していません</p>
+        <p className={styles.emptyMessage}>まだ練習していません</p>
       ) : (
         <>
-          <p data-testid="total-attempts">試行回数: {total}</p>
-          <p data-testid="success-count">成功: {successes}</p>
-          <p data-testid="success-rate">成功率: {rate}%</p>
+          <p data-testid="total-attempts" className={styles.stat}>試行回数: {total}</p>
+          <p data-testid="success-count" className={styles.stat}>成功: {successes}</p>
+          <p data-testid="success-rate" className={styles.stat}>成功率: {rate}%</p>
         </>
       )}
-      <button onClick={onRetry}>もう一度</button>
-      <button onClick={onExit}>終了</button>
+      <div className={styles.actions}>
+        <button className={styles.retryButton} onClick={onRetry}>もう一度</button>
+        <button className={styles.exitButton} onClick={onExit}>終了</button>
+      </div>
     </div>
   );
 }

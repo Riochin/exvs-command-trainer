@@ -3,11 +3,14 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  background: var(--color-bg-base, #050a14);
 }
 
 .header {
   flex-shrink: 0;
   padding: 0.4rem 1rem;
+  background: var(--color-bg-card, rgba(10, 22, 40, 0.85));
+  border-bottom: var(--border-cyan);
 }
 
 .controllerArea {
@@ -22,4 +25,6 @@
 .footer {
   flex-shrink: 0;
   padding: 0.4rem 1rem;
+  background: var(--color-bg-card, rgba(10, 22, 40, 0.85));
+  border-top: var(--border-cyan);
 }

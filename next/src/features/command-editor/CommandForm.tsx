@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { ArcadeController } from '@/features/arcade-controller/ArcadeController';
+import { CapsuleButton } from '@/components/CapsuleButton';
 import type { ButtonType, Command, CommandStep, StorageResult } from '@/types';
 import styles from './CommandForm.module.css';
 
@@ -47,35 +48,37 @@ export function CommandForm({ onAdd, onSuccess }: CommandFormProps) {
   return (
     <div className={styles.form}>
       <div className={styles.header}>
-        <div>
-          <label htmlFor="mobile-suit">機体名</label>
+        <div className={styles.fieldGroup}>
+          <label htmlFor="mobile-suit" className={styles.label}>機体名</label>
           <input
             id="mobile-suit"
             type="text"
             value={mobileSuit}
             onChange={(e) => setMobileSuit(e.target.value)}
+            className={styles.inputField}
           />
         </div>
-        <div>
-          <label htmlFor="command-name">コマンド名</label>
+        <div className={styles.fieldGroup}>
+          <label htmlFor="command-name" className={styles.label}>コマンド名</label>
           <input
             id="command-name"
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            className={styles.inputField}
           />
         </div>
-        <div data-testid="sequence-preview">
+        <div data-testid="sequence-preview" className={styles.sequencePreview}>
           {sequence.map((step, i) => (
-            <span key={i} data-testid="sequence-step">
+            <span key={i} data-testid="sequence-step" className={styles.previewStep}>
               {step.buttons.map((b) => BUTTON_LABELS[b]).join('+')}
             </span>
           ))}
         </div>
         {errorMessage && <div role="alert" className={styles.errorAlert}>{errorMessage}</div>}
-        <button type="button" disabled={!isValid} onClick={handleSubmit}>
+        <CapsuleButton disabled={!isValid} onClick={handleSubmit}>
           保存
-        </button>
+        </CapsuleButton>
       </div>
       <div className={styles.controllerArea}>
         <ArcadeController onStepAdded={handleStepAdded} />

@@ -6,11 +6,69 @@
 .header {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.5rem;
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: var(--letter-spacing-ui);
+  color: var(--color-text-muted, #7ab8cc);
+  text-transform: uppercase;
+  display: block;
+}
+
+.inputField {
+  background: rgba(5, 10, 20, 0.9);
+  border: var(--border-cyan);
+  border-radius: 0.25rem;
+  color: var(--color-text, #e8f4f8);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  letter-spacing: var(--letter-spacing-ui);
+  padding: 0.4rem 0.75rem;
+  width: 100%;
+  outline: none;
+  transition: box-shadow var(--transition-fast);
+}
+
+.inputField:focus {
+  box-shadow: var(--glow-cyan-sm);
 }
 
 .controllerArea {
   display: flex;
+}
+
+.sequencePreview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+  min-height: 2.5rem;
+}
+
+.previewStep {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  border: var(--border-cyan);
+  background: var(--color-bg-mid, #0a1628);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+  color: var(--color-accent-primary, #4fc8e8);
+  text-align: center;
+  padding: 0.1rem;
 }
 
 .errorAlert {

@@ -13,6 +13,16 @@
   display: flex;
 }
 
+.errorAlert {
+  color: var(--color-error, #ff4560);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  letter-spacing: var(--letter-spacing-ui);
+  border-left: 2px solid var(--color-error, #ff4560);
+  padding: 0.25rem 0.5rem;
+  background: rgba(255, 69, 96, 0.08);
+}
+
 @media (orientation: landscape) {
   .form {
     flex: 1;

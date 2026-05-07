@@ -1,0 +1,85 @@
+.group {
+  background: var(--color-bg-card, rgba(10, 22, 40, 0.85));
+  border: var(--border-cyan);
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  overflow: hidden;
+}
+
+.groupTitle {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  font-weight: var(--font-weight-heading);
+  letter-spacing: var(--letter-spacing-ui);
+  color: var(--color-accent-primary, #4fc8e8);
+  text-shadow: var(--glow-cyan-sm);
+  padding: 0.6rem 1rem;
+  margin: 0;
+  border-bottom: var(--border-cyan);
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  border-bottom: var(--border-cyan);
+  color: var(--color-text, #e8f4f8);
+  letter-spacing: var(--letter-spacing-body);
+}
+
+.item:last-child {
+  border-bottom: none;
+}
+
+.itemButton {
+  background: transparent;
+  border: none;
+  color: var(--color-text, #e8f4f8);
+  font-family: var(--font-body);
+  letter-spacing: var(--letter-spacing-body);
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+  transition: color var(--transition-fast);
+}
+
+.itemButton:hover {
+  color: var(--color-accent-primary, #4fc8e8);
+}
+
+.itemName {
+  color: var(--color-text, #e8f4f8);
+}
+
+.deleteButton {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: var(--letter-spacing-ui);
+  color: var(--color-error, #ff4560);
+  background: transparent;
+  border: 1px solid rgba(255, 69, 96, 0.4);
+  border-radius: 9999px;
+  padding: 0.2rem 0.75rem;
+  cursor: pointer;
+  transition: box-shadow var(--transition-fast);
+}
+
+.deleteButton:hover,
+.deleteButton:focus-visible {
+  box-shadow: 0 0 8px rgba(255, 69, 96, 0.6);
+  outline: none;
+}
+
+.emptyMessage {
+  color: var(--color-text-muted, #7ab8cc);
+  font-family: var(--font-mono);
+  letter-spacing: var(--letter-spacing-ui);
+  padding: 1rem;
+}

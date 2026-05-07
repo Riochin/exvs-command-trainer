@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import type { Command } from '@/types';
+import styles from './CommandList.module.css';
 
 export interface CommandListProps {
   commands: Command[];
@@ -14,7 +15,7 @@ export function CommandList({ commands, onDelete, onSelect }: CommandListProps) 
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   if (commands.length === 0) {
-    return <p>登録されたコマンドはありません</p>;
+    return <p className={styles.emptyMessage}>登録されたコマンドはありません</p>;
   }
 
   const groups = commands.reduce<Record<string, Command[]>>((acc, cmd) => {
@@ -43,17 +44,17 @@ export function CommandList({ commands, onDelete, onSelect }: CommandListProps) 
   return (
     <>
       {Object.entries(groups).map(([mobileSuit, cmds]) => (
-        <div key={mobileSuit} role="group" aria-label={mobileSuit}>
-          <h2>{mobileSuit}</h2>
-          <ul>
+        <div key={mobileSuit} role="group" aria-label={mobileSuit} className={styles.group}>
+          <h2 className={styles.groupTitle}>{mobileSuit}</h2>
+          <ul className={styles.list}>
             {cmds.map((cmd) => (
-              <li key={cmd.id}>
+              <li key={cmd.id} className={styles.item}>
                 {onSelect ? (
-                  <button type="button" onClick={() => onSelect(cmd.id)}>{cmd.name}</button>
+                  <button type="button" className={styles.itemButton} onClick={() => onSelect(cmd.id)}>{cmd.name}</button>
                 ) : (
-                  <span>{cmd.name}</span>
+                  <span className={styles.itemName}>{cmd.name}</span>
                 )}
-                <button type="button" aria-label={`${cmd.name}を削除`} onClick={() => handleDeleteClick(cmd.id)}>
+                <button type="button" className={styles.deleteButton} aria-label={`${cmd.name}を削除`} onClick={() => handleDeleteClick(cmd.id)}>
                   削除
                 </button>
               </li>

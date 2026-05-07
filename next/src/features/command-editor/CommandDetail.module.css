@@ -1,0 +1,51 @@
+.container {
+  background: var(--color-bg-card, rgba(10, 22, 40, 0.85));
+  border: var(--border-cyan);
+  border-radius: 0.5rem;
+  padding: 1.25rem 1.5rem;
+}
+
+.title {
+  font-family: var(--font-mono);
+  font-weight: var(--font-weight-heading);
+  letter-spacing: var(--letter-spacing-ui);
+  color: var(--color-accent-primary, #4fc8e8);
+  text-shadow: var(--glow-cyan-sm);
+  margin: 0 0 0.25rem;
+}
+
+.mobileSuit {
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  letter-spacing: var(--letter-spacing-body);
+  color: var(--color-text-muted, #7ab8cc);
+  margin: 0 0 1rem;
+}
+
+.sequenceList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.step {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  letter-spacing: var(--letter-spacing-ui);
+  color: var(--color-text, #e8f4f8);
+  padding: 0.35rem 0.75rem;
+  border-bottom: var(--border-cyan);
+}
+
+.step:last-child {
+  border-bottom: none;
+}
+
+.notFound {
+  color: var(--color-text-muted, #7ab8cc);
+  font-family: var(--font-mono);
+  letter-spacing: var(--letter-spacing-ui);
+}

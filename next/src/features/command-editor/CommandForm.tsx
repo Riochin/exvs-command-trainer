@@ -72,7 +72,7 @@ export function CommandForm({ onAdd, onSuccess }: CommandFormProps) {
             </span>
           ))}
         </div>
-        {errorMessage && <div role="alert">{errorMessage}</div>}
+        {errorMessage && <div role="alert" className={styles.errorAlert}>{errorMessage}</div>}
         <button type="button" disabled={!isValid} onClick={handleSubmit}>
           保存
         </button>

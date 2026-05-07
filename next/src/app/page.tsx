@@ -14,7 +14,7 @@ export default function HomePage() {
     <LandscapeGuard>
       <main>
         <header>
-          <h1>コマンド練習</h1>
+          <h1>EXVS2 コマンド練習アプリ</h1>
           <CapsuleButton href="/commands/new">コマンドを登録する</CapsuleButton>
         </header>
         {commands.length === 0 ? (

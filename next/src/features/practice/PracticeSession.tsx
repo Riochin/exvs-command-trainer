@@ -6,6 +6,7 @@ import { ArcadeController } from '@/features/arcade-controller/ArcadeController'
 import type { ControllerButtonState } from '@/features/arcade-controller/ControllerButton';
 import { CommandHint } from './CommandHint';
 import { SessionResult } from './SessionResult';
+import { CapsuleButton } from '@/components/CapsuleButton';
 import type { ButtonType, Command } from '@/types';
 import type { ArcadePhysicalButton } from '@/features/arcade-controller/ArcadeController';
 import styles from './PracticeSession.module.css';
@@ -88,11 +89,11 @@ export function PracticeSession({ command, onExit }: PracticeSessionProps) {
     <div data-testid="practice-session" className={styles.session}>
       <div className={styles.header}>
         <CommandHint sequence={command.sequence} currentIndex={state.currentIndex} />
-        <div data-testid="attempt-counter">
+        <div data-testid="attempt-counter" className={styles.attemptCounter}>
           試行: {totalAttempts} / 成功: {successCount}
         </div>
-        {state.lastResult === 'success' && <div data-testid="result-success">成功!</div>}
-        {state.lastResult === 'failure' && <div data-testid="result-failure">失敗...</div>}
+        {state.lastResult === 'success' && <div data-testid="result-success" className={styles.resultSuccess}>SUCCESS</div>}
+        {state.lastResult === 'failure' && <div data-testid="result-failure" className={styles.resultFailure}>MISS</div>}
       </div>
       <div className={styles.controllerArea}>
         <ArcadeController
@@ -102,7 +103,7 @@ export function PracticeSession({ command, onExit }: PracticeSessionProps) {
         />
       </div>
       <div className={styles.footer}>
-        <button onClick={end}>練習終了</button>
+        <CapsuleButton variant="danger" onClick={end}>練習終了</CapsuleButton>
       </div>
     </div>
   );

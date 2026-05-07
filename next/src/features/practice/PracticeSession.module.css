@@ -8,9 +8,37 @@
 
 .header {
   flex-shrink: 0;
-  padding: 0.4rem 1rem;
+  padding: 0.5rem 1rem;
   background: var(--color-bg-card, rgba(10, 22, 40, 0.85));
   border-bottom: var(--border-cyan);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.attemptCounter {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: var(--letter-spacing-ui);
+  color: var(--color-text-muted, #7ab8cc);
+}
+
+.resultSuccess {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  font-weight: var(--font-weight-heading);
+  letter-spacing: var(--letter-spacing-ui);
+  color: var(--color-success, #39d98a);
+  text-shadow: var(--glow-success);
+}
+
+.resultFailure {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  font-weight: var(--font-weight-heading);
+  letter-spacing: var(--letter-spacing-ui);
+  color: var(--color-error, #ff4560);
+  text-shadow: var(--glow-error);
 }
 
 .controllerArea {
@@ -24,7 +52,9 @@
 
 .footer {
   flex-shrink: 0;
-  padding: 0.4rem 1rem;
+  padding: 0.5rem 1rem;
   background: var(--color-bg-card, rgba(10, 22, 40, 0.85));
   border-top: var(--border-cyan);
+  display: flex;
+  justify-content: center;
 }

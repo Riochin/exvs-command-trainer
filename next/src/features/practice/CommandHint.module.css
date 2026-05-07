@@ -4,9 +4,23 @@
   border-radius: 0.5rem;
   padding: 0.6rem 1rem;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
   gap: 0.5rem;
   align-items: center;
+}
+
+.hint::-webkit-scrollbar {
+  height: 3px;
+}
+
+.hint::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.hint::-webkit-scrollbar-thumb {
+  background: var(--color-accent-primary);
+  border-radius: 2px;
 }
 
 .step {

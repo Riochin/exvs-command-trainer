@@ -1,6 +1,9 @@
 .main {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .title {
@@ -8,11 +11,6 @@
 }
 
 @media (orientation: landscape) {
-  .main {
-    height: 100svh;
-    overflow: hidden;
-  }
-
   .title {
     display: none;
   }

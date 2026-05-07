@@ -18,11 +18,15 @@ export function CommandDetailContent({ commandId }: { commandId: string }) {
 
   return (
     <main className={styles.main}>
-      <CommandDetail command={command} />
-      <PracticeHistory commandId={commandId} commandName={command.name} />
-      <CapsuleButton onClick={() => router.push(`/practice/${commandId}`)}>
-        練習を開始する
-      </CapsuleButton>
+      <div className={styles.left}>
+        <CommandDetail command={command} />
+      </div>
+      <div className={styles.right}>
+        <PracticeHistory commandId={commandId} commandName={command.name} />
+        <CapsuleButton onClick={() => router.push(`/practice/${commandId}`)}>
+          練習を開始する
+        </CapsuleButton>
+      </div>
     </main>
   );
 }

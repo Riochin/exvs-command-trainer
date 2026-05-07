@@ -5,6 +5,7 @@ import { useCommandStore } from '@/hooks/useCommandStore';
 import { CommandList } from '@/features/command-editor/CommandList';
 import { LandscapeGuard } from '@/components/LandscapeGuard';
 import { CapsuleButton } from '@/components/CapsuleButton';
+import styles from './page.module.css';
 
 export default function HomePage() {
   const { commands, removeCommand } = useCommandStore();
@@ -12,22 +13,24 @@ export default function HomePage() {
 
   return (
     <LandscapeGuard>
-      <main>
-        <header>
+      <main className={styles.page}>
+        <header className={styles.header}>
           <h1>EXVS2 コマンド練習アプリ</h1>
           <CapsuleButton href="/commands/new">コマンドを登録する</CapsuleButton>
         </header>
         {commands.length === 0 ? (
-          <div>
+          <div className={styles.emptyState}>
             <p>コマンドが登録されていません</p>
             <CapsuleButton href="/commands/new">コマンドを登録する</CapsuleButton>
           </div>
         ) : (
-          <CommandList
-            commands={commands}
-            onDelete={(id) => removeCommand(id)}
-            onSelect={(id) => router.push(`/commands/${id}`)}
-          />
+          <div className={styles.listArea}>
+            <CommandList
+              commands={commands}
+              onDelete={(id) => removeCommand(id)}
+              onSelect={(id) => router.push(`/commands/${id}`)}
+            />
+          </div>
         )}
       </main>
     </LandscapeGuard>

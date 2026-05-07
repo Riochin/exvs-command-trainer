@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import type { ButtonType, CommandStep } from '@/types';
 import styles from './CommandHint.module.css';
 
@@ -21,11 +22,22 @@ export interface CommandHintProps {
 }
 
 export function CommandHint({ sequence, currentIndex }: CommandHintProps) {
+  const stepRefs = useRef<(HTMLSpanElement | null)[]>([]);
+
+  useEffect(() => {
+    stepRefs.current[currentIndex]?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'nearest',
+      inline: 'nearest',
+    });
+  }, [currentIndex]);
+
   return (
     <div data-testid="command-hint" className={styles.hint}>
       {sequence.map((step, index) => (
         <span
           key={index}
+          ref={(el) => { stepRefs.current[index] = el; }}
           data-testid="hint-step"
           data-highlighted={index === currentIndex ? 'true' : 'false'}
           className={styles.step}

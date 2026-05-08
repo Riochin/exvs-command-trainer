@@ -1,9 +1,9 @@
 .controller {
-  --btn-size: min(22vw, 110px);
+  --btn-size: min(24vw, 120px);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: calc(var(--btn-size) * 0.15);
+  gap: calc(var(--btn-size) * 0.25);
   padding: calc(var(--btn-size) * 0.5) calc(var(--btn-size) * 0.3);
   background: var(--color-bg-card, rgba(10, 22, 40, 0.85));
   border: var(--border-cyan, 1px solid rgba(79, 200, 232, 0.5));
@@ -17,10 +17,10 @@
 
 @media (orientation: landscape) {
   .controller {
-    --btn-size: min(38vh, 150px);
+    --btn-size: min(42vh, 165px);
     flex: 1;
     width: 100%;
     padding: 0;
-    gap: calc(var(--btn-size) * 0.1);
+    gap: calc(var(--btn-size) * 0.2);
   }
 }

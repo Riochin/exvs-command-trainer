@@ -45,4 +45,10 @@
 .listArea {
   flex: 1;
   padding: 16px;
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  overflow-x: auto;
+  align-items: flex-start;
+  min-height: 0;
 }

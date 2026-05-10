@@ -30,9 +30,9 @@
   border-radius: 0.25rem;
   color: var(--color-text, #e8f4f8);
   font-family: var(--font-mono);
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   letter-spacing: var(--letter-spacing-ui);
-  padding: 0.4rem 0.75rem;
+  padding: 0.25rem 0.6rem;
   width: 100%;
   outline: none;
   transition: box-shadow var(--transition-fast);
@@ -50,7 +50,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  min-height: 2.5rem;
+  height: 2.5rem;
 }
 
 .sequencePreview {
@@ -81,9 +81,9 @@
   border-radius: 0.25rem;
   color: var(--color-error, #ff4560);
   font-family: var(--font-mono);
-  font-size: 0.65rem;
+  font-size: 0.55rem;
   letter-spacing: 0.08em;
-  padding: 0.2rem 0.5rem;
+  padding: 0.15rem 0.35rem;
   cursor: pointer;
   transition: background var(--transition-fast), box-shadow var(--transition-fast);
 }

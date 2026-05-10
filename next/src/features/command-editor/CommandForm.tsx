@@ -93,11 +93,14 @@ export function CommandForm({ onAdd, onSuccess }: CommandFormProps) {
           ))}
           {isAtMax && <span className={styles.maxLabel}>MAX</span>}
         </div>
-        {sequence.length > 0 && (
-          <button type="button" onClick={handleReset} className={styles.resetButton}>
-            RESET
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={handleReset}
+          className={styles.resetButton}
+          style={sequence.length === 0 ? { visibility: 'hidden' } : undefined}
+        >
+          RESET
+        </button>
       </div>
       {errorMessage && <div role="alert" className={styles.errorAlert}>{errorMessage}</div>}
       <div className={styles.controllerArea}>

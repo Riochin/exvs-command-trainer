@@ -93,8 +93,8 @@ export function useCommandStore(): UseCommandStoreReturn {
         setLastError(error);
         return { ok: false, error };
       }
-      if (input.sequence.length > 10) {
-        const error: StorageError = { type: 'write_error', message: 'シーケンスは最大10ステップです' };
+      if (input.sequence.length > 20) {
+        const error: StorageError = { type: 'write_error', message: 'シーケンスは最大20ステップです' };
         setLastError(error);
         return { ok: false, error };
       }

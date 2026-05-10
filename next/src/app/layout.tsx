@@ -14,8 +14,25 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "EXVS コマンドトレーナー",
-  description: "エクストリームバーサス コマンド練習アプリ",
+  title: "EXVSコマンド道場",
+  description: "機動戦士ガンダム EXTREME VS.のコマンドを練習・確認できるWebアプリ。コマンドの登録・編集・練習モードを搭載。",
+  metadataBase: new URL("https://exvs-command-trainer.vercel.app"),
+  openGraph: {
+    title: "EXVSコマンド道場",
+    description: "機動戦士ガンダム EXTREME VS.のコマンドを練習・確認できるWebアプリ。コマンドの登録・編集・練習モードを搭載。",
+    images: [{ url: "/ogp.png", width: 1200, height: 630 }],
+    locale: "ja_JP",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "EXVSコマンド道場",
+    description: "機動戦士ガンダム EXTREME VS.のコマンドを練習・確認できるWebアプリ。コマンドの登録・編集・練習モードを搭載。",
+    images: ["/ogp.png"],
+  },
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({

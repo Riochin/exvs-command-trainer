@@ -88,12 +88,17 @@ export function PracticeSession({ command, onExit }: PracticeSessionProps) {
   return (
     <div data-testid="practice-session" className={styles.session}>
       <div className={styles.header}>
-        <CommandHint sequence={command.sequence} currentIndex={state.currentIndex} />
-        <div data-testid="attempt-counter" className={styles.attemptCounter}>
-          試行: {totalAttempts} / 成功: {successCount}
+        <div className={styles.headerMain}>
+          <CommandHint sequence={command.sequence} currentIndex={state.currentIndex} />
+          <div className={styles.statsRow}>
+            <div data-testid="attempt-counter" className={styles.attemptCounter}>
+              試行: {totalAttempts} / 成功: {successCount}
+            </div>
+            {state.lastResult === 'success' && <div data-testid="result-success" className={styles.resultSuccess}>SUCCESS</div>}
+            {state.lastResult === 'failure' && <div data-testid="result-failure" className={styles.resultFailure}>MISS</div>}
+          </div>
         </div>
-        {state.lastResult === 'success' && <div data-testid="result-success" className={styles.resultSuccess}>SUCCESS</div>}
-        {state.lastResult === 'failure' && <div data-testid="result-failure" className={styles.resultFailure}>MISS</div>}
+        <CapsuleButton variant="danger" onClick={end}>練習終了</CapsuleButton>
       </div>
       <div className={styles.controllerArea}>
         <ArcadeController
@@ -101,9 +106,6 @@ export function PracticeSession({ command, onExit }: PracticeSessionProps) {
           highlightedPhysicalButtons={highlightedPhysicalButtons}
           buttonStateOverride={controllerFeedback}
         />
-      </div>
-      <div className={styles.footer}>
-        <CapsuleButton variant="danger" onClick={end}>練習終了</CapsuleButton>
       </div>
     </div>
   );

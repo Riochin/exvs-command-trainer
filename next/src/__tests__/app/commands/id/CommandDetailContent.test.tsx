@@ -75,12 +75,12 @@ describe('CommandDetailContent', () => {
       expect(screen.getByRole('button', { name: /練習を開始/ })).toBeTruthy();
     });
 
-    it('「練習を開始する」を押すと /practice/[id] に遷移する', () => {
+    it('「練習を開始する」を押すと /practice/[id]?timeLimit=30 に遷移する（デフォルト時間制限あり）', () => {
       const push = vi.fn();
       mockUseRouter.mockReturnValue({ push } as ReturnType<typeof useRouter>);
       render(<CommandDetailContent commandId="cmd-1" />);
       fireEvent.click(screen.getByRole('button', { name: /練習を開始/ }));
-      expect(push).toHaveBeenCalledWith('/practice/cmd-1');
+      expect(push).toHaveBeenCalledWith('/practice/cmd-1?timeLimit=30');
     });
   });
 

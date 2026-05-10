@@ -13,12 +13,14 @@ import type {
 import { isButtonType } from '@/types';
 
 describe('ButtonType', () => {
-  it('9種類のボタン値を受け付ける', () => {
+  it('11種類のボタン値を受け付ける', () => {
     const buttons: ButtonType[] = [
       'shot', 'melee', 'jump', 'awaken',
-      'melee-charge', 'shot-charge', 'sub', 'special-shot', 'special-melee',
+      'shot-charge-start', 'shot-charge-end',
+      'melee-charge-start', 'melee-charge-end',
+      'sub', 'special-shot', 'special-melee',
     ];
-    expect(buttons).toHaveLength(9);
+    expect(buttons).toHaveLength(11);
   });
 });
 
@@ -30,12 +32,19 @@ describe('isButtonType', () => {
     expect(isButtonType('awaken')).toBe(true);
   });
 
-  it('新規5種に対して true を返す', () => {
-    expect(isButtonType('melee-charge')).toBe(true);
-    expect(isButtonType('shot-charge')).toBe(true);
+  it('新規7種に対して true を返す', () => {
+    expect(isButtonType('shot-charge-start')).toBe(true);
+    expect(isButtonType('shot-charge-end')).toBe(true);
+    expect(isButtonType('melee-charge-start')).toBe(true);
+    expect(isButtonType('melee-charge-end')).toBe(true);
     expect(isButtonType('sub')).toBe(true);
     expect(isButtonType('special-shot')).toBe(true);
     expect(isButtonType('special-melee')).toBe(true);
+  });
+
+  it('旧チャージ型（shot-charge, melee-charge）に対して false を返す', () => {
+    expect(isButtonType('shot-charge')).toBe(false);
+    expect(isButtonType('melee-charge')).toBe(false);
   });
 
   it('不正な文字列に対して false を返す', () => {

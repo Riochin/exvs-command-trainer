@@ -96,22 +96,22 @@ describe('PracticeSession', () => {
   });
 
   describe('練習ヒント（ハイライト）', () => {
-    it('melee-charge ステップで格闘ボタンに data-highlighted が付く', () => {
+    it('melee-charge-start ステップで格闘ボタンに data-highlighted が付く', () => {
       const command: Command = {
         ...zundaCommand,
         id: 'c1',
-        sequence: [{ buttons: ['melee-charge'] }],
+        sequence: [{ buttons: ['melee-charge-start'] }],
       };
       render(<PracticeSession command={command} onExit={vi.fn()} />);
       expect(getControllerButton('格闘').getAttribute('data-highlighted')).toBe('true');
       expect(getControllerButton('射撃').getAttribute('data-highlighted')).toBeNull();
     });
 
-    it('shot-charge ステップで射撃ボタンに data-highlighted が付く', () => {
+    it('shot-charge-start ステップで射撃ボタンに data-highlighted が付く', () => {
       const command: Command = {
         ...zundaCommand,
         id: 'c2',
-        sequence: [{ buttons: ['shot-charge'] }],
+        sequence: [{ buttons: ['shot-charge-start'] }],
       };
       render(<PracticeSession command={command} onExit={vi.fn()} />);
       expect(getControllerButton('射撃').getAttribute('data-highlighted')).toBe('true');
@@ -153,9 +153,11 @@ describe('PracticeSession', () => {
   });
 
   describe('practiceStepToPhysicalHighlights', () => {
-    it('チャージ・複合入力を物理ボタン配列にマップする', () => {
-      expect(practiceStepToPhysicalHighlights('melee-charge')).toEqual(['melee']);
-      expect(practiceStepToPhysicalHighlights('shot-charge')).toEqual(['shot']);
+    it('チャージ開始・終了・複合入力を物理ボタン配列にマップする', () => {
+      expect(practiceStepToPhysicalHighlights('melee-charge-start')).toEqual(['melee']);
+      expect(practiceStepToPhysicalHighlights('melee-charge-end')).toEqual(['melee']);
+      expect(practiceStepToPhysicalHighlights('shot-charge-start')).toEqual(['shot']);
+      expect(practiceStepToPhysicalHighlights('shot-charge-end')).toEqual(['shot']);
       expect(practiceStepToPhysicalHighlights('sub')).toEqual(['shot', 'melee']);
       expect(practiceStepToPhysicalHighlights('special-shot')).toEqual(['shot', 'jump']);
       expect(practiceStepToPhysicalHighlights('special-melee')).toEqual(['melee', 'jump']);

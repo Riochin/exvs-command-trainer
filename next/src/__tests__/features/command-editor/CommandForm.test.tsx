@@ -68,7 +68,7 @@ describe('CommandForm', () => {
         fireEvent.pointerUp(screen.getByText('ジャンプ'));
       });
       expect(screen.getByTestId('sequence-preview')).toBeTruthy();
-      expect(screen.getByTestId('sequence-preview').textContent).toContain('ジャンプ');
+      expect(screen.getByTestId('sequence-preview').textContent).toContain('ジャ');
     });
 
     it('複数のボタンをタップするとステップが順番に追加される', async () => {

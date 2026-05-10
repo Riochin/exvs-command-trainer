@@ -36,8 +36,9 @@ describe('CommandDetail', () => {
     it('単押しボタンのラベルが表示される', () => {
       render(<CommandDetail command={sampleCommand} />);
       // jump×2, shot×1 が表示されるはず
-      const jumpEls = screen.getAllByText('ジャンプ');
-      expect(jumpEls).toHaveLength(2);
+      const steps = screen.getAllByTestId('detail-step');
+      const jumpSteps = steps.filter((el) => el.textContent?.includes('ジャ'));
+      expect(jumpSteps).toHaveLength(2);
       expect(screen.getByText('射撃')).toBeTruthy();
     });
 

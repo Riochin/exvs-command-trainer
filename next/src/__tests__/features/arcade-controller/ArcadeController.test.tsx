@@ -310,20 +310,20 @@ describe('ArcadeController', () => {
       vi.useRealTimers();
     });
 
-    it('格闘を長押し（しきい値以上）して離すと onButtonPress が melee-charge で呼ばれる', () => {
+    it('格闘を長押し（しきい値以上）して離すと melee-charge-start → melee-charge-end で呼ばれる', () => {
       const onButtonPress = vi.fn();
       render(<ArcadeController onButtonPress={onButtonPress} />);
       const el = screen.getByText('格闘').closest('button')!;
-      const start = Date.now();
       act(() => {
         fireEvent.pointerDown(el, { pointerId: 1 });
       });
-      vi.setSystemTime(start + CHARGE_THRESHOLD_MS + 50);
+      act(() => { vi.advanceTimersByTime(CHARGE_THRESHOLD_MS); }); // タイマー発火 → melee-charge-start
       act(() => {
-        fireEvent.pointerUp(el, { pointerId: 1 });
-        vi.advanceTimersByTime(SIMULTANEOUS_INPUT_DEFER_MS);
+        fireEvent.pointerUp(el, { pointerId: 1 }); // → melee-charge-end
       });
-      expect(onButtonPress).toHaveBeenCalledWith('melee-charge');
+      expect(onButtonPress).toHaveBeenCalledTimes(2);
+      expect(onButtonPress).toHaveBeenNthCalledWith(1, 'melee-charge-start');
+      expect(onButtonPress).toHaveBeenNthCalledWith(2, 'melee-charge-end');
     });
 
     it('格闘を短押し（しきい値未満）して離すと onButtonPress が melee で呼ばれる', () => {
@@ -356,20 +356,20 @@ describe('ArcadeController', () => {
       expect(el.getAttribute('aria-pressed')).toBe('true');
     });
 
-    it('onStepAdded で射撃を長押しすると shot-charge が記録される', () => {
+    it('onStepAdded で射撃を長押しすると shot-charge-start と shot-charge-end が別々のステップとして記録される', () => {
       const onStepAdded = vi.fn();
       render(<ArcadeController onStepAdded={onStepAdded} />);
       const el = screen.getByText('射撃').closest('button')!;
-      const start = Date.now();
       act(() => {
         fireEvent.pointerDown(el, { pointerId: 3 });
       });
-      vi.setSystemTime(start + CHARGE_THRESHOLD_MS + 1);
+      act(() => { vi.advanceTimersByTime(CHARGE_THRESHOLD_MS); }); // → shot-charge-start
       act(() => {
-        fireEvent.pointerUp(el, { pointerId: 3 });
-        vi.advanceTimersByTime(SIMULTANEOUS_INPUT_DEFER_MS);
+        fireEvent.pointerUp(el, { pointerId: 3 }); // → shot-charge-end
       });
-      expect(onStepAdded).toHaveBeenCalledWith({ buttons: ['shot-charge'] });
+      expect(onStepAdded).toHaveBeenCalledTimes(2);
+      expect(onStepAdded).toHaveBeenNthCalledWith(1, { buttons: ['shot-charge-start'] });
+      expect(onStepAdded).toHaveBeenNthCalledWith(2, { buttons: ['shot-charge-end'] });
     });
 
     it('sub 発火後は個別の pointerUp で shot/melee がコールバックされない', () => {

@@ -262,7 +262,7 @@ describe('useCommandStore', () => {
           id: 'abc',
           mobileSuit: 'ガンダム',
           name: 'テスト',
-          sequence: [{ buttons: ['melee-charge'] }, { buttons: ['sub'] }],
+          sequence: [{ buttons: ['melee-charge-start'] }, { buttons: ['melee-charge-end'] }, { buttons: ['sub'] }],
           createdAt: '2026-01-01T00:00:00.000Z',
         },
       ];
@@ -277,34 +277,37 @@ describe('useCommandStore', () => {
       expect(result.current.lastError).toBeNull();
     });
 
-    it('拡張 ButtonType を含むコマンドが localStorage から読み込み後もシーケンスを保持する', async () => {
-      const sequence = [
-        { buttons: ['melee-charge'] },
-        { buttons: ['sub'] },
-        { buttons: ['special-shot'] },
-        { buttons: ['special-melee'] },
-        { buttons: ['shot-charge'] },
-      ] as const;
-      const validData = [
+    it('旧チャージ形式 (shot-charge, melee-charge) は新形式に移行されエラーにならない', async () => {
+      const oldData = [
         {
           id: 'ext-full',
           mobileSuit: 'ガンダム',
-          name: '拡張シーケンス',
-          sequence: [...sequence],
+          name: '旧チャージシーケンス',
+          sequence: [
+            { buttons: ['melee-charge'] },
+            { buttons: ['sub'] },
+            { buttons: ['shot-charge'] },
+          ],
           createdAt: '2026-01-01T00:00:00.000Z',
         },
       ];
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(validData));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(oldData));
 
       const { result } = renderHook(() => useCommandStore());
 
       await waitFor(() => {
         expect(result.current.isLoading).toBe(false);
+        expect(result.current.commands[0]?.sequence).toHaveLength(5);
       });
 
       expect(result.current.lastError).toBeNull();
-      expect(result.current.commands).toHaveLength(1);
-      expect(result.current.commands[0].sequence).toEqual(validData[0].sequence);
+      expect(result.current.commands[0].sequence).toEqual([
+        { buttons: ['melee-charge-start'] },
+        { buttons: ['melee-charge-end'] },
+        { buttons: ['sub'] },
+        { buttons: ['shot-charge-start'] },
+        { buttons: ['shot-charge-end'] },
+      ]);
     });
   });
 });

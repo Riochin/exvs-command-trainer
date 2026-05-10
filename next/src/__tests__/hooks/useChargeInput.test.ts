@@ -61,38 +61,40 @@ describe('useChargeInput', () => {
       expect(callback).toHaveBeenCalledTimes(1);
     });
 
-    it('長押し（400ms）で melee-charge コールバックが呼ばれる', () => {
+    it('長押し（300ms経過後に離す）で melee-charge-start → melee-charge-end が呼ばれる', () => {
       const { result } = renderHook(() => useChargeInput());
       const callback = vi.fn();
       act(() => { result.current.setOnInput(callback); });
 
-      const startTime = Date.now();
       act(() => {
         result.current.getChargeHandlers('melee').onPointerDown(makePointerEvent(1));
       });
-      vi.setSystemTime(startTime + 400);
+      // CHARGE_THRESHOLD_MS 経過でタイマー発火 → melee-charge-start
+      act(() => { vi.advanceTimersByTime(CHARGE_THRESHOLD_MS); });
       act(() => {
         result.current.getChargeHandlers('melee').onPointerUp(makePointerEvent(1));
       });
 
-      expect(callback).toHaveBeenCalledWith('melee-charge');
-      expect(callback).toHaveBeenCalledTimes(1);
+      expect(callback).toHaveBeenCalledTimes(2);
+      expect(callback).toHaveBeenNthCalledWith(1, 'melee-charge-start');
+      expect(callback).toHaveBeenNthCalledWith(2, 'melee-charge-end');
     });
 
-    it(`しきい値境界（${CHARGE_THRESHOLD_MS}ms）はタップ扱いで melee が呼ばれる`, () => {
+    it(`しきい値境界（${CHARGE_THRESHOLD_MS - 1}ms）はタップ扱いで melee が呼ばれる`, () => {
       const { result } = renderHook(() => useChargeInput());
       const callback = vi.fn();
       act(() => { result.current.setOnInput(callback); });
 
-      const startTime = Date.now();
       act(() => {
         result.current.getChargeHandlers('melee').onPointerDown(makePointerEvent(1));
       });
-      vi.setSystemTime(startTime + CHARGE_THRESHOLD_MS);
+      // 299ms では タイマー未発火 → タップ
+      act(() => { vi.advanceTimersByTime(CHARGE_THRESHOLD_MS - 1); });
       act(() => {
         result.current.getChargeHandlers('melee').onPointerUp(makePointerEvent(1));
       });
 
+      expect(callback).toHaveBeenCalledTimes(1);
       expect(callback).toHaveBeenCalledWith('melee');
     });
   });
@@ -115,21 +117,22 @@ describe('useChargeInput', () => {
       expect(callback).toHaveBeenCalledWith('shot');
     });
 
-    it('長押しで shot-charge コールバックが呼ばれる', () => {
+    it('長押しで shot-charge-start → shot-charge-end が呼ばれる', () => {
       const { result } = renderHook(() => useChargeInput());
       const callback = vi.fn();
       act(() => { result.current.setOnInput(callback); });
 
-      const startTime = Date.now();
       act(() => {
         result.current.getChargeHandlers('shot').onPointerDown(makePointerEvent(2));
       });
-      vi.setSystemTime(startTime + 400);
+      act(() => { vi.advanceTimersByTime(CHARGE_THRESHOLD_MS); });
       act(() => {
         result.current.getChargeHandlers('shot').onPointerUp(makePointerEvent(2));
       });
 
-      expect(callback).toHaveBeenCalledWith('shot-charge');
+      expect(callback).toHaveBeenCalledTimes(2);
+      expect(callback).toHaveBeenNthCalledWith(1, 'shot-charge-start');
+      expect(callback).toHaveBeenNthCalledWith(2, 'shot-charge-end');
     });
   });
 
@@ -261,24 +264,29 @@ describe('useChargeInput', () => {
       const callback = vi.fn();
       act(() => { result.current.setOnInput(callback); });
 
-      const startTime = Date.now();
       act(() => {
         result.current.getChargeHandlers('melee').onPointerDown(makePointerEvent(1));
         result.current.getChargeHandlers('shot').onPointerDown(makePointerEvent(2));
       });
 
-      vi.setSystemTime(startTime + 100);
+      // 100ms 経過（300ms未満）→ melee タイマーはまだ発火しない
+      act(() => { vi.advanceTimersByTime(100); });
       act(() => {
+        // melee をタップ（タイマーキャンセル → 'melee'）
         result.current.getChargeHandlers('melee').onPointerUp(makePointerEvent(1));
       });
 
-      vi.setSystemTime(startTime + 400);
+      // さらに 200ms 経過（合計 300ms）→ shot のタイマーが発火 → 'shot-charge-start'
+      act(() => { vi.advanceTimersByTime(200); });
       act(() => {
+        // shot を離す → 'shot-charge-end'
         result.current.getChargeHandlers('shot').onPointerUp(makePointerEvent(2));
       });
 
+      expect(callback).toHaveBeenCalledTimes(3);
       expect(callback).toHaveBeenNthCalledWith(1, 'melee');
-      expect(callback).toHaveBeenNthCalledWith(2, 'shot-charge');
+      expect(callback).toHaveBeenNthCalledWith(2, 'shot-charge-start');
+      expect(callback).toHaveBeenNthCalledWith(3, 'shot-charge-end');
     });
 
     it('一方を離しても他方は activeChargeButtons に残る', () => {

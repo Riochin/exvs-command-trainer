@@ -11,8 +11,6 @@ import type { ButtonType, Command } from '@/types';
 import type { ArcadePhysicalButton } from '@/features/arcade-controller/ArcadeController';
 import styles from './PracticeSession.module.css';
 
-const TIME_LIMIT = 30;
-
 /** 現在ステップの ButtonType を、アケコン上で灯す物理ボタンに展開する */
 export function practiceStepToPhysicalHighlights(stepButton: ButtonType): ArcadePhysicalButton[] {
   switch (stepButton) {
@@ -40,12 +38,13 @@ export function practiceStepToPhysicalHighlights(stepButton: ButtonType): Arcade
 export interface PracticeSessionProps {
   command: Command;
   onExit: () => void;
+  timeLimit?: number | null;
 }
 
-export function PracticeSession({ command, onExit }: PracticeSessionProps) {
+export function PracticeSession({ command, onExit, timeLimit = null }: PracticeSessionProps) {
   const { state, start, end, handleButtonPress } = usePracticeSession();
   const [controllerFeedback, setControllerFeedback] = useState<ControllerButtonState>('neutral');
-  const [timeLeft, setTimeLeft] = useState(TIME_LIMIT);
+  const [timeLeft, setTimeLeft] = useState<number | null>(timeLimit);
 
   useEffect(() => {
     start(command);
@@ -55,17 +54,17 @@ export function PracticeSession({ command, onExit }: PracticeSessionProps) {
 
   useEffect(() => {
     if (state.status === 'active') {
-      setTimeLeft(TIME_LIMIT);
+      setTimeLeft(timeLimit);
     }
-  }, [state.status]);
+  }, [state.status, timeLimit]);
 
   useEffect(() => {
-    if (state.status !== 'active') return;
+    if (timeLeft === null || state.status !== 'active') return;
     if (timeLeft <= 0) {
       end();
       return;
     }
-    const id = setTimeout(() => setTimeLeft((t) => t - 1), 1000);
+    const id = setTimeout(() => setTimeLeft((t) => (t !== null ? t - 1 : null)), 1000);
     return () => clearTimeout(id);
   }, [timeLeft, state.status, end]);
 
@@ -115,12 +114,14 @@ export function PracticeSession({ command, onExit }: PracticeSessionProps) {
             <div data-testid="attempt-counter" className={styles.attemptCounter}>
               試行: {totalAttempts} / 成功: {successCount}
             </div>
-            <div
-              data-testid="timer"
-              className={timeLeft <= 10 ? styles.timerWarning : styles.timer}
-            >
-              {timeLeft}s
-            </div>
+            {timeLeft !== null && (
+              <div
+                data-testid="timer"
+                className={timeLeft <= 10 ? styles.timerWarning : styles.timer}
+              >
+                {timeLeft}s
+              </div>
+            )}
             {state.lastResult === 'success' && <div data-testid="result-success" className={styles.resultSuccess}>SUCCESS</div>}
             {state.lastResult === 'failure' && <div data-testid="result-failure" className={styles.resultFailure}>MISS</div>}
           </div>

@@ -1,7 +1,11 @@
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { CommandHint } from '@/features/practice/CommandHint';
 import type { CommandStep } from '@/types';
+
+beforeEach(() => {
+  window.HTMLElement.prototype.scrollIntoView = vi.fn();
+});
 
 const zundaSequence: CommandStep[] = [
   { buttons: ['jump'] },

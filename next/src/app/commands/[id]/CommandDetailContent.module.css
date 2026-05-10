@@ -17,6 +17,58 @@
   overflow: hidden;
 }
 
+.startArea {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.timeLimitRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.timeLimitLabel {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: var(--letter-spacing-ui);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.toggle {
+  display: flex;
+  flex-direction: row;
+  border: var(--border-cyan);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.toggleOption {
+  padding: 0.3rem 0.9rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: var(--font-weight-heading);
+  letter-spacing: var(--letter-spacing-ui);
+  background: transparent;
+  color: var(--color-text-muted);
+  border: none;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.toggleOption:hover {
+  color: var(--color-text);
+}
+
+.toggleOptionActive {
+  background: var(--color-accent-primary);
+  color: var(--color-bg-base);
+}
+
 @media (orientation: landscape) {
   .main {
     flex-direction: row;

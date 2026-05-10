@@ -46,12 +46,55 @@
   display: flex;
 }
 
+.sequenceRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.5rem;
+}
+
 .sequencePreview {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 0.35rem;
   align-items: center;
-  min-height: 2.5rem;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+}
+
+.maxLabel {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  color: var(--color-error, #ff4560);
+  flex-shrink: 0;
+  padding: 0 0.25rem;
+}
+
+.resetButton {
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid var(--color-error, #ff4560);
+  border-radius: 0.25rem;
+  color: var(--color-error, #ff4560);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  padding: 0.2rem 0.5rem;
+  cursor: pointer;
+  transition: background var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.resetButton:hover {
+  background: rgba(255, 69, 96, 0.12);
+  box-shadow: 0 0 6px rgba(255, 69, 96, 0.4);
+}
+
+.sequencePreview::-webkit-scrollbar {
+  display: none;
 }
 
 .previewStep {
@@ -81,6 +124,10 @@
   background: rgba(255, 69, 96, 0.08);
 }
 
+.saveButtonWrapper {
+  margin-left: auto;
+}
+
 @media (orientation: landscape) {
   .form {
     flex: 1;
@@ -91,10 +138,19 @@
   .header {
     flex-direction: row;
     align-items: center;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 0.5rem;
     padding: 0.4rem 1rem;
     flex-shrink: 0;
+  }
+
+  .sequenceRow {
+    padding: 0.25rem 1rem;
+    flex-shrink: 0;
+  }
+
+  .errorAlert {
+    margin: 0 1rem;
   }
 
   .controllerArea {

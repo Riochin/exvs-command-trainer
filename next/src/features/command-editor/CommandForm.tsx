@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ArcadeController } from '@/features/arcade-controller/ArcadeController';
 import { CapsuleButton } from '@/components/CapsuleButton';
 import type { ButtonType, Command, CommandStep, StorageResult } from '@/types';
@@ -28,12 +28,22 @@ export function CommandForm({ onAdd, onSuccess }: CommandFormProps) {
   const [name, setName] = useState('');
   const [sequence, setSequence] = useState<CommandStep[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const sequencePreviewRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    const el = sequencePreviewRef.current;
+    if (el) el.scrollLeft = el.scrollWidth;
+  }, [sequence]);
+
+  const MAX_SEQUENCE = 10;
+  const isAtMax = sequence.length >= MAX_SEQUENCE;
   const isValid = mobileSuit.trim() !== '' && name.trim() !== '' && sequence.length > 0;
 
   const handleStepAdded = (step: CommandStep) => {
-    setSequence((prev) => [...prev, step]);
+    setSequence((prev) => (prev.length < MAX_SEQUENCE ? [...prev, step] : prev));
   };
+
+  const handleReset = () => setSequence([]);
 
   const handleSubmit = () => {
     const result = onAdd({ mobileSuit: mobileSuit.trim(), name: name.trim(), sequence });
@@ -68,18 +78,28 @@ export function CommandForm({ onAdd, onSuccess }: CommandFormProps) {
             className={styles.inputField}
           />
         </div>
-        <div data-testid="sequence-preview" className={styles.sequencePreview}>
+        <div className={styles.saveButtonWrapper}>
+          <CapsuleButton disabled={!isValid} onClick={handleSubmit}>
+            保存
+          </CapsuleButton>
+        </div>
+      </div>
+      <div className={styles.sequenceRow}>
+        <div ref={sequencePreviewRef} data-testid="sequence-preview" className={styles.sequencePreview}>
           {sequence.map((step, i) => (
             <span key={i} data-testid="sequence-step" className={styles.previewStep}>
               {step.buttons.map((b) => BUTTON_LABELS[b]).join('+')}
             </span>
           ))}
+          {isAtMax && <span className={styles.maxLabel}>MAX</span>}
         </div>
-        {errorMessage && <div role="alert" className={styles.errorAlert}>{errorMessage}</div>}
-        <CapsuleButton disabled={!isValid} onClick={handleSubmit}>
-          保存
-        </CapsuleButton>
+        {sequence.length > 0 && (
+          <button type="button" onClick={handleReset} className={styles.resetButton}>
+            RESET
+          </button>
+        )}
       </div>
+      {errorMessage && <div role="alert" className={styles.errorAlert}>{errorMessage}</div>}
       <div className={styles.controllerArea}>
         <ArcadeController onStepAdded={handleStepAdded} />
       </div>

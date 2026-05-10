@@ -58,6 +58,28 @@
   text-shadow: var(--glow-error);
 }
 
+.timer {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: var(--font-weight-heading);
+  letter-spacing: var(--letter-spacing-ui);
+  color: var(--color-text-muted, #7ab8cc);
+}
+
+.timerWarning {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: var(--font-weight-heading);
+  letter-spacing: var(--letter-spacing-ui);
+  color: var(--color-error, #ff4560);
+  text-shadow: var(--glow-error);
+  animation: blink 0.5s step-end infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0.4; }
+}
+
 .controllerArea {
   flex: 1;
   min-height: 0;

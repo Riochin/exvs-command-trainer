@@ -11,13 +11,17 @@ import type { ButtonType, Command } from '@/types';
 import type { ArcadePhysicalButton } from '@/features/arcade-controller/ArcadeController';
 import styles from './PracticeSession.module.css';
 
+const TIME_LIMIT = 30;
+
 /** 現在ステップの ButtonType を、アケコン上で灯す物理ボタンに展開する */
 export function practiceStepToPhysicalHighlights(stepButton: ButtonType): ArcadePhysicalButton[] {
   switch (stepButton) {
-    case 'melee-charge':
-      return ['melee'];
-    case 'shot-charge':
+    case 'shot-charge-start':
+    case 'shot-charge-end':
       return ['shot'];
+    case 'melee-charge-start':
+    case 'melee-charge-end':
+      return ['melee'];
     case 'sub':
       return ['shot', 'melee'];
     case 'special-shot':
@@ -41,12 +45,29 @@ export interface PracticeSessionProps {
 export function PracticeSession({ command, onExit }: PracticeSessionProps) {
   const { state, start, end, handleButtonPress } = usePracticeSession();
   const [controllerFeedback, setControllerFeedback] = useState<ControllerButtonState>('neutral');
+  const [timeLeft, setTimeLeft] = useState(TIME_LIMIT);
 
   useEffect(() => {
     start(command);
     // command が変わった場合だけ再開始する
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [command.id]);
+
+  useEffect(() => {
+    if (state.status === 'active') {
+      setTimeLeft(TIME_LIMIT);
+    }
+  }, [state.status]);
+
+  useEffect(() => {
+    if (state.status !== 'active') return;
+    if (timeLeft <= 0) {
+      end();
+      return;
+    }
+    const id = setTimeout(() => setTimeLeft((t) => t - 1), 1000);
+    return () => clearTimeout(id);
+  }, [timeLeft, state.status, end]);
 
   useEffect(() => {
     if (state.lastResult === 'success') {
@@ -93,6 +114,12 @@ export function PracticeSession({ command, onExit }: PracticeSessionProps) {
           <div className={styles.statsRow}>
             <div data-testid="attempt-counter" className={styles.attemptCounter}>
               試行: {totalAttempts} / 成功: {successCount}
+            </div>
+            <div
+              data-testid="timer"
+              className={timeLeft <= 10 ? styles.timerWarning : styles.timer}
+            >
+              {timeLeft}s
             </div>
             {state.lastResult === 'success' && <div data-testid="result-success" className={styles.resultSuccess}>SUCCESS</div>}
             {state.lastResult === 'failure' && <div data-testid="result-failure" className={styles.resultFailure}>MISS</div>}

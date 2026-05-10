@@ -1,11 +1,13 @@
 export type ButtonType =
   | 'shot' | 'melee' | 'jump' | 'awaken'
-  | 'shot-charge' | 'melee-charge'
+  | 'shot-charge-start' | 'shot-charge-end'
+  | 'melee-charge-start' | 'melee-charge-end'
   | 'sub' | 'special-shot' | 'special-melee';
 
 const VALID_BUTTON_TYPES = new Set<string>([
   'shot', 'melee', 'jump', 'awaken',
-  'shot-charge', 'melee-charge',
+  'shot-charge-start', 'shot-charge-end',
+  'melee-charge-start', 'melee-charge-end',
   'sub', 'special-shot', 'special-melee',
 ]);
 

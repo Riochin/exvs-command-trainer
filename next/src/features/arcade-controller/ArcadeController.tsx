@@ -88,6 +88,7 @@ export function ArcadeController({
     getChargeHandlers,
     setOnInput,
     getHeldChargeableSync,
+    getChargingSync,
     suppressChainedOutputForChargeableButton,
     cancelDeferredSoloEmitForChordPartner,
     cancelAllDeferredSoloEmits,
@@ -128,11 +129,13 @@ export function ArcadeController({
   const syncChordInputs = useCallback(() => {
     const ch = getHeldChargeableSync();
     const ctrl = getHeldButtonsSync();
+    const charging = getChargingSync();
     const cb = inputHandlerRef.current;
 
-    const subCombo = ch.has('shot') && ch.has('melee');
-    const specialShotCombo = ch.has('shot') && ctrl.has('jump');
-    const specialMeleeCombo = ch.has('melee') && ctrl.has('jump');
+    // チャージ中のボタンを含むコードは検出しない
+    const subCombo = ch.has('shot') && ch.has('melee') && !charging.has('shot') && !charging.has('melee');
+    const specialShotCombo = ch.has('shot') && ctrl.has('jump') && !charging.has('shot');
+    const specialMeleeCombo = ch.has('melee') && ctrl.has('jump') && !charging.has('melee');
 
     if (!cb) {
       subComboPrevRef.current = subCombo;
@@ -167,6 +170,7 @@ export function ArcadeController({
   }, [
     getHeldChargeableSync,
     getHeldButtonsSync,
+    getChargingSync,
     suppressChainedOutputForChargeableButton,
     cancelAllDeferredSoloEmits,
   ]);
@@ -202,9 +206,12 @@ export function ArcadeController({
         getButtonHandlers('jump', { suppressCallbackOnPointerDown: true }).onPointerDown(event);
         syncChordInputs();
 
+        const charging = getChargingSync();
         const shotHeld = getHeldChargeableSync().has('shot');
         const meleeHeld = getHeldChargeableSync().has('melee');
-        if (shotHeld || meleeHeld) {
+        // タップウィンドウ中（チャージ未確定）のボタンと同時押しになりうるときだけ solo timer をスキップ
+        const chordPossible = (shotHeld && !charging.has('shot')) || (meleeHeld && !charging.has('melee'));
+        if (chordPossible) {
           clearSoloJumpSchedule();
           return;
         }
@@ -214,9 +221,12 @@ export function ArcadeController({
         soloJumpTimerRef.current = setTimeout(() => {
           soloJumpTimerRef.current = null;
           const ch = getHeldChargeableSync();
+          const currentCharging = getChargingSync();
           const ctrl = getHeldButtonsSync();
           if (!inputHandlerRef.current || !ctrl.has('jump')) return;
-          if (ch.size > 0) return;
+          // タップウィンドウ中のボタンがあれば chord を待つ（チャージ中は除く）
+          const uncharged = [...ch].filter((b) => !currentCharging.has(b));
+          if (uncharged.length > 0) return;
           jumpSoloEmittedPointerIdsRef.current.add(pid);
           inputHandlerRef.current('jump');
         }, SIMULTANEOUS_INPUT_DEFER_MS);
@@ -251,6 +261,7 @@ export function ArcadeController({
     getButtonHandlers,
     getHeldChargeableSync,
     getHeldButtonsSync,
+    getChargingSync,
     syncChordInputs,
     clearSoloJumpSchedule,
     cancelDeferredSoloEmitForChordPartner,

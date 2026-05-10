@@ -6,6 +6,28 @@ import type { Command, StorageError, StorageResult } from '@/types';
 const COMMANDS_KEY = 'ct_commands';
 const LOGS_KEY = 'ct_practice_logs';
 
+function migrateOldChargeTypes(commands: Command[]): Command[] {
+  return commands.map((cmd) => ({
+    ...cmd,
+    sequence: cmd.sequence.flatMap((step) => {
+      const buttons = step.buttons as unknown as string[];
+      if (buttons.includes('shot-charge')) {
+        return [
+          { buttons: ['shot-charge-start'] as Command['sequence'][number]['buttons'] },
+          { buttons: ['shot-charge-end'] as Command['sequence'][number]['buttons'] },
+        ];
+      }
+      if (buttons.includes('melee-charge')) {
+        return [
+          { buttons: ['melee-charge-start'] as Command['sequence'][number]['buttons'] },
+          { buttons: ['melee-charge-end'] as Command['sequence'][number]['buttons'] },
+        ];
+      }
+      return [step];
+    }),
+  }));
+}
+
 export interface UseCommandStoreReturn {
   commands: Command[];
   isLoading: boolean;
@@ -25,13 +47,24 @@ export function useCommandStore(): UseCommandStoreReturn {
 
   useEffect(() => {
     if (isLoading) return;
+
+    const needsMigration = commands.some((cmd) =>
+      cmd.sequence.some((step) =>
+        (step.buttons as unknown as string[]).some((b) => b === 'shot-charge' || b === 'melee-charge'),
+      ),
+    );
+    if (needsMigration) {
+      setValue(migrateOldChargeTypes(commands));
+      return;
+    }
+
     const hasInvalidButtonType = commands.some((cmd) =>
       cmd.sequence.some((step) => step.buttons.some((b) => !isButtonType(b))),
     );
     if (hasInvalidButtonType) {
       setLastError({ type: 'parse_error', message: '不正な ButtonType が保存データに含まれています' });
     }
-  }, [commands, isLoading]);
+  }, [commands, isLoading, setValue]);
 
   // setValue は localStorage を即時書き込むため、次の同期呼び出しで最新値を読める
   const readCurrentCommands = useCallback((): Command[] => {

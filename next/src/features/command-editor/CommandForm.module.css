@@ -50,7 +50,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  height: 2.5rem;
+  min-height: 2.5rem;
 }
 
 .sequencePreview {
@@ -111,6 +111,8 @@
   letter-spacing: 0.04em;
   color: var(--color-accent-primary, #4fc8e8);
   text-align: center;
+  white-space: pre-line;
+  line-height: 1.3;
   padding: 0.1rem;
 }
 

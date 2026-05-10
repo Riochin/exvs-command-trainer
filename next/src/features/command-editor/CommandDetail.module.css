@@ -66,6 +66,7 @@
   letter-spacing: 0.04em;
   color: var(--color-text, #e8f4f8);
   line-height: 1.2;
+  white-space: pre-line;
   word-break: keep-all;
 }
 

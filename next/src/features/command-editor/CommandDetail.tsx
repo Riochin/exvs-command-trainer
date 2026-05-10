@@ -6,8 +6,15 @@ import styles from './CommandDetail.module.css';
 const BUTTON_LABELS: Record<string, string> = {
   shot: '射撃',
   melee: '格闘',
-  jump: 'ジャンプ',
+  jump: 'ジャ\nンプ',
   awaken: '覚醒',
+  'shot-charge-start': '射CS\n開始',
+  'shot-charge-end': '射CS\n終わり',
+  'melee-charge-start': '格CS\n開始',
+  'melee-charge-end': '格CS\n終わり',
+  sub: 'サブ',
+  'special-shot': '特射',
+  'special-melee': '特格',
 };
 
 export interface CommandDetailProps {

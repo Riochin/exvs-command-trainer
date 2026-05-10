@@ -20,6 +20,29 @@ const BUTTON_LABELS: Record<ButtonType, string> = {
   'special-melee': '特格',
 };
 
+type PreviewItem =
+  | { kind: 'step'; index: number }
+  | { kind: 'pair'; startIndex: number; label: string };
+
+function buildPreviewItems(sequence: CommandStep[]): PreviewItem[] {
+  const items: PreviewItem[] = [];
+  let i = 0;
+  while (i < sequence.length) {
+    const btn = sequence[i].buttons[0];
+    if (btn === 'shot-charge-start' && sequence[i + 1]?.buttons[0] === 'shot-charge-end') {
+      items.push({ kind: 'pair', startIndex: i, label: '射CS' });
+      i += 2;
+    } else if (btn === 'melee-charge-start' && sequence[i + 1]?.buttons[0] === 'melee-charge-end') {
+      items.push({ kind: 'pair', startIndex: i, label: '格CS' });
+      i += 2;
+    } else {
+      items.push({ kind: 'step', index: i });
+      i += 1;
+    }
+  }
+  return items;
+}
+
 export interface CommandFormProps {
   onAdd: (input: Omit<Command, 'id' | 'createdAt'>) => StorageResult<Command>;
   onSuccess: () => void;
@@ -37,7 +60,7 @@ export function CommandForm({ onAdd, onSuccess }: CommandFormProps) {
     if (el) el.scrollLeft = el.scrollWidth;
   }, [sequence]);
 
-  const MAX_SEQUENCE = 10;
+  const MAX_SEQUENCE = 20;
   const isAtMax = sequence.length >= MAX_SEQUENCE;
   const isValid = mobileSuit.trim() !== '' && name.trim() !== '' && sequence.length > 0;
 
@@ -88,11 +111,17 @@ export function CommandForm({ onAdd, onSuccess }: CommandFormProps) {
       </div>
       <div className={styles.sequenceRow}>
         <div ref={sequencePreviewRef} data-testid="sequence-preview" className={styles.sequencePreview}>
-          {sequence.map((step, i) => (
-            <span key={i} data-testid="sequence-step" className={styles.previewStep}>
-              {step.buttons.map((b) => BUTTON_LABELS[b]).join('+')}
-            </span>
-          ))}
+          {buildPreviewItems(sequence).map((item, i) =>
+            item.kind === 'pair' ? (
+              <span key={i} data-testid="sequence-step" className={styles.previewStep}>
+                {item.label}
+              </span>
+            ) : (
+              <span key={i} data-testid="sequence-step" className={styles.previewStep}>
+                {sequence[item.index].buttons.map((b) => BUTTON_LABELS[b]).join('+')}
+              </span>
+            ),
+          )}
           {isAtMax && <span className={styles.maxLabel}>MAX</span>}
         </div>
         <button

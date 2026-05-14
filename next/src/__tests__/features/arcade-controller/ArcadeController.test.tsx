@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { ArcadeController, SIMULTANEOUS_INPUT_DEFER_MS } from '@/features/arcade-controller/ArcadeController';
+import { ArcadeController, SIMULTANEOUS_INPUT_DEFER_MS, BD_WINDOW_MS } from '@/features/arcade-controller/ArcadeController';
 import { CHARGE_THRESHOLD_MS } from '@/hooks/useChargeInput';
 
 describe('ArcadeController', () => {
@@ -46,12 +46,15 @@ describe('ArcadeController', () => {
     });
 
     it('ジャンプのタップで onButtonPress が "jump" で呼ばれる', () => {
+      vi.useFakeTimers();
       const onButtonPress = vi.fn();
       render(<ArcadeController onButtonPress={onButtonPress} />);
       const jump = screen.getByText('ジャンプ').closest('button')!;
       fireEvent.pointerDown(jump, { pointerId: 1 });
       fireEvent.pointerUp(jump, { pointerId: 1 });
+      act(() => { vi.advanceTimersByTime(BD_WINDOW_MS + 10); });
       expect(onButtonPress).toHaveBeenCalledWith('jump');
+      vi.useRealTimers();
     });
 
     it('ジャンプ→格闘の順でも onButtonPress は "special-melee" のみ（先行ジャンプ誤検知しない）', () => {
@@ -163,12 +166,15 @@ describe('ArcadeController', () => {
       });
 
       it('i の keyDown→keyUp で onButtonPress が "jump" で1回だけ呼ばれる', () => {
+        vi.useFakeTimers();
         const onButtonPress = vi.fn();
         render(<ArcadeController onButtonPress={onButtonPress} />);
         fireEvent.keyDown(window, { key: 'i' });
         fireEvent.keyUp(window, { key: 'i' });
+        act(() => { vi.advanceTimersByTime(BD_WINDOW_MS + 10); });
         expect(onButtonPress).toHaveBeenCalledTimes(1);
         expect(onButtonPress).toHaveBeenCalledWith('jump');
+        vi.useRealTimers();
       });
 
       it('大文字 F でも射撃として扱う', () => {
@@ -188,12 +194,15 @@ describe('ArcadeController', () => {
 
   describe('onStepAdded モード（登録モード）', () => {
     it('ボタン押下で onStepAdded が CommandStep として呼ばれる', () => {
+      vi.useFakeTimers();
       const onStepAdded = vi.fn();
       render(<ArcadeController onStepAdded={onStepAdded} />);
       const jump = screen.getByText('ジャンプ').closest('button')!;
       fireEvent.pointerDown(jump, { pointerId: 1 });
       fireEvent.pointerUp(jump, { pointerId: 1 });
+      act(() => { vi.advanceTimersByTime(BD_WINDOW_MS + 10); });
       expect(onStepAdded).toHaveBeenCalledWith({ buttons: ['jump'] });
+      vi.useRealTimers();
     });
 
     it('サブ同時押しで onStepAdded が { buttons: ["sub"] } で呼ばれる', () => {
@@ -221,14 +230,17 @@ describe('ArcadeController', () => {
     });
 
     it('onButtonPress と onStepAdded の両方が渡された場合、onButtonPress が優先される', () => {
+      vi.useFakeTimers();
       const onButtonPress = vi.fn();
       const onStepAdded = vi.fn();
       render(<ArcadeController onButtonPress={onButtonPress} onStepAdded={onStepAdded} />);
       const jump = screen.getByText('ジャンプ').closest('button')!;
       fireEvent.pointerDown(jump, { pointerId: 1 });
       fireEvent.pointerUp(jump, { pointerId: 1 });
+      act(() => { vi.advanceTimersByTime(BD_WINDOW_MS + 10); });
       expect(onButtonPress).toHaveBeenCalledWith('jump');
       expect(onStepAdded).not.toHaveBeenCalled();
+      vi.useRealTimers();
     });
   });
 
@@ -298,6 +310,109 @@ describe('ArcadeController', () => {
         fireEvent.pointerDown(meleeEl, { pointerId: 2 });
       });
       expect(meleeEl.getAttribute('aria-pressed')).toBe('true');
+    });
+  });
+
+  describe('BD（ブーストダッシュ）検出', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('BD_WINDOW_MS 以内の2連打で "bd" が発火する', () => {
+      const onButtonPress = vi.fn();
+      render(<ArcadeController onButtonPress={onButtonPress} />);
+      const jump = screen.getByText('ジャンプ').closest('button')!;
+
+      fireEvent.pointerDown(jump, { pointerId: 1 });
+      fireEvent.pointerUp(jump, { pointerId: 1 });
+
+      act(() => { vi.advanceTimersByTime(100); }); // BD_WINDOW_MS より短い (200ms)
+
+      fireEvent.pointerDown(jump, { pointerId: 1 });
+      fireEvent.pointerUp(jump, { pointerId: 1 });
+
+      expect(onButtonPress).toHaveBeenCalledWith('bd');
+    });
+
+    it('BD_WINDOW_MS 以内の2連打では "jump" は発火しない', () => {
+      const onButtonPress = vi.fn();
+      render(<ArcadeController onButtonPress={onButtonPress} />);
+      const jump = screen.getByText('ジャンプ').closest('button')!;
+
+      fireEvent.pointerDown(jump, { pointerId: 1 });
+      fireEvent.pointerUp(jump, { pointerId: 1 });
+
+      act(() => { vi.advanceTimersByTime(100); });
+
+      fireEvent.pointerDown(jump, { pointerId: 1 });
+      fireEvent.pointerUp(jump, { pointerId: 1 });
+
+      expect(onButtonPress).not.toHaveBeenCalledWith('jump');
+    });
+
+    it('単押し後に BD_WINDOW_MS が経過すると "jump" が発火する', () => {
+      const onButtonPress = vi.fn();
+      render(<ArcadeController onButtonPress={onButtonPress} />);
+      const jump = screen.getByText('ジャンプ').closest('button')!;
+
+      fireEvent.pointerDown(jump, { pointerId: 1 });
+      fireEvent.pointerUp(jump, { pointerId: 1 });
+
+      act(() => { vi.advanceTimersByTime(BD_WINDOW_MS - 10); });
+      expect(onButtonPress).not.toHaveBeenCalled();
+
+      act(() => { vi.advanceTimersByTime(20); }); // 合計 > BD_WINDOW_MS
+      expect(onButtonPress).toHaveBeenCalledWith('jump');
+    });
+
+    it('単押しでは "bd" は発火しない', () => {
+      const onButtonPress = vi.fn();
+      render(<ArcadeController onButtonPress={onButtonPress} />);
+      const jump = screen.getByText('ジャンプ').closest('button')!;
+
+      fireEvent.pointerDown(jump, { pointerId: 1 });
+      fireEvent.pointerUp(jump, { pointerId: 1 });
+
+      act(() => { vi.advanceTimersByTime(BD_WINDOW_MS + 50); });
+
+      expect(onButtonPress).not.toHaveBeenCalledWith('bd');
+    });
+
+    it('BD_WINDOW_MS を超えた間隔の2連打では "jump" が2回発火する', () => {
+      const onButtonPress = vi.fn();
+      render(<ArcadeController onButtonPress={onButtonPress} />);
+      const jump = screen.getByText('ジャンプ').closest('button')!;
+
+      fireEvent.pointerDown(jump, { pointerId: 1 });
+      fireEvent.pointerUp(jump, { pointerId: 1 });
+      act(() => { vi.advanceTimersByTime(BD_WINDOW_MS + 50); }); // 1回目 jump 確定
+
+      fireEvent.pointerDown(jump, { pointerId: 1 });
+      fireEvent.pointerUp(jump, { pointerId: 1 });
+      act(() => { vi.advanceTimersByTime(BD_WINDOW_MS + 50); }); // 2回目 jump 確定
+
+      expect(onButtonPress).toHaveBeenCalledTimes(2);
+      expect(onButtonPress).toHaveBeenCalledWith('jump');
+    });
+
+    it('BD_WINDOW_MS を超えた間隔の2連打では "bd" は発火しない', () => {
+      const onButtonPress = vi.fn();
+      render(<ArcadeController onButtonPress={onButtonPress} />);
+      const jump = screen.getByText('ジャンプ').closest('button')!;
+
+      fireEvent.pointerDown(jump, { pointerId: 1 });
+      fireEvent.pointerUp(jump, { pointerId: 1 });
+      act(() => { vi.advanceTimersByTime(BD_WINDOW_MS + 50); });
+
+      fireEvent.pointerDown(jump, { pointerId: 1 });
+      fireEvent.pointerUp(jump, { pointerId: 1 });
+      act(() => { vi.advanceTimersByTime(BD_WINDOW_MS + 50); });
+
+      expect(onButtonPress).not.toHaveBeenCalledWith('bd');
     });
   });
 

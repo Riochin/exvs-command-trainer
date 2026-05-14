@@ -2,6 +2,7 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { CommandForm } from '@/features/command-editor/CommandForm';
 import { flushChargeDeferredInput } from '@/__tests__/utils/flushChargeDeferredInput';
+import { flushBdDetection } from '@/__tests__/utils/flushBdDetection';
 import type { CommandStep, StorageResult, Command } from '@/types';
 
 const makeAddCommand = (result: StorageResult<Command> = { ok: true, value: { id: '1', mobileSuit: 'ν', name: 'test', sequence: [{ buttons: ['shot'] }], createdAt: '' } }) =>
@@ -67,6 +68,7 @@ describe('CommandForm', () => {
         fireEvent.pointerDown(screen.getByText('ジャンプ'));
         fireEvent.pointerUp(screen.getByText('ジャンプ'));
       });
+      await flushBdDetection();
       expect(screen.getByTestId('sequence-preview')).toBeTruthy();
       expect(screen.getByTestId('sequence-preview').textContent).toContain('ジャ');
     });
@@ -77,6 +79,7 @@ describe('CommandForm', () => {
         fireEvent.pointerDown(screen.getByText('ジャンプ'));
         fireEvent.pointerUp(screen.getByText('ジャンプ'));
       });
+      await flushBdDetection();
       await act(async () => {
         fireEvent.pointerDown(screen.getByText('射撃'));
         fireEvent.pointerUp(screen.getByText('射撃'));

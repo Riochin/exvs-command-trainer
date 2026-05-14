@@ -2,12 +2,14 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { PracticeSession } from '@/features/practice/PracticeSession';
 import { flushChargeDeferredInput } from '@/__tests__/utils/flushChargeDeferredInput';
+import { flushBdDetection } from '@/__tests__/utils/flushBdDetection';
 import type { Command } from '@/types';
 
-const zundaCommand: Command = {
-  id: 'cmd-zunda',
+// ジャンプ→ジャンプ→射撃 の順で入力するコマンド（ズンダは BD→射撃→BD）
+const jumpJumpShotCommand: Command = {
+  id: 'cmd-jjs',
   mobileSuit: 'ストライクフリーダム',
-  name: 'ズンダ',
+  name: 'ジャンプ→ジャンプ→射撃',
   sequence: [
     { buttons: ['jump'] },
     { buttons: ['jump'] },
@@ -24,15 +26,18 @@ async function pressControllerButton(label: string) {
   if (label === '射撃' || label === '格闘') {
     await flushChargeDeferredInput();
   }
+  if (label === 'ジャンプ') {
+    await flushBdDetection();
+  }
 }
 
-describe('ズンダコマンド練習 E2E テスト', () => {
+describe('ジャンプ→ジャンプ→射撃コマンド練習 E2E テスト', () => {
   beforeEach(() => {
     localStorage.clear();
   });
 
   it('ジャンプ→ジャンプ→射撃の順で入力すると成功判定される', async () => {
-    render(<PracticeSession command={zundaCommand} onExit={() => {}} />);
+    render(<PracticeSession command={jumpJumpShotCommand} onExit={() => {}} />);
     await pressControllerButton('ジャンプ');
     await pressControllerButton('ジャンプ');
     await pressControllerButton('射撃');
@@ -40,7 +45,7 @@ describe('ズンダコマンド練習 E2E テスト', () => {
   });
 
   it('練習終了後のサマリで 1 回成功したとき成功率 100% が表示される', async () => {
-    render(<PracticeSession command={zundaCommand} onExit={() => {}} />);
+    render(<PracticeSession command={jumpJumpShotCommand} onExit={() => {}} />);
 
     await pressControllerButton('ジャンプ');
     await pressControllerButton('ジャンプ');
@@ -53,7 +58,7 @@ describe('ズンダコマンド練習 E2E テスト', () => {
   });
 
   it('2 回試行（成功1・失敗1）後のサマリで成功率 50% と試行数が正しく表示される', async () => {
-    render(<PracticeSession command={zundaCommand} onExit={() => {}} />);
+    render(<PracticeSession command={jumpJumpShotCommand} onExit={() => {}} />);
 
     // 1回目: 成功
     await pressControllerButton('ジャンプ');
@@ -70,7 +75,7 @@ describe('ズンダコマンド練習 E2E テスト', () => {
   });
 
   it('練習ログが ct_practice_logs に成功として記録される', async () => {
-    render(<PracticeSession command={zundaCommand} onExit={() => {}} />);
+    render(<PracticeSession command={jumpJumpShotCommand} onExit={() => {}} />);
 
     await pressControllerButton('ジャンプ');
     await pressControllerButton('ジャンプ');
@@ -79,13 +84,13 @@ describe('ズンダコマンド練習 E2E テスト', () => {
     const raw = localStorage.getItem('ct_practice_logs');
     expect(raw).not.toBeNull();
     const logs = JSON.parse(raw!) as Record<string, { attempts: { success: boolean }[] }>;
-    expect(logs['cmd-zunda']).toBeDefined();
-    expect(logs['cmd-zunda'].attempts).toHaveLength(1);
-    expect(logs['cmd-zunda'].attempts[0].success).toBe(true);
+    expect(logs['cmd-jjs']).toBeDefined();
+    expect(logs['cmd-jjs'].attempts).toHaveLength(1);
+    expect(logs['cmd-jjs'].attempts[0].success).toBe(true);
   });
 
   it('失敗後も練習ログが ct_practice_logs に記録される', async () => {
-    render(<PracticeSession command={zundaCommand} onExit={() => {}} />);
+    render(<PracticeSession command={jumpJumpShotCommand} onExit={() => {}} />);
 
     // 射撃で始める（最初のステップは ジャンプ）→ 失敗
     await pressControllerButton('射撃');
@@ -93,11 +98,11 @@ describe('ズンダコマンド練習 E2E テスト', () => {
     const raw = localStorage.getItem('ct_practice_logs');
     expect(raw).not.toBeNull();
     const logs = JSON.parse(raw!) as Record<string, { attempts: { success: boolean }[] }>;
-    expect(logs['cmd-zunda'].attempts[0].success).toBe(false);
+    expect(logs['cmd-jjs'].attempts[0].success).toBe(false);
   });
 
   it('「もう一度」でセッションを再開するとカウンタがリセットされ再練習できる', async () => {
-    render(<PracticeSession command={zundaCommand} onExit={() => {}} />);
+    render(<PracticeSession command={jumpJumpShotCommand} onExit={() => {}} />);
 
     // 1回目成功
     await pressControllerButton('ジャンプ');

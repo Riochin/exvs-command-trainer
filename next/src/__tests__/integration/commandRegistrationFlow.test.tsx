@@ -4,6 +4,7 @@ import { useCommandStore } from '@/hooks/useCommandStore';
 import { CommandForm } from '@/features/command-editor/CommandForm';
 import { CommandList } from '@/features/command-editor/CommandList';
 import { flushChargeDeferredInput } from '@/__tests__/utils/flushChargeDeferredInput';
+import { flushBdDetection } from '@/__tests__/utils/flushBdDetection';
 import type { Command } from '@/types';
 
 // 実フックに接続したラッパーコンポーネント
@@ -33,10 +34,12 @@ describe('コマンド登録フロー 統合テスト', () => {
         fireEvent.pointerDown(screen.getByRole('button', { name: 'ジャンプ' }));
         fireEvent.pointerUp(screen.getByRole('button', { name: 'ジャンプ' }));
       });
+      await flushBdDetection();
       await act(async () => {
         fireEvent.pointerDown(screen.getByRole('button', { name: 'ジャンプ' }));
         fireEvent.pointerUp(screen.getByRole('button', { name: 'ジャンプ' }));
       });
+      await flushBdDetection();
       await act(async () => {
         fireEvent.pointerDown(screen.getByRole('button', { name: '射撃' }));
         fireEvent.pointerUp(screen.getByRole('button', { name: '射撃' }));

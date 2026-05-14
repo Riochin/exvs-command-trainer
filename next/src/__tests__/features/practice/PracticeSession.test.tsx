@@ -2,6 +2,7 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { PracticeSession, practiceStepToPhysicalHighlights } from '@/features/practice/PracticeSession';
 import { flushChargeDeferredInput } from '@/__tests__/utils/flushChargeDeferredInput';
+import { flushBdDetection } from '@/__tests__/utils/flushBdDetection';
 import type { Command } from '@/types';
 
 const zundaCommand: Command = {
@@ -53,10 +54,12 @@ describe('PracticeSession', () => {
         fireEvent.pointerDown(getControllerButton('ジャンプ'));
         fireEvent.pointerUp(getControllerButton('ジャンプ'));
       });
+      await flushBdDetection();
       await act(async () => {
         fireEvent.pointerDown(getControllerButton('ジャンプ'));
         fireEvent.pointerUp(getControllerButton('ジャンプ'));
       });
+      await flushBdDetection();
       await act(async () => {
         fireEvent.pointerDown(getControllerButton('射撃'));
         fireEvent.pointerUp(getControllerButton('射撃'));
@@ -81,10 +84,12 @@ describe('PracticeSession', () => {
         fireEvent.pointerDown(getControllerButton('ジャンプ'));
         fireEvent.pointerUp(getControllerButton('ジャンプ'));
       });
+      await flushBdDetection();
       await act(async () => {
         fireEvent.pointerDown(getControllerButton('ジャンプ'));
         fireEvent.pointerUp(getControllerButton('ジャンプ'));
       });
+      await flushBdDetection();
       await act(async () => {
         fireEvent.pointerDown(getControllerButton('射撃'));
         fireEvent.pointerUp(getControllerButton('射撃'));
@@ -171,10 +176,12 @@ describe('PracticeSession', () => {
         fireEvent.pointerDown(getControllerButton('ジャンプ'));
         fireEvent.pointerUp(getControllerButton('ジャンプ'));
       });
+      await flushBdDetection();
       await act(async () => {
         fireEvent.pointerDown(getControllerButton('ジャンプ'));
         fireEvent.pointerUp(getControllerButton('ジャンプ'));
       });
+      await flushBdDetection();
       await act(async () => {
         fireEvent.pointerDown(getControllerButton('射撃'));
         fireEvent.pointerUp(getControllerButton('射撃'));

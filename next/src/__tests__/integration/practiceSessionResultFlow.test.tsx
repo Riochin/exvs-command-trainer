@@ -2,6 +2,7 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { PracticeSession } from '@/features/practice/PracticeSession';
 import { flushChargeDeferredInput } from '@/__tests__/utils/flushChargeDeferredInput';
+import { flushBdDetection } from '@/__tests__/utils/flushBdDetection';
 import type { Command } from '@/types';
 
 const shotCommand: Command = {
@@ -25,7 +26,11 @@ async function pressControllerButton(label: string) {
     fireEvent.pointerDown(screen.getByRole('button', { name: label }));
     fireEvent.pointerUp(screen.getByRole('button', { name: label }));
   });
-  await flushChargeDeferredInput();
+  if (label === 'ジャンプ') {
+    await flushBdDetection();
+  } else {
+    await flushChargeDeferredInput();
+  }
 }
 
 describe('練習セッション結果フロー 統合テスト', () => {

@@ -13,6 +13,9 @@ export type ArcadePhysicalButton = 'shot' | 'melee' | 'jump';
 /** 同時押し判定用の短い遅延（ジャンプ単独／射撃・格闘の tap・charge を、相手ボタンが続く場合に誤発火しないため） */
 export const SIMULTANEOUS_INPUT_DEFER_MS = 50;
 
+/** BD（ブーストダッシュ）判定ウィンドウ。この時間内に2回ジャンプを押すと 'bd' として検出する */
+export const BD_WINDOW_MS = 150;
+
 const BUTTONS = ['shot', 'melee', 'jump'] as const satisfies readonly ArcadePhysicalButton[];
 
 /** PC デバッグ用キー（f/y/i）。実ポインターと衝突しない負の ID。 */
@@ -104,11 +107,26 @@ export function ArcadeController({
   const jumpChordConsumedRef = useRef(false);
   /** 遅延タイマーで既に jump を出したポインター（長押し後の離しで二重にしない） */
   const jumpSoloEmittedPointerIdsRef = useRef<Set<number>>(new Set());
+  /** BD 判定中の保留タイマー — 非null なら1回目 jump が待機中 */
+  const bdPendingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const clearSoloJumpSchedule = useCallback(() => {
     if (soloJumpTimerRef.current !== null) {
       clearTimeout(soloJumpTimerRef.current);
       soloJumpTimerRef.current = null;
+    }
+  }, []);
+
+  const emitJumpOrBd = useCallback(() => {
+    if (bdPendingTimerRef.current !== null) {
+      clearTimeout(bdPendingTimerRef.current);
+      bdPendingTimerRef.current = null;
+      inputHandlerRef.current?.('bd');
+    } else {
+      bdPendingTimerRef.current = setTimeout(() => {
+        bdPendingTimerRef.current = null;
+        inputHandlerRef.current?.('jump');
+      }, BD_WINDOW_MS);
     }
   }, []);
 
@@ -123,6 +141,7 @@ export function ArcadeController({
   useEffect(() => {
     return () => {
       if (soloJumpTimerRef.current) clearTimeout(soloJumpTimerRef.current);
+      if (bdPendingTimerRef.current) clearTimeout(bdPendingTimerRef.current);
     };
   }, []);
 
@@ -228,7 +247,7 @@ export function ArcadeController({
           const uncharged = [...ch].filter((b) => !currentCharging.has(b));
           if (uncharged.length > 0) return;
           jumpSoloEmittedPointerIdsRef.current.add(pid);
-          inputHandlerRef.current('jump');
+          emitJumpOrBd();
         }, SIMULTANEOUS_INPUT_DEFER_MS);
       },
       onPointerUp(event: React.PointerEvent<HTMLElement>) {
@@ -245,7 +264,7 @@ export function ArcadeController({
           syncChordInputs();
           return;
         }
-        inputHandlerRef.current?.('jump');
+        emitJumpOrBd();
         getButtonHandlers('jump').onPointerUp(event);
         syncChordInputs();
       },
@@ -265,6 +284,7 @@ export function ArcadeController({
     syncChordInputs,
     clearSoloJumpSchedule,
     cancelDeferredSoloEmitForChordPartner,
+    emitJumpOrBd,
   ]);
 
   const getHandlers = useCallback(

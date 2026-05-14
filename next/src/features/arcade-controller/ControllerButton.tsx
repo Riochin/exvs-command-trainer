@@ -8,6 +8,7 @@ const BUTTON_LABELS: Record<ButtonType, string> = {
   shot: '射撃',
   melee: '格闘',
   jump: 'ジャンプ',
+  bd: 'BD',
   awaken: '覚醒',
   'shot-charge-start': '射撃チャージ開始',
   'shot-charge-end': '射撃チャージ終わり',

@@ -29,6 +29,13 @@ export function HamburgerMenu() {
         {open && (
           <nav className={styles.menu} aria-label="メインメニュー">
             <Link
+              href="/"
+              className={`${styles.item} ${pathname === '/' ? styles.active : ''}`}
+              onClick={close}
+            >
+              フリー練習
+            </Link>
+            <Link
               href="/commands/new"
               className={`${styles.item} ${pathname === '/commands/new' ? styles.active : ''}`}
               onClick={close}

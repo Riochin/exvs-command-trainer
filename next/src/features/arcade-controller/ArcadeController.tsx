@@ -14,7 +14,7 @@ export type ArcadePhysicalButton = 'shot' | 'melee' | 'jump';
 export const SIMULTANEOUS_INPUT_DEFER_MS = 50;
 
 /** BD（ブーストダッシュ）判定ウィンドウ。この時間内に2回ジャンプを押すと 'bd' として検出する */
-export const BD_WINDOW_MS = 150;
+export const BD_WINDOW_MS = 175;
 
 const BUTTONS = ['shot', 'melee', 'jump'] as const satisfies readonly ArcadePhysicalButton[];
 

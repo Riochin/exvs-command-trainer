@@ -15,7 +15,7 @@ export default function CommandsPage() {
     <LandscapeGuard>
       <main className={styles.page}>
         <header className={styles.header}>
-          <h1>EXVS2 コマンド練習アプリ</h1>
+          <h1>EXVSコマンド道場</h1>
           <CapsuleButton href="/commands/new">コマンドを登録する</CapsuleButton>
         </header>
         {commands.length === 0 ? (

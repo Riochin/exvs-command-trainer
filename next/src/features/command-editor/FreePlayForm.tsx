@@ -61,7 +61,7 @@ export function FreePlayForm() {
   return (
     <div className={styles.form}>
       <header className={styles.header}>
-        <h1 className={styles.title}>EXVS2 コマンド練習アプリ</h1>
+        <h1 className={styles.title}>EXVSコマンド道場</h1>
       </header>
       <div className={styles.sequenceRow}>
         <div ref={sequencePreviewRef} data-testid="sequence-preview" className={styles.sequencePreview}>

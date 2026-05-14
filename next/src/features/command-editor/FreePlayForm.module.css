@@ -3,6 +3,23 @@
   flex-direction: column;
 }
 
+.header {
+  padding: 0.4rem 1rem;
+  border-bottom: var(--border-cyan);
+  background-color: var(--color-bg-mid);
+  flex-shrink: 0;
+}
+
+.title {
+  font-family: var(--font-mono);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: var(--letter-spacing-ui);
+  color: var(--color-accent-primary);
+  text-shadow: var(--glow-cyan-sm);
+  margin: 0;
+}
+
 .sequenceRow {
   display: flex;
   align-items: center;

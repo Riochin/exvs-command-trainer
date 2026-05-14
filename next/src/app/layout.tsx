@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { BackToHomeNav } from "@/components/BackToHomeNav";
 import { HamburgerMenu } from "@/components/HamburgerMenu";
 import "./globals.css";
+import Script from "next/script";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -48,6 +49,20 @@ export default function RootLayout({
   return (
     <html lang="ja" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body>
+        {/* Google Analytics */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-3YHP7ZY4XV"
+          strategy="afterInteractive"
+        />
+        <Script id="ga-gtag" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-3YHP7ZY4XV');
+          `}
+        </Script>
+
         <HamburgerMenu />
         <BackToHomeNav />
         {children}

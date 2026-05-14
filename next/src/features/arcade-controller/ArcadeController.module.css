@@ -3,17 +3,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: calc(var(--btn-size) * 0.25);
+  gap: calc(var(--btn-size) * 0.1);
   padding: calc(var(--btn-size) * 0.5) calc(var(--btn-size) * 0.3);
   background: var(--color-bg-card, rgba(10, 22, 40, 0.85));
   border: var(--border-cyan, 1px solid rgba(79, 200, 232, 0.5));
   border-radius: 12px;
 }
 
-/* 人差し指: 中間, 親指: 最高, 薬指: 最低 */
-.btn-shot  { --btn-y: calc(var(--btn-size) * 0.15); }
+/* 人差し指: 最低, 親指: 最高, 薬指: 中間 */
+.btn-shot  { --btn-y: calc(var(--btn-size) * 0.3); }
 .btn-melee { --btn-y: 0px; }
-.btn-jump  { --btn-y: calc(var(--btn-size) * 0.3); }
+.btn-jump  { --btn-y: calc(var(--btn-size) * 0.15); }
 
 @media (orientation: landscape) {
   .controller {
@@ -21,6 +21,6 @@
     flex: 1;
     width: 100%;
     padding: 0;
-    gap: calc(var(--btn-size) * 0.2);
+    gap: calc(var(--btn-size) * 0.1);
   }
 }

@@ -90,15 +90,15 @@
 
 ---
 
-- [ ] 4. Core: アナリティクスフック群
-- [ ] 4.1 useAnalytics 統合フックの実装
+- [x] 4. Core: アナリティクスフック群
+- [x] 4.1 useAnalytics 統合フックの実装
   - `features/analytics/useAnalytics.ts` を実装し、認証状態に応じて `userId`（認証済み）と `clientId`（常時）を各 API リクエストに付与する
   - `trackSessionStart`・`trackAttempt`・`trackSessionEnd`・`trackPageView`・`trackEvent` を全て実装
   - 全メソッドが fire-and-forget で戻り値なし・例外なしで動作すること
   - _Requirements: 2.2, 2.3, 2.4, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 5.1, 6.1, 6.2, 6.3, 6.4_
   - _Depends: 3.1, 3.2_
 
-- [ ] 4.2 (P) useMigration フックの実装
+- [x] 4.2 (P) useMigration フックの実装
   - `features/analytics/useMigration.ts` を実装し、認証済みかつ `ct_synced_at` が未設定の場合にマイグレーション API を自動呼び出しする
   - 成功時のみ `ct_synced_at` を `localStorage` に書き込む
   - 失敗時は `ct_synced_at` を書き込まず、`localStorage` データを保持したまま次回ログイン時に再試行できる状態を維持すること
@@ -106,7 +106,7 @@
   - _Boundary: useMigration_
   - _Depends: 3.1_
 
-- [ ] 4.3 (P) AuthButton コンポーネントの実装
+- [x] 4.3 (P) AuthButton コンポーネントの実装
   - `components/AuthButton.tsx` を `'use client'` コンポーネントとして実装し、認証済み時はアバター画像と表示名を表示する
   - 未認証時はログインボタンを表示し、タップで `signIn('google')` を呼び出す
   - ログアウトボタンで `signOut()` を呼び出し、未認証状態に戻ること

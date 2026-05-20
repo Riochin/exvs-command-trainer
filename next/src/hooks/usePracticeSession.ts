@@ -52,6 +52,32 @@ function reducer(state: PracticeSessionState, action: Action): PracticeSessionSt
   }
 }
 
+export interface AttemptAnalyticsData {
+  sessionId: string;
+  commandId: string;
+  attemptIndex: number;
+  success: boolean;
+  stepReached: number;
+  failureStep: number | null;
+  totalDurationMs: number;
+  stepTimings: Array<{ step: number; duration_ms: number }>;
+  inputSequence: ButtonType[] | null;
+}
+
+export interface UsePracticeSessionOptions {
+  sessionId?: string;
+  onSessionStart?: (commandSnapshot: string) => void;
+  onAttemptComplete?: (data: AttemptAnalyticsData) => void;
+  onSessionEnd?: (stats: {
+    totalAttempts: number;
+    successCount: number;
+    durationMs: number;
+    abandoned: boolean;
+    attemptsToFirstSuccess: number | null;
+    bestAttemptMs: number | null;
+  }) => void;
+}
+
 export interface UsePracticeSessionReturn {
   state: PracticeSessionState;
   start(command: Command): void;
@@ -59,7 +85,7 @@ export interface UsePracticeSessionReturn {
   handleButtonPress(button: ButtonType): void;
 }
 
-export function usePracticeSession(): UsePracticeSessionReturn {
+export function usePracticeSession(options?: UsePracticeSessionOptions): UsePracticeSessionReturn {
   const [state, dispatch] = useReducer(reducer, initialState);
   const stateRef = useRef<PracticeSessionState>(state);
   stateRef.current = state;
@@ -67,12 +93,50 @@ export function usePracticeSession(): UsePracticeSessionReturn {
   const { recordAttempt } = usePracticeLog();
   const stepAccumulatorRef = useRef<Set<ButtonType>>(new Set());
 
+  // Keep options in a ref to avoid stale closures in callbacks
+  const optionsRef = useRef<UsePracticeSessionOptions | undefined>(options);
+  optionsRef.current = options;
+
+  // Timing and analytics tracking refs
+  const sessionStartTimeRef = useRef<number>(0);
+  const attemptStartTimeRef = useRef<number>(0);
+  const stepStartTimeRef = useRef<number>(0);
+  const stepTimingsAccRef = useRef<Array<{ step: number; duration_ms: number }>>([]);
+  const inputSequenceAccRef = useRef<ButtonType[]>([]);
+  const attemptIndexRef = useRef<number>(0);
+  const firstSuccessAttemptRef = useRef<number | null>(null);
+  const bestAttemptMsRef = useRef<number | null>(null);
+  const successCountRef = useRef<number>(0);
+
   const start = useCallback((command: Command) => {
+    const now = Date.now();
     stepAccumulatorRef.current = new Set();
+    sessionStartTimeRef.current = now;
+    attemptStartTimeRef.current = now;
+    stepStartTimeRef.current = now;
+    stepTimingsAccRef.current = [];
+    inputSequenceAccRef.current = [];
+    attemptIndexRef.current = 0;
+    firstSuccessAttemptRef.current = null;
+    bestAttemptMsRef.current = null;
+    successCountRef.current = 0;
+
+    optionsRef.current?.onSessionStart?.(JSON.stringify(command));
     dispatch({ type: 'START', command });
   }, []);
 
   const end = useCallback(() => {
+    const durationMs = Date.now() - sessionStartTimeRef.current;
+    const totalAttempts = attemptIndexRef.current;
+    const successCount = successCountRef.current;
+    optionsRef.current?.onSessionEnd?.({
+      totalAttempts,
+      successCount,
+      durationMs,
+      abandoned: successCount === 0,
+      attemptsToFirstSuccess: firstSuccessAttemptRef.current,
+      bestAttemptMs: bestAttemptMsRef.current,
+    });
     dispatch({ type: 'END' });
   }, []);
 
@@ -83,7 +147,37 @@ export function usePracticeSession(): UsePracticeSessionReturn {
 
       const step = s.command.sequence[s.currentIndex];
 
+      // Track every button press in the input sequence
+      inputSequenceAccRef.current.push(button);
+
       if (!step.buttons.includes(button)) {
+        // Failure: wrong button pressed
+        const now = Date.now();
+        const stepDuration = now - stepStartTimeRef.current;
+        const totalDurationMs = now - attemptStartTimeRef.current;
+        stepTimingsAccRef.current.push({ step: s.currentIndex, duration_ms: stepDuration });
+
+        const analyticsData: AttemptAnalyticsData = {
+          sessionId: optionsRef.current?.sessionId ?? '',
+          commandId: s.command.id,
+          attemptIndex: attemptIndexRef.current,
+          success: false,
+          stepReached: s.currentIndex,
+          failureStep: s.currentIndex,
+          totalDurationMs,
+          stepTimings: [...stepTimingsAccRef.current],
+          inputSequence: [...inputSequenceAccRef.current],
+        };
+
+        // Reset for next attempt
+        attemptIndexRef.current += 1;
+        stepTimingsAccRef.current = [];
+        inputSequenceAccRef.current = [];
+        attemptStartTimeRef.current = now;
+        stepStartTimeRef.current = now;
+
+        optionsRef.current?.onAttemptComplete?.(analyticsData);
+
         stepAccumulatorRef.current = new Set();
         const attempt: PracticeAttempt = { success: false, timestamp: new Date().toISOString() };
         recordAttempt(s.command.id, attempt);
@@ -95,18 +189,54 @@ export function usePracticeSession(): UsePracticeSessionReturn {
       const allPressed = step.buttons.every((b) => stepAccumulatorRef.current.has(b));
 
       if (!allPressed) {
-        // 同時押しステップの途中 — まだ他のボタンが必要
+        // Simultaneous press — waiting for remaining buttons
         return;
       }
 
       stepAccumulatorRef.current = new Set();
 
+      const now = Date.now();
+      const stepDuration = now - stepStartTimeRef.current;
+      stepTimingsAccRef.current.push({ step: s.currentIndex, duration_ms: stepDuration });
+
       const isLastStep = s.currentIndex === s.command.sequence.length - 1;
       if (isLastStep) {
+        const totalDurationMs = now - attemptStartTimeRef.current;
+
+        const analyticsData: AttemptAnalyticsData = {
+          sessionId: optionsRef.current?.sessionId ?? '',
+          commandId: s.command.id,
+          attemptIndex: attemptIndexRef.current,
+          success: true,
+          stepReached: s.currentIndex,
+          failureStep: null,
+          totalDurationMs,
+          stepTimings: [...stepTimingsAccRef.current],
+          inputSequence: [...inputSequenceAccRef.current],
+        };
+
+        successCountRef.current += 1;
+        if (firstSuccessAttemptRef.current === null) {
+          firstSuccessAttemptRef.current = attemptIndexRef.current + 1; // 1-based
+        }
+        if (bestAttemptMsRef.current === null || totalDurationMs < bestAttemptMsRef.current) {
+          bestAttemptMsRef.current = totalDurationMs;
+        }
+
+        // Reset for next attempt
+        attemptIndexRef.current += 1;
+        stepTimingsAccRef.current = [];
+        inputSequenceAccRef.current = [];
+        attemptStartTimeRef.current = now;
+        stepStartTimeRef.current = now;
+
+        optionsRef.current?.onAttemptComplete?.(analyticsData);
+
         const attempt: PracticeAttempt = { success: true, timestamp: new Date().toISOString() };
         recordAttempt(s.command.id, attempt);
         dispatch({ type: 'RECORD_SUCCESS', attempt });
       } else {
+        stepStartTimeRef.current = now;
         dispatch({ type: 'ADVANCE' });
       }
     },

@@ -1,7 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePracticeSession } from '@/hooks/usePracticeSession';
+import type { UsePracticeSessionOptions } from '@/hooks/usePracticeSession';
+import { useAnalytics } from '@/features/analytics/useAnalytics';
 import { ArcadeController } from '@/features/arcade-controller/ArcadeController';
 import type { ControllerButtonState } from '@/features/arcade-controller/ControllerButton';
 import { CommandHint } from './CommandHint';
@@ -42,7 +44,39 @@ export interface PracticeSessionProps {
 }
 
 export function PracticeSession({ command, onExit, timeLimit = null }: PracticeSessionProps) {
-  const { state, start, end, handleButtonPress } = usePracticeSession();
+  const { trackSessionStart, trackAttempt, trackSessionEnd } = useAnalytics();
+
+  // sessionId はセッション開始ごとに新しい UUID を生成して ref に保持
+  const sessionIdRef = useRef('');
+
+  const analyticsOptions: UsePracticeSessionOptions = {
+    onSessionStart: (commandSnapshot) => {
+      sessionIdRef.current = crypto.randomUUID();
+      trackSessionStart({
+        sessionId: sessionIdRef.current,
+        commandId: command.id,
+        commandSnapshot,
+        deviceType: 'mobile',
+        timeLimitMs: timeLimit ?? undefined,
+      });
+    },
+    onAttemptComplete: (data) => {
+      trackAttempt({ ...data, sessionId: sessionIdRef.current });
+    },
+    onSessionEnd: (stats) => {
+      trackSessionEnd(sessionIdRef.current, {
+        endedAt: new Date().toISOString(),
+        totalAttempts: stats.totalAttempts,
+        successCount: stats.successCount,
+        durationMs: stats.durationMs,
+        abandoned: stats.abandoned,
+        attemptsToFirstSuccess: stats.attemptsToFirstSuccess,
+        bestAttemptMs: stats.bestAttemptMs,
+      });
+    },
+  };
+
+  const { state, start, end, handleButtonPress } = usePracticeSession(analyticsOptions);
   const [controllerFeedback, setControllerFeedback] = useState<ControllerButtonState>('neutral');
   const [timeLeft, setTimeLeft] = useState<number | null>(timeLimit);
 

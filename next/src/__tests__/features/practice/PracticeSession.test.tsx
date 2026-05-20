@@ -1,5 +1,24 @@
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+vi.mock('next-auth/react', () => ({
+  useSession: vi.fn().mockReturnValue({ data: null, status: 'unauthenticated' }),
+}));
+
+vi.mock('@/features/analytics/useAnalytics', () => ({
+  useAnalytics: vi.fn().mockReturnValue({
+    trackSessionStart: vi.fn(),
+    trackAttempt: vi.fn(),
+    trackSessionEnd: vi.fn(),
+    trackPageView: vi.fn(),
+    trackEvent: vi.fn(),
+  }),
+}));
+
+vi.mock('@/features/analytics/useClientId', () => ({
+  useClientId: vi.fn().mockReturnValue({ clientId: 'test-client-id' }),
+}));
+
 import { PracticeSession, practiceStepToPhysicalHighlights } from '@/features/practice/PracticeSession';
 import { flushChargeDeferredInput } from '@/__tests__/utils/flushChargeDeferredInput';
 import { flushBdDetection } from '@/__tests__/utils/flushBdDetection';

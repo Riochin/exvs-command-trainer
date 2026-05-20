@@ -36,27 +36,27 @@
 
 ---
 
-- [ ] 2. Core: アナリティクス API Route Handler 群
-- [ ] 2.1 練習セッション作成・更新 Route Handler の実装
+- [x] 2. Core: アナリティクス API Route Handler 群
+- [x] 2.1 練習セッション作成・更新 Route Handler の実装
   - `POST /api/analytics/sessions` でセッションレコードを作成し `{ sessionId }` を返す
   - `PATCH /api/analytics/sessions/[id]` でセッション終了情報（`ended_at`・`total_attempts`・`success_count`・`duration_ms`・`abandoned`・`attempts_to_first_success`・`best_attempt_ms`）を更新
   - `INSERT OR IGNORE` で冪等性を保証し、重複リクエスト時も安全に処理すること
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
 
-- [ ] 2.2 (P) 練習試行記録 Route Handler の実装
+- [x] 2.2 (P) 練習試行記録 Route Handler の実装
   - `POST /api/analytics/attempts` で試行レコードを作成し `{ ok: true }` を返す
   - `step_timings`（JSON）・`input_sequence`（JSON）を含む全フィールドを処理すること
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
   - _Boundary: attempts Route Handler_
 
-- [ ] 2.3 (P) ページビュー・行動イベント記録 Route Handler の実装
+- [x] 2.3 (P) ページビュー・行動イベント記録 Route Handler の実装
   - `POST /api/analytics/pageviews` でページビューレコードを作成し `{ ok: true }` を返す
   - `POST /api/analytics/events` でイベントレコードを作成し `{ ok: true }` を返す
   - `payload` フィールドを汎用 JSON で保持し、スキーマ変更なしに新規イベント種別を追加できること
   - _Requirements: 5.1, 5.2, 5.3, 6.1, 6.2, 6.3, 6.4_
   - _Boundary: pageviews Route Handler, events Route Handler_
 
-- [ ] 2.4 (P) 統計取得 Route Handler の実装
+- [x] 2.4 (P) 統計取得 Route Handler の実装
   - `GET /api/analytics/stats` でコマンドごとの練習回数・成功率・平均入力速度・ステップ別失敗率を集計して返す
   - 過去 N 日間の日次練習回数推移を集計する
   - 未認証時は `?clientId=` クエリパラメータで匿名データを絞り込んで返す
@@ -64,7 +64,7 @@
   - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
   - _Boundary: stats Route Handler_
 
-- [ ] 2.5 (P) localStorage マイグレーション Route Handler の実装
+- [x] 2.5 (P) localStorage マイグレーション Route Handler の実装
   - `POST /api/analytics/migrate` で認証チェックを行い、`commands` と `practice_logs` を DB に一括 INSERT する
   - 未認証時は 401 を返す
   - `INSERT OR IGNORE` で冪等性を保証し、成功時 `{ migratedCommands, migratedLogs }` を返すこと

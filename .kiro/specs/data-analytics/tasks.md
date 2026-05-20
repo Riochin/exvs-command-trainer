@@ -13,21 +13,21 @@
 
 ---
 
-- [ ] 1. Foundation: 依存パッケージ・DB基盤・認証設定
-- [ ] 1.1 依存パッケージのインストールと環境変数テンプレートの整備
+- [x] 1. Foundation: 依存パッケージ・DB基盤・認証設定
+- [x] 1.1 依存パッケージのインストールと環境変数テンプレートの整備
   - `next-auth@beta`・`drizzle-orm`・`drizzle-kit`・`@libsql/client`・`uuid` を pnpm でインストール
   - `.env.local.example` に `AUTH_SECRET`・`AUTH_GOOGLE_ID`・`AUTH_GOOGLE_SECRET`・`TURSO_DATABASE_URL`・`TURSO_AUTH_TOKEN` を追記
   - `pnpm dev` が必要な環境変数をセット後に正常起動すること
   - _Requirements: 1.1_
 
-- [ ] 1.2 Drizzle ORM スキーマと Turso DB クライアントの実装
+- [x] 1.2 Drizzle ORM スキーマと Turso DB クライアントの実装
   - `users`・`practice_sessions`・`practice_attempts`・`page_views`・`events` の 5 テーブルを Drizzle スキーマで定義
   - `client_id`・`user_id`・`session_id`・`command_id` 等に必要なインデックスを定義
   - Drizzle + Turso クライアントのシングルトンを実装し、`TURSO_DATABASE_URL` で接続する
   - `drizzle.config.ts` を作成し、`pnpm drizzle-kit push` でスキーマが Turso に適用できること
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 6.1, 6.2, 6.3, 6.4, 7.1, 8.1, 8.2_
 
-- [ ] 1.3 Auth.js Google OAuth 設定と認証 Route Handler の実装
+- [x] 1.3 Auth.js Google OAuth 設定と認証 Route Handler の実装
   - `lib/auth.ts` に `next-auth@beta` を使って Google OAuth プロバイダーを設定
   - `signIn` コールバック内で `users` テーブルへの UPSERT を実装し、ログイン後に必ずユーザーレコードが存在すること
   - `app/api/auth/[...nextauth]/route.ts` に Auth.js ハンドラを配置

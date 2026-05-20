@@ -73,15 +73,15 @@
 
 ---
 
-- [ ] 3. (P) Core: クライアント側アナリティクス基盤
-- [ ] 3.1 アナリティクス型定義と API クライアントモジュールの実装
+- [x] 3. (P) Core: クライアント側アナリティクス基盤
+- [x] 3.1 アナリティクス型定義と API クライアントモジュールの実装
   - `features/analytics/types.ts` に `StatsResponse`・`CommandStat`・`StepFailureRate`・`DailyPractice` を定義
   - `features/analytics/apiClient.ts` に全 API 呼び出し関数を実装（`postSession`・`patchSession`・`postAttempt`・`postPageView`・`postEvent`・`postMigrate`・`getStats`）
   - `void` 返却の関数は `fetch().catch(() => {})` パターンで例外をサイレント処理し、API 失敗時に例外をスローしないこと
   - _Requirements: 4.6, 5.3, 8.1_
   - _Boundary: analyticsApiClient, analytics types_
 
-- [ ] 3.2 (P) useClientId フックの実装
+- [x] 3.2 (P) useClientId フックの実装
   - `features/analytics/useClientId.ts` を実装し、初回アクセス時に UUID を生成して `localStorage` の `ct_client_id` に保存する
   - SSR 中は空文字列を返し、`useEffect` 実行後に必ず非空の UUID を返すこと
   - 2 回目以降のアクセスでは `localStorage` から同一 UUID を読み込むこと

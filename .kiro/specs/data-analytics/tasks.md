@@ -115,20 +115,20 @@
 
 ---
 
-- [ ] 5. Integration: 既存コードへのアナリティクス統合
-- [ ] 5.1 usePracticeSession フックへのタイミング計測・コールバック拡張
+- [x] 5. Integration: 既存コードへのアナリティクス統合
+- [x] 5.1 usePracticeSession フックへのタイミング計測・コールバック拡張
   - `UsePracticeSessionOptions` インターフェース（`sessionId`・`onSessionStart`・`onAttemptComplete`・`onSessionEnd`）を既存フックに追加
   - ステップごとのタイミング計測を `useRef` で実装し、再レンダリングを引き起こさない
   - `options` が未指定の場合、既存の動作と完全互換であること（既存テストが変化しない）
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
 
-- [ ] 5.2 PracticeSession.tsx への useAnalytics 連携
+- [x] 5.2 PracticeSession.tsx への useAnalytics 連携
   - `PracticeSession.tsx` から `usePracticeSession` に analytics options を渡し、セッション開始・試行完了・セッション終了を自動記録する
   - 練習画面の既存 UX に一切変更がなく、analytics 処理の失敗が練習操作をブロックしないこと
   - _Requirements: 3.1, 3.2, 4.1, 4.2, 4.3, 4.4, 4.5_
   - _Depends: 5.1_
 
-- [ ] 5.3 (P) コマンド管理・フリー練習画面へのイベントトラッキング追加
+- [x] 5.3 (P) コマンド管理・フリー練習画面へのイベントトラッキング追加
   - コマンド登録成功時に `command_created` イベント（機体名・ステップ数 payload）を記録する
   - コマンド削除成功時に `command_deleted` イベントを記録する
   - フリー練習画面の利用時に `free_play_used` イベントを記録する
@@ -136,7 +136,7 @@
   - _Requirements: 6.1, 6.2, 6.3, 6.4_
   - _Boundary: commands pages, free play page_
 
-- [ ] 5.4 AnalyticsPageViewTracker と Root Layout の統合
+- [x] 5.4 AnalyticsPageViewTracker と Root Layout の統合
   - `features/analytics/AnalyticsPageViewTracker.tsx` を実装し、ルート変化を検知してページビューを自動記録する（null render）
   - `app/layout.tsx` に `SessionProvider` ラッパーと `AnalyticsPageViewTracker` を追加する
   - `components/HamburgerMenu.tsx` に `AuthButton` を組み込む

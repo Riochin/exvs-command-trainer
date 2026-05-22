@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import HomePage from '@/app/page';
+import CommandsPage from '@/app/commands/page';
 import type { Command } from '@/types';
 
 vi.mock('@/hooks/useCommandStore', () => ({
@@ -80,13 +80,13 @@ describe('ホームページ CapsuleButton 統合テスト', () => {
 
   describe('コマンド登録 CapsuleButton（href リンク）', () => {
     it('「コマンドを登録する」が link 要素として DOM に存在する', () => {
-      render(<HomePage />);
+      render(<CommandsPage />);
       const links = screen.getAllByRole('link', { name: /コマンドを登録する/ });
       expect(links.length).toBeGreaterThan(0);
     });
 
     it('CapsuleButton の href が /commands/new に設定されている', () => {
-      render(<HomePage />);
+      render(<CommandsPage />);
       const links = screen.getAllByRole('link', { name: /コマンドを登録する/ });
       links.forEach((link) => {
         expect(link.getAttribute('href')).toBe('/commands/new');
@@ -94,7 +94,7 @@ describe('ホームページ CapsuleButton 統合テスト', () => {
     });
 
     it('CapsuleButton リンクをクリックしてもエラーが発生しない', () => {
-      render(<HomePage />);
+      render(<CommandsPage />);
       const link = screen.getAllByRole('link', { name: /コマンドを登録する/ })[0];
       expect(() => fireEvent.click(link)).not.toThrow();
     });
@@ -114,12 +114,12 @@ describe('ホームページ CapsuleButton 統合テスト', () => {
     });
 
     it('コマンドリストが表示される', () => {
-      render(<HomePage />);
+      render(<CommandsPage />);
       expect(screen.getByText('ズンダ')).toBeTruthy();
     });
 
     it('ヘッダーの CapsuleButton リンクが /commands/new へ遷移できる', () => {
-      render(<HomePage />);
+      render(<CommandsPage />);
       const headerLink = screen.getByRole('link', { name: /コマンドを登録する/ });
       expect(headerLink.getAttribute('href')).toBe('/commands/new');
     });
@@ -127,7 +127,7 @@ describe('ホームページ CapsuleButton 統合テスト', () => {
     it('コマンド選択ボタンをクリックすると router.push が呼ばれる', () => {
       const push = vi.fn();
       mockUseRouter.mockReturnValue({ push } as ReturnType<typeof useRouter>);
-      render(<HomePage />);
+      render(<CommandsPage />);
       fireEvent.click(screen.getByRole('button', { name: 'ズンダ' }));
       expect(push).toHaveBeenCalledWith('/commands/1');
     });
@@ -135,7 +135,7 @@ describe('ホームページ CapsuleButton 統合テスト', () => {
 
   describe('コマンドなしの場合', () => {
     it('CapsuleButton が複数表示される（ヘッダー＋本文）', () => {
-      render(<HomePage />);
+      render(<CommandsPage />);
       const links = screen.getAllByRole('link', { name: /コマンドを登録する/ });
       expect(links.length).toBeGreaterThanOrEqual(2);
     });

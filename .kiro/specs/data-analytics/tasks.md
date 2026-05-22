@@ -146,15 +146,15 @@
 
 ---
 
-- [ ] 6. Validation: テスト
-- [ ] 6.1 クライアント側フックのユニットテスト
+- [x] 6. Validation: テスト
+- [x] 6.1 クライアント側フックのユニットテスト
   - `useClientId`: 初回 UUID 生成・2 回目以降同一値・SSR 中空文字列の各ケースを検証
   - `useMigration`: `ct_synced_at` あり/なし・API 成功/失敗の条件分岐を検証
   - `analyticsApiClient`: `fetch` 失敗時に例外をスローしないことを検証
   - 全ユニットテストが通ること
   - _Requirements: 2.1, 4.6, 7.1, 7.2, 7.3_
 
-- [ ] 6.2 Route Handler 統合テスト
+- [x] 6.2 Route Handler 統合テスト
   - `POST /api/analytics/sessions` → `PATCH /api/analytics/sessions/[id]` の一連フローを検証
   - `GET /api/analytics/stats`（未認証: `?clientId=` 指定）のデータ返却を検証
   - `signIn` コールバックでの `users` テーブルへの UPSERT（新規作成・重複更新の両方）を検証

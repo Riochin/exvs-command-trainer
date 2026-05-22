@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import HomePage from '@/app/page';
+import CommandsPage from '@/app/commands/page';
 import type { Command } from '@/types';
 
 vi.mock('@/hooks/useCommandStore', () => ({
@@ -63,12 +63,12 @@ describe('HomePage', () => {
 
   describe('コマンドが空の場合', () => {
     it('登録を促すメッセージを表示する', () => {
-      render(<HomePage />);
+      render(<CommandsPage />);
       expect(screen.getByText(/コマンドが登録されていません/)).toBeTruthy();
     });
 
     it('/commands/new へのリンクを表示する', () => {
-      render(<HomePage />);
+      render(<CommandsPage />);
       const links = screen.getAllByRole('link');
       const registerLinks = links.filter((l) => l.getAttribute('href') === '/commands/new');
       expect(registerLinks.length).toBeGreaterThan(0);
@@ -82,7 +82,7 @@ describe('HomePage', () => {
         makeCommand({ id: '2', mobileSuit: 'νガンダム', name: 'BR' }),
         makeCommand({ id: '3', mobileSuit: 'ストライクフリーダム', name: 'クロスボーン' }),
       ]);
-      render(<HomePage />);
+      render(<CommandsPage />);
       expect(screen.getByText('νガンダム')).toBeTruthy();
       expect(screen.getByText('ストライクフリーダム')).toBeTruthy();
       expect(screen.getByText('ズンダ')).toBeTruthy();
@@ -92,7 +92,7 @@ describe('HomePage', () => {
       const push = vi.fn();
       mockUseRouter.mockReturnValue({ push } as ReturnType<typeof useRouter>);
       mockStore([makeCommand({ id: 'cmd-1', mobileSuit: 'νガンダム', name: 'ズンダ' })]);
-      render(<HomePage />);
+      render(<CommandsPage />);
       fireEvent.click(screen.getByRole('button', { name: 'ズンダ' }));
       expect(push).toHaveBeenCalledWith('/commands/cmd-1');
     });
@@ -108,7 +108,7 @@ describe('HomePage', () => {
         getCommand: vi.fn(),
         getCommandsByMobileSuit: vi.fn(),
       });
-      render(<HomePage />);
+      render(<CommandsPage />);
       fireEvent.click(screen.getByRole('button', { name: /ズンダを削除/ }));
       fireEvent.click(screen.getByRole('button', { name: /削除する/ }));
       expect(removeCommand).toHaveBeenCalledWith('cmd-1');
@@ -118,13 +118,13 @@ describe('HomePage', () => {
   describe('LandscapeGuard', () => {
     it('縦画面時は回転促進メッセージが表示される', () => {
       mockUseLandscapeMode.mockReturnValue({ isLandscape: false });
-      render(<HomePage />);
+      render(<CommandsPage />);
       expect(screen.getByRole('alert')).toBeTruthy();
     });
 
     it('横画面時はコンテンツが表示される', () => {
       mockUseLandscapeMode.mockReturnValue({ isLandscape: true });
-      render(<HomePage />);
+      render(<CommandsPage />);
       expect(screen.queryByRole('alert')).toBeNull();
     });
   });

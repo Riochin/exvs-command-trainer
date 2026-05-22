@@ -25,6 +25,6 @@ describe('BackToHomeNav', () => {
     mockUsePathname.mockReturnValue('/commands/foo');
     render(<BackToHomeNav />);
     const link = screen.getByRole('link', { name: /コマンド一覧に戻る/ });
-    expect(link.getAttribute('href')).toBe('/');
+    expect(link.getAttribute('href')).toBe('/commands');
   });
 });

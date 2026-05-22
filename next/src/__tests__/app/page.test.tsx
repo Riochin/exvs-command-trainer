@@ -12,6 +12,21 @@ vi.mock('@/hooks/useLandscapeMode', () => ({
 vi.mock('next/navigation', () => ({
   useRouter: vi.fn(),
 }));
+vi.mock('next-auth/react', () => ({
+  useSession: vi.fn().mockReturnValue({ data: null, status: 'unauthenticated' }),
+}));
+vi.mock('@/features/analytics/useAnalytics', () => ({
+  useAnalytics: vi.fn().mockReturnValue({
+    trackSessionStart: vi.fn(),
+    trackAttempt: vi.fn(),
+    trackSessionEnd: vi.fn(),
+    trackPageView: vi.fn(),
+    trackEvent: vi.fn(),
+  }),
+}));
+vi.mock('@/features/analytics/useClientId', () => ({
+  useClientId: vi.fn().mockReturnValue({ clientId: 'test-client-id' }),
+}));
 
 import { useCommandStore } from '@/hooks/useCommandStore';
 import { useLandscapeMode } from '@/hooks/useLandscapeMode';

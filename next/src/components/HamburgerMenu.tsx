@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { AuthButton } from './AuthButton';
 import styles from './HamburgerMenu.module.css';
 
 export function HamburgerMenu() {
@@ -49,6 +50,9 @@ export function HamburgerMenu() {
             >
               コマンドを練習する
             </Link>
+            <div className={styles.item}>
+              <AuthButton />
+            </div>
           </nav>
         )}
       </div>

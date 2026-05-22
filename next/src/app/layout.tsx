@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { BackToHomeNav } from "@/components/BackToHomeNav";
 import { HamburgerMenu } from "@/components/HamburgerMenu";
+import { Providers } from "@/components/Providers";
+import { AnalyticsPageViewTracker } from "@/features/analytics/AnalyticsPageViewTracker";
 import "./globals.css";
 import Script from "next/script";
 
@@ -63,9 +65,12 @@ export default function RootLayout({
           `}
         </Script>
 
-        <HamburgerMenu />
-        <BackToHomeNav />
-        {children}
+        <Providers>
+          <AnalyticsPageViewTracker />
+          <HamburgerMenu />
+          <BackToHomeNav />
+          {children}
+        </Providers>
       </body>
     </html>
   );

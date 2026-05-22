@@ -1,5 +1,22 @@
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+
+vi.mock('next-auth/react', () => ({
+  useSession: vi.fn().mockReturnValue({ data: null, status: 'unauthenticated' }),
+}));
+vi.mock('@/features/analytics/useAnalytics', () => ({
+  useAnalytics: vi.fn().mockReturnValue({
+    trackSessionStart: vi.fn(),
+    trackAttempt: vi.fn(),
+    trackSessionEnd: vi.fn(),
+    trackPageView: vi.fn(),
+    trackEvent: vi.fn(),
+  }),
+}));
+vi.mock('@/features/analytics/useClientId', () => ({
+  useClientId: vi.fn().mockReturnValue({ clientId: 'test-client-id' }),
+}));
+
 import { PracticeSession } from '@/features/practice/PracticeSession';
 import { SIMULTANEOUS_INPUT_DEFER_MS } from '@/features/arcade-controller/ArcadeController';
 import type { Command } from '@/types';

@@ -1,0 +1,83 @@
+.tutor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.heading {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  color: var(--color-accent-primary);
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  letter-spacing: var(--letter-spacing-ui);
+}
+
+.remaining {
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+  letter-spacing: normal;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem;
+  border: var(--border-cyan);
+  border-radius: 4px;
+  background: var(--color-bg-card);
+}
+
+/* 桁セルは小さいので、粗い画素のまま拡大して見せる */
+.preview {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid var(--color-accent-deep);
+  background: #000;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.noPreview {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px dashed var(--color-accent-deep);
+  color: var(--color-text-muted);
+  font-size: 0.6rem;
+  text-align: center;
+}
+
+.digits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+}
+
+.digit {
+  min-width: 1.75rem;
+  padding: 0.2rem 0;
+  border: 1px solid var(--color-accent-deep);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.digit:hover {
+  background: var(--color-accent-deep);
+}

@@ -12,6 +12,12 @@ export const FRAME_DURATION_MS = 1000 / 30;
 /** Undo スタックに積む逆アクションの上限。超過分は古い方から捨てる */
 export const UNDO_LIMIT = 20;
 
+/** 走査時の再生倍率の既定値。上げるほど速いがフレームの取りこぼしが増える */
+export const DEFAULT_SCAN_PLAYBACK_RATE = 4;
+
+/** 動画のメタデータ読み込みを待つ上限。これを超えたら読めない動画とみなす */
+export const METADATA_TIMEOUT_MS = 15_000;
+
 /** 走査を許可する動画の最大尺。これを超えるとメモリを圧迫する */
 export const MAX_SCAN_DURATION_MS = 10 * 60 * 1000;
 

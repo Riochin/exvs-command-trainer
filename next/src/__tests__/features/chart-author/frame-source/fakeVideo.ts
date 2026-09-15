@@ -16,6 +16,10 @@ export type FakeVideo = {
   emitEnded(): void;
   /** シーク完了を伝える */
   emitSeeked(): void;
+  /** メタデータの読み込み完了を伝える */
+  emitLoadedMetadata(): void;
+  /** デコード失敗を伝える */
+  emitError(): void;
   /** currentTime へ書かれた値の履歴（秒） */
   readonly seeks: number[];
   readonly play: ReturnType<typeof vi.fn>;
@@ -66,6 +70,8 @@ export type FakeVideoOptions = {
   readonly withoutFrameCallback?: boolean;
   /** currentTime を書いたら自動で seeked を発火する */
   readonly autoSeeked?: boolean;
+  /** 動画の尺（秒）。省略時は 60 */
+  readonly durationSeconds?: number;
 };
 
 export function createFakeVideo(options: FakeVideoOptions = {}): FakeVideo {
@@ -77,6 +83,10 @@ export function createFakeVideo(options: FakeVideoOptions = {}): FakeVideo {
 
   Object.defineProperty(video, 'videoWidth', { value: options.videoWidth ?? 1920 });
   Object.defineProperty(video, 'videoHeight', { value: options.videoHeight ?? 1080 });
+  Object.defineProperty(video, 'duration', {
+    value: options.durationSeconds ?? 60,
+    configurable: true,
+  });
 
   const fake: FakeVideo = {
     video,
@@ -101,6 +111,8 @@ export function createFakeVideo(options: FakeVideoOptions = {}): FakeVideo {
     },
     emitEnded: () => void video.dispatchEvent(new Event('ended')),
     emitSeeked: () => void video.dispatchEvent(new Event('seeked')),
+    emitLoadedMetadata: () => void video.dispatchEvent(new Event('loadedmetadata')),
+    emitError: () => void video.dispatchEvent(new Event('error')),
   };
 
   video.play = fake.play as unknown as HTMLVideoElement['play'];

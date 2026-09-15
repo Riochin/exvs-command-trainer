@@ -71,6 +71,11 @@
   gap: 0.5rem;
 }
 
+/* コントローラは自前の寸法を持つ。土台は余白だけを与える */
+.controller {
+  min-width: 0;
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;

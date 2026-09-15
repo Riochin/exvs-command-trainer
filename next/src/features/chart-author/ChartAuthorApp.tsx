@@ -222,7 +222,11 @@ export function ChartAuthorApp({ videoOptions, analysisDeps }: ChartAuthorAppPro
               />
             )}
 
-            {video.videoKey !== null && <ArcadeController onButtonPress={onControllerPress} />}
+            {video.videoKey !== null && (
+              <div className={styles.controller} data-testid="chart-author-controller">
+                <ArcadeController onButtonPress={onControllerPress} />
+              </div>
+            )}
           </div>
 
           <div className={styles.side}>

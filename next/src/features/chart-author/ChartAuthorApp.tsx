@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArcadeController } from '@/features/arcade-controller/ArcadeController';
 import type { ButtonType } from '@/types';
+import type { ChartParseError } from '@/types/chart';
 import { AnalysisPanel } from './analysis-run/AnalysisPanel';
 import { GlyphTutor } from './analysis-run/GlyphTutor';
 import { RerunDecisionDialog } from './analysis-run/RerunDecisionDialog';
@@ -26,6 +27,8 @@ import { StepInspector } from './editor/StepInspector';
 import { StepList } from './editor/StepList';
 import { Timeline } from './editor/Timeline';
 import { useChartEditor } from './editor/useChartEditor';
+import { toEditorSteps } from './io/chartCodec';
+import { ExportPanel } from './io/ExportPanel';
 import { useChartIo } from './io/useChartIo';
 import { TransportBar } from './player/TransportBar';
 import { useVideoController, type UseVideoControllerOptions } from './player/useVideoController';
@@ -60,6 +63,8 @@ export function ChartAuthorApp({ videoOptions, analysisDeps }: ChartAuthorAppPro
   const [calibrating, setCalibrating] = useState(false);
   const [loadFailure, setLoadFailure] = useState<string | null>(null);
   const [rerunAsked, setRerunAsked] = useState(false);
+  /** 直前の読み込みが拒否された理由。取り込みに成功したら消す */
+  const [importErrors, setImportErrors] = useState<readonly ChartParseError[] | null>(null);
 
   const videoRef = video.videoRef;
   const sampleIndicator = useCallback(
@@ -148,6 +153,22 @@ export function ChartAuthorApp({ videoOptions, analysisDeps }: ChartAuthorAppPro
   const onControllerPress = (button: ButtonType): void => {
     if (video.isPlaying) return;
     editor.addStep(video.currentTimeMs, button);
+  };
+
+  /**
+   * 譜面ファイルの取り込み。
+   * 検証は codec が持つので、ここは「通ったら丸ごと差し替える / 通らなければ
+   * 何も変えずに理由を出す」の二択に徹する（Req 8.7）。
+   */
+  const importChart = async (file: File): Promise<void> => {
+    const result = await io.importFromFile(file);
+    if (!result.ok) {
+      setImportErrors(result.errors);
+      return;
+    }
+    setImportErrors(null);
+    io.setSource(result.chart.source);
+    editor.replaceAll(toEditorSteps(result.chart));
   };
 
   const selectStep = (id: string): void => {
@@ -267,6 +288,16 @@ export function ChartAuthorApp({ videoOptions, analysisDeps }: ChartAuthorAppPro
             )}
 
             <GlyphTutor glyphs={analysis.unresolvedGlyphs} onLabel={analysis.labelGlyph} />
+
+            <ExportPanel
+              source={io.source}
+              stepCount={editor.steps.length}
+              importErrors={importErrors}
+              onChangeSource={io.setSource}
+              onDownloadJson={() => io.downloadJson(editor.steps)}
+              onDownloadCsv={() => io.downloadCsv(editor.steps)}
+              onImportFile={(file) => void importChart(file)}
+            />
 
             {showEditor && (
               <>

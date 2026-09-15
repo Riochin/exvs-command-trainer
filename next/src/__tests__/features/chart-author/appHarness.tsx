@@ -23,6 +23,8 @@ export type AppHarness = {
   readonly frameSource: ReturnType<typeof createManualFrameSource>;
   readonly probes: FakeVideo[];
   readonly revoked: string[];
+  /** createObjectURL に渡された Blob。ダウンロードの中身をここから読む */
+  readonly blobs: Blob[];
 };
 
 let harness: AppHarness;
@@ -39,8 +41,9 @@ export function boostDropLook(dropAtFrame = 3): (index: number) => FrameLook {
 export function installUrlMocks(): void {
   let issued = 0;
   Object.defineProperty(URL, 'createObjectURL', {
-    value: vi.fn(() => {
+    value: vi.fn((blob: Blob) => {
       issued += 1;
+      harness.blobs.push(blob);
       return `blob:mock-${issued}`;
     }),
     writable: true,
@@ -69,7 +72,7 @@ export function renderApp(look: (index: number) => FrameLook = boostDropLook()) 
   const sampler = createFakeSampler(look);
   const probes: FakeVideo[] = [];
 
-  harness = { frameSource, probes, revoked: [] };
+  harness = { frameSource, probes, revoked: [], blobs: [] };
   installUrlMocks();
 
   const view = render(
@@ -143,4 +146,17 @@ export function phaseOf(): string | undefined {
 
 export function stepRows(): HTMLElement[] {
   return screen.queryAllByTestId('step-row');
+}
+
+/** 直近のダウンロードの中身。ファイルを作らずに内容だけを確かめる */
+export async function lastDownloadText(): Promise<string> {
+  const blob = harness.blobs[harness.blobs.length - 1];
+  if (blob === undefined) throw new Error('ダウンロードが発生していません');
+  return blob.text();
+}
+
+export function lastDownloadType(): string {
+  const blob = harness.blobs[harness.blobs.length - 1];
+  if (blob === undefined) throw new Error('ダウンロードが発生していません');
+  return blob.type;
 }

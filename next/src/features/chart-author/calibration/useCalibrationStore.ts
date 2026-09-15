@@ -22,6 +22,7 @@ import {
 } from '../constants';
 import type {
   CalibrationDefect,
+  GlyphBank,
   CalibrationValidation,
   HudCalibration,
   Rect,
@@ -41,6 +42,8 @@ export interface UseCalibrationStoreReturn {
   addSlot(rect: Rect): SlotId;
   removeSlot(slotId: SlotId): void;
   setBoostRect(rect: Rect): void;
+  /** 解決済みのグリフ束を校正へ載せる。保存すれば次の走査の出発点になる */
+  setGlyphBank(bank: GlyphBank): void;
   adoptReusable(): void;
   persist(): StorageResult<HudCalibration>;
 }
@@ -194,6 +197,10 @@ export function useCalibrationStore(videoKey: VideoKey | null): UseCalibrationSt
     );
   }, []);
 
+  const setGlyphBank = useCallback((bank: GlyphBank) => {
+    setCalibration((previous) => (previous === null ? previous : { ...previous, glyphBank: bank }));
+  }, []);
+
   const adoptReusable = useCallback(() => {
     // 尺と解像度まで一致したものだけを適用する。ファイル名の一致は提案の根拠にしかならない
     if (!reusableMatchesVideo || reusable === null) return;
@@ -235,6 +242,7 @@ export function useCalibrationStore(videoKey: VideoKey | null): UseCalibrationSt
     addSlot,
     removeSlot,
     setBoostRect,
+    setGlyphBank,
     adoptReusable,
     persist,
   };

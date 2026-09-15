@@ -13,6 +13,7 @@
  */
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { collectDefects } from '../calibration/useCalibrationStore';
+import { EMPTY_BANK } from '../analysis/glyphBank';
 import {
   DEFAULT_ANALYSIS_PARAMS,
   MAX_SCAN_DURATION_MS,
@@ -23,15 +24,24 @@ import {
   computeGlyphDescriptor,
   computeNormalizedLuminance,
 } from '../analysis/descriptors';
-import { assignGlyph, unresolvedGlyphs } from '../analysis/glyphBank';
+import {
+  assignGlyph,
+  labelGlyph as applyGlyphLabel,
+  unresolvedGlyphs,
+} from '../analysis/glyphBank';
+import { runDetectors } from '../analysis/runDetectors';
 import { createFrameSource, type CreateFrameSourceResult } from '../frame-source/createFrameSource';
 import { createRegionSampler } from '../frame-source/regionSampler';
 import type { RegionSamplerService, SampledRegions } from '../frame-source/types';
 import type {
   AnalysisParams,
   CalibrationDefect,
+  DetectedStep,
+  DetectionSummary,
   FrameSample,
   GlyphBank,
+  GlyphKey,
+  GlyphTemplate,
   HudCalibration,
   SampleTimeline,
   SlotSample,
@@ -75,12 +85,25 @@ export interface UseAnalysisRunReturn {
   readonly failure: AnalysisFailure | null;
   readonly warning: AnalysisWarning | null;
   readonly params: AnalysisParams;
+  /** 走査済みの観測列から導いたステップ。走査していなければ空 */
+  readonly steps: readonly DetectedStep[];
+  readonly summary: DetectionSummary | null;
+  /** いまの数字ラベルの解決状況。校正へ載せて保存すれば次の走査で再利用できる */
+  readonly glyphBank: GlyphBank;
+  readonly unresolvedGlyphs: readonly GlyphTemplate[];
   start(objectUrl: string, calibration: HudCalibration): Promise<void>;
   cancel(): void;
+  /** 走査済み timeline に対して検出のみ再実行する（Req 4.5） */
+  setParams(next: AnalysisParams): void;
+  /** 未解決グリフへ数字ラベルを与える。動画は開き直さない（Req 3.3） */
+  labelGlyph(key: GlyphKey, digit: number): void;
   reset(): void;
 }
 
 const IDLE_PROGRESS: AnalysisProgress = { ratio: 0, elapsedMs: 0, processedFrames: 0 };
+
+/** 走査前の空の結果。毎描画で新しい配列を作らないよう共有する */
+const EMPTY_STEPS: readonly DetectedStep[] = [];
 
 /** 走査を始める前に長尺かどうかを判定する。UI は開始前の警告にこれを使う */
 export function exceedsScanDuration(durationMs: number): boolean {
@@ -298,16 +321,53 @@ export function useAnalysisRun(deps: UseAnalysisRunDeps = {}): UseAnalysisRunRet
     [cancel, createSampler, now, openFrameSource, params, yieldToMain],
   );
 
+  /**
+   * 検出は観測列の従属物として導く。
+   *
+   * 走査の結果・校正・パラメータが同じなら結果も同じなので、状態として
+   * 抱える必要がない。ラベル付けや閾値の変更で「検出だけが走り直す」のは、
+   * 再計算の入口をここ 1 つに絞った結果であって、特別な経路ではない。
+   */
+  const detection = useMemo(
+    () =>
+      timeline === null || calibration === null
+        ? null
+        : runDetectors(timeline, calibration, params),
+    [calibration, params, timeline],
+  );
+
+  const glyphBank = timeline?.glyphBank ?? EMPTY_BANK;
+  const unresolved = useMemo(() => unresolvedGlyphs(glyphBank), [glyphBank]);
+
+  const labelGlyph = useCallback((key: GlyphKey, digit: number) => {
+    setTimeline((previous) => {
+      if (previous === null) return previous;
+      const labeled = applyGlyphLabel(previous.glyphBank, key, digit);
+      if (labeled === previous.glyphBank) return previous;
+      return { ...previous, glyphBank: labeled };
+    });
+  }, []);
+
+  // 未解決が残っている間は解決の段階に留まる。全部片付いたら編集へ進める
+  const settledPhase =
+    phase === 'resolving' && unresolved.length === 0 ? 'done' : phase;
+
   return {
-    phase,
+    phase: settledPhase,
     progress,
     timeline,
     calibration,
     failure,
     warning,
     params,
+    steps: detection?.steps ?? EMPTY_STEPS,
+    summary: detection?.summary ?? null,
+    glyphBank,
+    unresolvedGlyphs: unresolved,
     start,
     cancel,
+    setParams,
+    labelGlyph,
     reset,
   };
 }

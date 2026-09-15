@@ -47,12 +47,20 @@ export function gaugeRegion(fill: number, width = 10, height = 4): PixelRegion {
   return { width, height, data };
 }
 
-/** 上半分だけが明るい桁セル。空ではないグリフとしてクラスタを作らせる */
-export function inkedRegion(width = 8, height = 8): PixelRegion {
+/**
+ * 半分だけが明るい桁セル。空ではないグリフとしてクラスタを作らせる。
+ * 上下どちらを塗るかで、互いに別のクラスタになる 2 種類の見え方を作れる。
+ */
+export function inkedRegion(
+  pattern: InkPattern = 'top',
+  width = 8,
+  height = 8,
+): PixelRegion {
   const data = new Uint8ClampedArray(width * height * 4);
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
-      const value = y < height / 2 ? 255 : 0;
+      const bright = pattern === 'top' ? y < height / 2 : y >= height / 2;
+      const value = bright ? 255 : 0;
       const i = (y * width + x) * 4;
       data[i] = value;
       data[i + 1] = value;
@@ -63,14 +71,18 @@ export function inkedRegion(width = 8, height = 8): PixelRegion {
   return { width, height, data };
 }
 
+/** 桁セルの塗り方。異なるパターンは異なるクラスタになる */
+export type InkPattern = 'top' | 'bottom';
+
 /** フレーム 1 枚ぶんの見え方。省略した項目は既定の見え方になる */
 export type FrameLook = {
   /** ブーストゲージの充填率 0..1 */
   readonly boostFill?: number;
   /** CHARGE 領域の明るさ 0..255 */
   readonly chargeValue?: number;
-  /** 桁セルにインクを載せるか */
+  /** 桁セルにインクを載せるか。載せ方（パターン）まで指定したいときは ink を使う */
   readonly inked?: boolean;
+  readonly ink?: InkPattern;
 };
 
 export type FakeSampler = RegionSamplerService & {
@@ -95,7 +107,11 @@ export function createFakeSampler(look: (index: number) => FrameLook = () => ({}
         slots: calibration.slots.map((slot) => ({
           slotId: slot.id,
           ammoCells: Array.from({ length: slot.digitCount }, () =>
-            spec.inked === true ? inkedRegion() : solidRegion(0),
+            spec.ink !== undefined
+              ? inkedRegion(spec.ink)
+              : spec.inked === true
+                ? inkedRegion()
+                : solidRegion(0),
           ),
           charge: slot.chargeRect === null ? null : solidRegion(spec.chargeValue ?? 0),
           buttonIndicator: null,

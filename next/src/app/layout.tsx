@@ -4,8 +4,8 @@ import { BackToHomeNav } from "@/components/BackToHomeNav";
 import { HamburgerMenu } from "@/components/HamburgerMenu";
 import { Providers } from "@/components/Providers";
 import { AnalyticsPageViewTracker } from "@/features/analytics/AnalyticsPageViewTracker";
+import { GoogleAnalyticsScripts } from "@/features/analytics/GoogleAnalyticsScripts";
 import "./globals.css";
-import Script from "next/script";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -52,18 +52,7 @@ export default function RootLayout({
     <html lang="ja" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body>
         {/* Google Analytics */}
-        <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-3YHP7ZY4XV"
-          strategy="afterInteractive"
-        />
-        <Script id="ga-gtag" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', 'G-3YHP7ZY4XV');
-          `}
-        </Script>
+        <GoogleAnalyticsScripts />
 
         <Providers>
           <AnalyticsPageViewTracker />

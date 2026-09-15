@@ -1,0 +1,62 @@
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  border: var(--border-cyan);
+  border-radius: 4px;
+  background: var(--color-bg-card);
+}
+
+/* マーカーと再生位置はこの軸を基準に絶対配置する */
+.track {
+  position: relative;
+  height: 1.75rem;
+  border-radius: 2px;
+  background: var(--color-bg-mid);
+}
+
+.marker {
+  position: absolute;
+  top: 0.25rem;
+  bottom: 0.25rem;
+  width: 3px;
+  padding: 0;
+  transform: translateX(-50%);
+  border: none;
+  border-radius: 1px;
+  background: var(--color-accent-primary);
+  cursor: pointer;
+}
+
+/* 一覧と同じ規則で候補を描き分ける（Req 4.4） */
+.marker[data-candidate='true'] {
+  background: var(--color-warning);
+}
+
+.marker[data-selected='true'] {
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  box-shadow: var(--glow-cyan-sm);
+}
+
+.playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  transform: translateX(-50%);
+  background: var(--color-text);
+  /* 軸の上に重ねるだけの表示。マーカーのクリックを奪わせない */
+  pointer-events: none;
+}
+
+.scale {
+  display: flex;
+  justify-content: space-between;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+}

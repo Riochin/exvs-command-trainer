@@ -172,11 +172,16 @@ describe('toEditorSteps', () => {
     if (!parsed.ok) return;
 
     const restored = toEditorSteps(parsed.chart);
+    /** 識別子と検出器の由来を除いた、往復で保たれるべき部分 */
     const strip = (steps: readonly EditorStep[]) =>
-      steps.map(({ id: _id, detector: _detector, ...rest }) => rest);
-    expect(strip(restored)).toEqual(
-      STEPS.map(({ id: _id, detector: _detector, ...rest }) => rest),
-    );
+      steps.map((s) => ({
+        tMs: s.tMs,
+        input: s.input,
+        confidence: s.confidence,
+        origin: s.origin,
+        caveat: s.caveat,
+      }));
+    expect(strip(restored)).toEqual(strip(STEPS));
   });
 
   it('往復させても出典が失われない', () => {

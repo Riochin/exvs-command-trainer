@@ -128,8 +128,11 @@ function chargeMarginOf(luminance: number, threshold: number): number {
 /**
  * 1 フレームぶんの画素を観測値へ還元する。
  * グリフの束は走査の間ずっと育つので、更新後の束も一緒に返す。
+ *
+ * 公開しているのは、性能計測が「本番と同じ経路」を測れるようにするため。
+ * 写しを作って測ると、実装が変わったときに測定値だけが古いまま残る。
  */
-function reduceFrame(
+export function reduceFrame(
   tMs: number,
   regions: SampledRegions,
   bank: GlyphBank,

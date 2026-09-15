@@ -1,0 +1,40 @@
+/* 高さいっぱいのグリッド。ヘッダは固定高、本文だけが余りを受け取る */
+.app {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.header {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--color-accent-deep);
+}
+
+.title {
+  color: var(--color-accent-primary);
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  font-weight: var(--font-weight-heading);
+  letter-spacing: 0.08em;
+}
+
+.note {
+  margin-top: 0.25rem;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+/* 縦に長くなりうるのはここだけ。本文スクロールの代わりに内部でスクロールする */
+.scrollRegion {
+  min-height: 0;
+  padding: 1rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.placeholder {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}

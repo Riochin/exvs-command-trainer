@@ -48,3 +48,31 @@ export const DEFAULT_ANALYSIS_PARAMS: AnalysisParams = {
   sustainedFireGapMs: 150,
   glyphMatchDistance: 0.18,
 };
+
+/**
+ * 検出器が割り当てる信頼度。
+ *
+ * 由来ごとの確からしさの序列をここ 1 箇所で決める。ブースト由来は
+ * 弾数由来（解決済み）より必ず低くし、UI が「要確認の候補」を
+ * 一貫した基準で区別できるようにする。
+ */
+export const DETECTION_CONFIDENCE = {
+  /** 弾数が両フレームで解決済み、1 減少 */
+  ammoSingleDecrease: 0.95,
+  /** 弾数が両フレームで解決済み、2 以上減少 */
+  ammoMultiDecrease: 0.85,
+  /** 弾数の記述子は変化したが数値が未解決 */
+  ammoDirectionUnknown: 0.45,
+  /** CHARGE 変化、閾値からの余裕が十分 */
+  chargeClear: 0.85,
+  /** CHARGE 変化、余裕が小さい */
+  chargeLowMargin: 0.55,
+  /** ブースト急減 */
+  boostDrop: 0.4,
+} as const;
+
+/** 欠測区間をまたぐ変化に掛ける減衰。観測していない区間の推測だから下げる */
+export const ACROSS_GAP_CONFIDENCE_FACTOR = 0.6;
+
+/** CHARGE 判定の余裕がこれ未満なら、閾値の近くでの変化とみなす */
+export const CHARGE_LOW_MARGIN_THRESHOLD = 0.15;

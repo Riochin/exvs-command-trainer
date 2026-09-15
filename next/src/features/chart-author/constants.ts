@@ -27,6 +27,9 @@ export const CALIBRATION_STORAGE_KEY = 'ct_chart_author_calibrations';
 /** 作業中譜面の永続化キー */
 export const DRAFT_STORAGE_KEY = 'ct_chart_author_draft';
 
+/** 作業中譜面を書き出すまでの待ち時間。連続した編集を 1 回の書き込みに畳む */
+export const DRAFT_AUTOSAVE_DELAY_MS = 500;
+
 /** 下書きフォーマットのバージョン。譜面フォーマットとは独立に上げる */
 export const CHART_AUTHOR_DRAFT_VERSION = 1;
 

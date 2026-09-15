@@ -38,6 +38,16 @@ export async function waitForFrameRequest(fake: FakeVideo): Promise<void> {
   }
 }
 
+/** 供給側が n 回目のシークを要求するまで待つ */
+export async function waitForSeek(fake: FakeVideo, count: number): Promise<void> {
+  for (let attempt = 0; attempt < 50 && fake.seeks.length < count; attempt += 1) {
+    await tick();
+  }
+  if (fake.seeks.length < count) {
+    throw new Error(`${count} 回目のシークが要求されませんでした`);
+  }
+}
+
 /** 登録を待ってからフレームを 1 枚流す */
 export async function pushFrame(
   fake: FakeVideo,

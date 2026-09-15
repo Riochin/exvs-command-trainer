@@ -97,3 +97,11 @@ export const LOW_CLASSIFICATION_CONFIDENCE = 0.7;
 /** 弾数表示が取りうる桁数の範囲。校正画面の入力欄と検証で共有する */
 export const MIN_DIGIT_COUNT = 1;
 export const MAX_DIGIT_COUNT = 3;
+
+/**
+ * 走査中にメインスレッドを解放する間隔（フレーム数）。
+ *
+ * 短すぎると走査が遅くなり、長すぎるとページが固まる。1 フレームの処理が
+ * 数ミリ秒であることを前提に、解放と解放の間が 50ms を大きく超えない値を選ぶ。
+ */
+export const SCAN_YIELD_INTERVAL_FRAMES = 30;

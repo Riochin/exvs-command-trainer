@@ -155,7 +155,8 @@ describe('detectChargeSteps', () => {
       ]),
     );
     const steps = detectChargeSteps(timelineOf(samples), two, PARAMS);
-    expect(steps.map((s) => s.tMs)).toEqual([...steps].sort((a, b) => a - b).map((s) => s.tMs));
+    const times = steps.map((s) => s.tMs);
+    expect(times).toEqual([...times].sort((a, b) => a - b));
     expect(steps.map((s) => s.input)).toEqual([
       'shot-charge-start',
       'melee-charge-start',

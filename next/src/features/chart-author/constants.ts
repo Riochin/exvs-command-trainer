@@ -85,3 +85,15 @@ export const ACROSS_GAP_CONFIDENCE_FACTOR = 0.6;
 
 /** CHARGE 判定の余裕がこれ未満なら、閾値の近くでの変化とみなす */
 export const CHARGE_LOW_MARGIN_THRESHOLD = 0.15;
+
+/**
+ * 入力種別の推定を「確からしい」とみなす下限。
+ *
+ * これを下回る推定と、推定そのものができなかったスロットは校正画面で
+ * 明示する（Req 2.3）。上書きが唯一の保険なので、迷ったら見せる側に倒す。
+ */
+export const LOW_CLASSIFICATION_CONFIDENCE = 0.7;
+
+/** 弾数表示が取りうる桁数の範囲。校正画面の入力欄と検証で共有する */
+export const MIN_DIGIT_COUNT = 1;
+export const MAX_DIGIT_COUNT = 3;

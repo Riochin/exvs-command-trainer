@@ -12,6 +12,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArcadeController } from '@/features/arcade-controller/ArcadeController';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 import type { ButtonType } from '@/types';
 import type { ChartParseError } from '@/types/chart';
 import { AnalysisPanel } from './analysis-run/AnalysisPanel';
@@ -23,6 +24,7 @@ import { CalibrationPanel } from './calibration/CalibrationPanel';
 import { sampleVideoRegion } from './calibration/sampleVideoRegion';
 import { useCalibrationDraw } from './calibration/useCalibrationDraw';
 import { useCalibrationStore } from './calibration/useCalibrationStore';
+import { DraftRestorePrompt } from './editor/DraftRestorePrompt';
 import { StepInspector } from './editor/StepInspector';
 import { StepList } from './editor/StepList';
 import { Timeline } from './editor/Timeline';
@@ -33,7 +35,8 @@ import { useChartIo } from './io/useChartIo';
 import { TransportBar } from './player/TransportBar';
 import { useVideoController, type UseVideoControllerOptions } from './player/useVideoController';
 import { VideoStage } from './player/VideoStage';
-import type { DetectedStep, Rect, RerunStrategy } from './types';
+import { DRAFT_STORAGE_KEY } from './constants';
+import type { ChartAuthorDraft, DetectedStep, Rect, RerunStrategy } from './types';
 import { canStartAnalysis, needsRerunDecision, resolveWorkflowPhase } from './workflow';
 import styles from './ChartAuthorApp.module.css';
 
@@ -65,6 +68,20 @@ export function ChartAuthorApp({ videoOptions, analysisDeps }: ChartAuthorAppPro
   const [rerunAsked, setRerunAsked] = useState(false);
   /** 直前の読み込みが拒否された理由。取り込みに成功したら消す */
   const [importErrors, setImportErrors] = useState<readonly ChartParseError[] | null>(null);
+  /** 下書きの確認を済ませたか。復元でも破棄でも、一度答えたら二度と尋ねない */
+  const [draftAnswered, setDraftAnswered] = useState(false);
+
+  /**
+   * 起動時点の下書き。
+   *
+   * 自動保存は `useChartEditor` が別の口から書くので、ここで読む値は
+   * 画面を開いた時点のまま動かない。復元の確認に使うのはこの断面でよく、
+   * 編集のたびに確認が出し直されることもない。
+   */
+  const { value: storedDraft } = useLocalStorage<ChartAuthorDraft | null>(
+    DRAFT_STORAGE_KEY,
+    null,
+  );
 
   const videoRef = video.videoRef;
   const sampleIndicator = useCallback(
@@ -171,6 +188,13 @@ export function ChartAuthorApp({ videoOptions, analysisDeps }: ChartAuthorAppPro
     editor.replaceAll(toEditorSteps(result.chart));
   };
 
+  const restoreDraft = (): void => {
+    if (storedDraft === null) return;
+    io.setSource(storedDraft.source);
+    editor.replaceAll(storedDraft.steps);
+    setDraftAnswered(true);
+  };
+
   const selectStep = (id: string): void => {
     editor.select(id);
     const target = editor.steps.find((step) => step.id === id);
@@ -179,6 +203,8 @@ export function ChartAuthorApp({ videoOptions, analysisDeps }: ChartAuthorAppPro
 
   const selectedStep = editor.steps.find((step) => step.id === editor.selectedId) ?? null;
   const showEditor = editor.steps.length > 0 || phase === 'editing';
+  // 作業机が空のうちだけ尋ねる。何か載っていれば、それを黙って押しのけない
+  const offerDraft = !draftAnswered && editor.steps.length === 0;
 
   return (
     <div className={styles.app} data-testid="chart-author-app" data-phase={phase}>
@@ -288,6 +314,25 @@ export function ChartAuthorApp({ videoOptions, analysisDeps }: ChartAuthorAppPro
             )}
 
             <GlyphTutor glyphs={analysis.unresolvedGlyphs} onLabel={analysis.labelGlyph} />
+
+            {offerDraft && (
+              <DraftRestorePrompt
+                draft={storedDraft}
+                currentVideoKey={video.videoKey}
+                onRestore={restoreDraft}
+                onDiscard={() => setDraftAnswered(true)}
+              />
+            )}
+
+            {editor.lastStorageError !== null && (
+              <p className={styles.failure} data-testid="draft-storage-error">
+                作業中譜面を保存できませんでした（
+                {editor.lastStorageError.type === 'quota_exceeded'
+                  ? 'ブラウザの保存容量が足りません'
+                  : '保存に失敗しました'}
+                ）。編集は続けられますが、こまめにエクスポートしてください
+              </p>
+            )}
 
             <ExportPanel
               source={io.source}

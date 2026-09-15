@@ -1,0 +1,38 @@
+.stage {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 0;
+}
+
+/* 動画とオーバーレイの座標系を揃えるための箱。大きさは動画の比率が決める */
+.frame {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  border: var(--border-cyan);
+  border-radius: 4px;
+  background: #000;
+  overflow: hidden;
+}
+
+.video {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.meta {
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.placeholder {
+  padding: 2rem 1rem;
+  border: 1px dashed var(--color-accent-deep);
+  border-radius: 4px;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  text-align: center;
+}

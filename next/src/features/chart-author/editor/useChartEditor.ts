@@ -33,6 +33,7 @@ import type {
   VideoKey,
 } from '../types';
 import { chartReducer } from './chartReducer';
+import { findNearestStep as nearestOf } from './nearestStep';
 
 export interface UseChartEditorOptions {
   readonly initialSteps?: readonly EditorStep[];
@@ -208,12 +209,7 @@ export function useChartEditor(options: UseChartEditorOptions = {}): UseChartEdi
 
   /** 一覧で光らせる相手を返すので、絞り込みで隠れているステップは選ばない */
   const findNearestStep = useCallback(
-    (tMs: number): EditorStep | null =>
-      visibleSteps.reduce<EditorStep | null>((nearest, step) => {
-        if (nearest === null) return step;
-        // 等距離なら手前を残す（昇順に見ているので > で比較する）
-        return Math.abs(nearest.tMs - tMs) > Math.abs(step.tMs - tMs) ? step : nearest;
-      }, null),
+    (tMs: number): EditorStep | null => nearestOf(visibleSteps, tMs),
     [visibleSteps],
   );
 

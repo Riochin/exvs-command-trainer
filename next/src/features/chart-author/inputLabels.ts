@@ -28,3 +28,11 @@ export const INPUT_LABELS: Readonly<Record<ButtonType, string>> = {
 export function inputLabel(input: string): string {
   return INPUT_LABELS[input as ButtonType] ?? input;
 }
+
+/**
+ * 表示順を固定した入力種別の一覧。
+ *
+ * 絞り込みのチェックボックスも種別変更の選択肢も、並びが揺れると
+ * 目で追えなくなる。対応表の定義順をそのまま唯一の並びとして使う。
+ */
+export const INPUT_TYPES = Object.keys(INPUT_LABELS) as readonly ButtonType[];

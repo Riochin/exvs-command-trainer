@@ -18,6 +18,17 @@ export type Rect = {
 
 export type SlotId = string;
 
+/**
+ * ImageData から必要な情報だけを抜いた、DOM 非依存の値。
+ * 解析層はこれだけを見る。フレーム供給層（frame-source）がこの形で切り出す。
+ */
+export type PixelRegion = {
+  readonly width: number;
+  readonly height: number;
+  /** RGBA 連続。長さは width * height * 4 */
+  readonly data: Uint8ClampedArray;
+};
+
 /** グリフのクラスタ識別子。数字としての意味はまだ持たない */
 export type GlyphKey = string;
 

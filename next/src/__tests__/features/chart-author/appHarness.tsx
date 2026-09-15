@@ -11,7 +11,13 @@ import { ChartAuthorApp } from '@/features/chart-author/ChartAuthorApp';
 import { CALIBRATION_STORAGE_KEY } from '@/features/chart-author/constants';
 import type { HudCalibration } from '@/features/chart-author/types';
 import { calibrationOf, slot, VIDEO_KEY } from './analysis/helpers';
-import { createFakeSampler, createManualFrameSource, tick, type FrameLook } from './analysis-run/fakeScan';
+import {
+  createFakeSampler,
+  createManualFrameSource,
+  tick,
+  type FrameLook,
+  type ManualFrameSource,
+} from './analysis-run/fakeScan';
 import { createFakeVideo, type FakeVideo } from './frame-source/fakeVideo';
 
 export { VIDEO_KEY };
@@ -20,7 +26,10 @@ export { VIDEO_KEY };
 export const SCAN_FRAME_MS = 100;
 
 export type AppHarness = {
-  readonly frameSource: ReturnType<typeof createManualFrameSource>;
+  /** 走査のたびに開かれる擬似フレーム供給。再解析では新しい 1 本が積まれる */
+  readonly sources: readonly ManualFrameSource[];
+  /** 最後に開かれた供給。テストはこれにフレームを流す */
+  readonly frameSource: ManualFrameSource;
   readonly probes: FakeVideo[];
   readonly revoked: string[];
   /** createObjectURL に渡された Blob。ダウンロードの中身をここから読む */
@@ -65,14 +74,22 @@ export function seedReusableCalibration(calibration: HudCalibration = calibratio
 }
 
 export function renderApp(look: (index: number) => FrameLook = boostDropLook()) {
-  const frameSource = createManualFrameSource({
-    durationMs: VIDEO_KEY.durationMs,
-    frameDurationMs: SCAN_FRAME_MS,
-  });
   const sampler = createFakeSampler(look);
   const probes: FakeVideo[] = [];
+  // 走査は始まるたびに新しい供給を開く。再解析でも同じ手順でフレームを流せる
+  const sources: ManualFrameSource[] = [];
 
-  harness = { frameSource, probes, revoked: [], blobs: [] };
+  harness = {
+    sources,
+    get frameSource(): ManualFrameSource {
+      const latest = sources[sources.length - 1];
+      if (latest === undefined) throw new Error('フレーム供給がまだ開かれていません');
+      return latest;
+    },
+    probes,
+    revoked: [],
+    blobs: [],
+  };
   installUrlMocks();
 
   const view = render(
@@ -85,7 +102,14 @@ export function renderApp(look: (index: number) => FrameLook = boostDropLook()) 
         },
       }}
       analysisDeps={{
-        openFrameSource: async () => ({ ok: true as const, source: frameSource.source }),
+        openFrameSource: async () => {
+          const opened = createManualFrameSource({
+            durationMs: VIDEO_KEY.durationMs,
+            frameDurationMs: SCAN_FRAME_MS,
+          });
+          sources.push(opened);
+          return { ok: true as const, source: opened.source };
+        },
         createSampler: () => sampler,
         yieldToMain: async () => {},
       }}

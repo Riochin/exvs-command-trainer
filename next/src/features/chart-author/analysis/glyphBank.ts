@@ -57,6 +57,26 @@ export function assignGlyph(
   return { bank: { templates: [...bank.templates, created] }, key: created.key };
 }
 
+/**
+ * クラスタに切り出し画像を持たせる。
+ *
+ * 画像そのものを作るのは描画の仕事（frame-source/glyphPreview）で、ここは
+ * 受け取った結果を束へ収めるだけ。この層が canvas を知らずに済むよう、
+ * 生成と保管を分けている。
+ */
+export function attachGlyphPreview(
+  bank: GlyphBank,
+  key: GlyphKey,
+  previewDataUrl: string,
+): GlyphBank {
+  if (!bank.templates.some((template) => template.key === key)) return bank;
+  return {
+    templates: bank.templates.map((template) =>
+      template.key === key ? { ...template, previewDataUrl } : template,
+    ),
+  };
+}
+
 /** ラベル未付与のクラスタのみを返す。GlyphTutor が表示する対象 */
 export function unresolvedGlyphs(bank: GlyphBank): readonly GlyphTemplate[] {
   return bank.templates.filter((t) => t.digit === null);

@@ -26,11 +26,13 @@ import {
 } from '../analysis/descriptors';
 import {
   assignGlyph,
+  attachGlyphPreview,
   labelGlyph as applyGlyphLabel,
   unresolvedGlyphs,
 } from '../analysis/glyphBank';
 import { runDetectors } from '../analysis/runDetectors';
 import { createFrameSource, type CreateFrameSourceResult } from '../frame-source/createFrameSource';
+import { createGlyphPreview } from '../frame-source/glyphPreview';
 import { createRegionSampler } from '../frame-source/regionSampler';
 import type { RegionSamplerService, SampledRegions } from '../frame-source/types';
 import type {
@@ -43,6 +45,7 @@ import type {
   GlyphKey,
   GlyphTemplate,
   HudCalibration,
+  PixelRegion,
   SampleTimeline,
   SlotSample,
 } from '../types';
@@ -73,6 +76,8 @@ export type AnalysisWarning = {
 export type UseAnalysisRunDeps = {
   readonly openFrameSource?: (objectUrl: string) => Promise<CreateFrameSourceResult>;
   readonly createSampler?: () => RegionSamplerService;
+  /** 新しいクラスタの見た目を画像にする。省略時は canvas を使う */
+  readonly renderGlyphPreview?: (region: PixelRegion) => string | null;
   readonly now?: () => number;
   readonly yieldToMain?: () => Promise<void>;
 };
@@ -137,6 +142,7 @@ export function reduceFrame(
   regions: SampledRegions,
   bank: GlyphBank,
   params: AnalysisParams,
+  renderPreview: (region: PixelRegion) => string | null = () => null,
 ): { readonly sample: FrameSample; readonly bank: GlyphBank } {
   let currentBank = bank;
   const slots: SlotSample[] = [];
@@ -148,7 +154,17 @@ export function reduceFrame(
         computeGlyphDescriptor(cell),
         params.glyphMatchDistance,
       );
-      currentBank = assigned.bank;
+      // 束が差し替わったときだけクラスタが新しくできている。
+      // 既存クラスタへの照合では画像を作り直さない（毎フレーム走ってしまう）
+      if (assigned.bank !== currentBank) {
+        const preview = renderPreview(cell);
+        currentBank =
+          preview === null
+            ? assigned.bank
+            : attachGlyphPreview(assigned.bank, assigned.key, preview);
+      } else {
+        currentBank = assigned.bank;
+      }
       return assigned.key;
     });
 
@@ -184,6 +200,7 @@ export function useAnalysisRun(deps: UseAnalysisRunDeps = {}): UseAnalysisRunRet
   );
   const now = useMemo(() => nowDep ?? ((): number => Date.now()), [nowDep]);
   const yieldToMain = deps.yieldToMain ?? defaultYieldToMain;
+  const renderGlyphPreview = deps.renderGlyphPreview ?? createGlyphPreview;
 
   const [phase, setPhase] = useState<AnalysisPhase>('idle');
   const [progress, setProgress] = useState<AnalysisProgress>(IDLE_PROGRESS);
@@ -275,6 +292,7 @@ export function useAnalysisRun(deps: UseAnalysisRunDeps = {}): UseAnalysisRunRet
             sampler.sample(handle.source, target),
             bank,
             params,
+            renderGlyphPreview,
           );
           bank = reduced.bank;
           samples.push(reduced.sample);
@@ -321,7 +339,7 @@ export function useAnalysisRun(deps: UseAnalysisRunDeps = {}): UseAnalysisRunRet
       }
       setPhase(unresolvedGlyphs(bank).length > 0 ? 'resolving' : 'done');
     },
-    [cancel, createSampler, now, openFrameSource, params, yieldToMain],
+    [cancel, createSampler, now, openFrameSource, params, renderGlyphPreview, yieldToMain],
   );
 
   /**

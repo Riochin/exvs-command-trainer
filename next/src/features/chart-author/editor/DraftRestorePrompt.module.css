@@ -30,7 +30,7 @@
 .primary,
 .secondary {
   padding: 0.3rem 0.75rem;
-  border: var(--border-cyan);
+  border: var(--border-plate);
   border-radius: 3px;
   background: transparent;
   color: var(--color-accent-primary);

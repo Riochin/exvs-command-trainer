@@ -34,7 +34,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.375rem;
-  border: var(--border-cyan);
+  border: var(--border-plate);
   border-radius: 4px;
   background: var(--color-bg-card);
 }

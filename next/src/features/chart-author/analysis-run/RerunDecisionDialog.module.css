@@ -4,7 +4,7 @@
   display: grid;
   place-items: center;
   padding: 1rem;
-  background: rgba(5, 10, 20, 0.8);
+  background: rgba(0, 0, 0, 0.8);
   z-index: 100;
 }
 
@@ -14,10 +14,10 @@
   gap: 0.5rem;
   width: min(24rem, 100%);
   padding: 1rem;
-  border: var(--border-cyan);
+  border: var(--border-plate);
   border-radius: 6px;
   background: var(--color-bg-mid);
-  box-shadow: var(--glow-cyan-md);
+  box-shadow: var(--shadow-drop-md);
 }
 
 .message {
@@ -39,7 +39,7 @@
 
 .primary {
   padding: 0.5rem;
-  border: var(--border-cyan);
+  border: var(--border-plate);
   border-radius: 4px;
   background: var(--color-bg-card);
   color: var(--color-accent-primary);

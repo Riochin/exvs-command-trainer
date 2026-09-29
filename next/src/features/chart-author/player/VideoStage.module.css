@@ -10,7 +10,7 @@
   position: relative;
   width: 100%;
   max-width: 100%;
-  border: var(--border-cyan);
+  border: var(--border-plate);
   border-radius: 4px;
   background: #000;
   overflow: hidden;

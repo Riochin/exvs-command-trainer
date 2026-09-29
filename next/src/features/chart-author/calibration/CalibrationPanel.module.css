@@ -91,7 +91,7 @@
 
 .start {
   padding: 0.5rem;
-  border: var(--border-cyan);
+  border: var(--border-plate);
   border-radius: 4px;
   background: var(--color-bg-mid);
   color: var(--color-accent-primary);
@@ -103,7 +103,7 @@
 }
 
 .start:hover:not(:disabled) {
-  box-shadow: var(--glow-cyan-sm);
+  box-shadow: var(--shadow-drop-sm);
 }
 
 .start:disabled {

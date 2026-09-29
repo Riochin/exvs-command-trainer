@@ -3,7 +3,7 @@
   flex-direction: column;
   gap: 0.5rem;
   padding: 0.5rem 0.75rem;
-  border: var(--border-cyan);
+  border: var(--border-plate);
   border-radius: 4px;
   background: var(--color-bg-card);
 }
@@ -15,7 +15,6 @@
   font-size: 0.875rem;
   font-weight: var(--font-weight-heading);
   letter-spacing: var(--letter-spacing-ui);
-  text-shadow: var(--glow-cyan-sm);
 }
 
 .control {
@@ -77,7 +76,7 @@
 
 .button {
   padding: 0.3rem 0.75rem;
-  border: var(--border-cyan);
+  border: var(--border-plate);
   border-radius: 3px;
   background: transparent;
   color: var(--color-accent-primary);

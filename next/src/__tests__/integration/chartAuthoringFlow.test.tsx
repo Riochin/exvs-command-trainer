@@ -5,72 +5,27 @@
  * 擬似実装へ差し替える。それ以外（校正の作図・走査の駆動・グリフのラベル付け・
  * 一覧への反映・ファイル出力）は本番と同じ配線を通す。
  */
-import { act, fireEvent, screen, within } from '@testing-library/react';
+import { act, fireEvent, screen } from '@testing-library/react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { CHART_FORMAT_VERSION } from '@/types/chart';
 import {
-  currentHarness,
+  ammoChangeLook,
+  deliverScanFrames,
+  drawCalibration,
+  labelGlyphs,
   lastDownloadText,
   loadVideo,
+  mockStageBounds,
+  phaseOf,
   renderApp,
   SCAN_FRAME_MS,
+  startAnalysis,
   stepRows,
 } from '../features/chart-author/appHarness';
-import { tick, type FrameLook } from '../features/chart-author/analysis-run/fakeScan';
 
-/** 動画の表示サイズ。正規化座標への換算はこの箱を基準にする */
-const STAGE = { left: 0, top: 0, width: 800, height: 450 };
-
-/** 弾数表示が途中で別の見え方に変わる。数字の意味は後からラベルで与える */
+/** 弾数表示が変わるフレーム。数字の意味は後からラベルで与える */
 const AMMO_CHANGE_FRAME = 3;
-const ammoLook = (index: number): FrameLook => ({
-  ink: index < AMMO_CHANGE_FRAME ? 'top' : 'bottom',
-});
-
-function mockStageBounds(): void {
-  vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({
-    ...STAGE,
-    right: STAGE.width,
-    bottom: STAGE.height,
-    x: STAGE.left,
-    y: STAGE.top,
-    toJSON: () => ({}),
-  } as DOMRect);
-}
-
-function dragOnStage(from: readonly [number, number], to: readonly [number, number]): void {
-  const layer = screen.getByTestId('calibration-overlay');
-  fireEvent.mouseDown(layer, { clientX: from[0], clientY: from[1] });
-  fireEvent.mouseMove(window, { clientX: to[0], clientY: to[1] });
-  fireEvent.mouseUp(window, { clientX: to[0], clientY: to[1] });
-}
-
-/** 弾数領域とブーストゲージを描いて、解析を開始できる校正にする */
-function drawCalibration(): void {
-  dragOnStage([80, 45], [240, 135]);
-  fireEvent.click(screen.getByRole('button', { name: 'ブーストゲージを描く' }));
-  dragOnStage([400, 200], [600, 260]);
-}
-
-/** フレームを順に流し切る。供給の終端まで届けて走査を終わらせる */
-async function harnessDeliver(frames: number): Promise<void> {
-  const source = currentHarness().frameSource;
-  await source.deliverMany(frames, SCAN_FRAME_MS);
-  await source.finish();
-}
-
-function phaseOf(): string | undefined {
-  return screen.getByTestId('chart-author-app').dataset.phase;
-}
-
-/** 未解決グリフへ、現れた順に数字を与える */
-function labelGlyphs(digits: readonly number[]): void {
-  const rows = within(screen.getByTestId('glyph-tutor')).getAllByRole('listitem');
-  digits.forEach((digit, index) => {
-    const buttons = within(rows[index]).getAllByRole('button');
-    fireEvent.click(buttons[digit]);
-  });
-}
+const ammoLook = ammoChangeLook(AMMO_CHANGE_FRAME);
 
 beforeEach(() => {
   window.localStorage.clear();
@@ -96,10 +51,7 @@ describe('譜面作成の通し（校正 → 走査 → ラベル付け → 一�
     expect((screen.getByTestId('calibration-start') as HTMLButtonElement).disabled).toBe(false);
 
     // --- 走査 -------------------------------------------------------------
-    await act(async () => {
-      fireEvent.click(screen.getByTestId('calibration-start'));
-      await tick();
-    });
+    await startAnalysis();
 
     expect(phaseOf()).toBe('scanning');
     expect(screen.getByRole('progressbar', { name: '走査の進捗' })).toBeTruthy();
@@ -107,9 +59,7 @@ describe('譜面作成の通し（校正 → 走査 → ラベル付け → 一�
       false,
     );
 
-    await act(async () => {
-      await harnessDeliver(6);
-    });
+    await deliverScanFrames(6);
 
     // --- グリフのラベル付け -----------------------------------------------
     expect(phaseOf()).toBe('resolving');
@@ -148,13 +98,8 @@ describe('譜面作成の通し（校正 → 走査 → ラベル付け → 一�
     await loadVideo();
     drawCalibration();
 
-    await act(async () => {
-      fireEvent.click(screen.getByTestId('calibration-start'));
-      await tick();
-    });
-    await act(async () => {
-      await harnessDeliver(6);
-    });
+    await startAnalysis();
+    await deliverScanFrames(6);
 
     // 未解決の桁を推測で埋めない。この段階では譜面に何も入れない
     expect(phaseOf()).toBe('resolving');

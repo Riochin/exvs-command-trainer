@@ -13,7 +13,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArcadeController } from '@/features/arcade-controller/ArcadeController';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
-import type { ButtonType } from '@/types';
+import type { ButtonType, StorageError } from '@/types';
 import type { ChartParseError } from '@/types/chart';
 import { AnalysisPanel } from './analysis-run/AnalysisPanel';
 import { GlyphTutor } from './analysis-run/GlyphTutor';
@@ -68,6 +68,7 @@ export function ChartAuthorApp({ videoOptions, analysisDeps }: ChartAuthorAppPro
   const [rerunAsked, setRerunAsked] = useState(false);
   /** 直前の読み込みが拒否された理由。取り込みに成功したら消す */
   const [importErrors, setImportErrors] = useState<readonly ChartParseError[] | null>(null);
+  const [calibrationSaveError, setCalibrationSaveError] = useState<StorageError | null>(null);
   /** 下書きの確認を済ませたか。復元でも破棄でも、一度答えたら二度と尋ねない */
   const [draftAnswered, setDraftAnswered] = useState(false);
 
@@ -117,6 +118,32 @@ export function ChartAuthorApp({ videoOptions, analysisDeps }: ChartAuthorAppPro
     strategyRef.current = 'replace_auto_only';
   }, [adoptDetections, analysis.phase, analysis.steps]);
 
+  const { calibration, persist: persistCalibration, saveGlyphBank } = calibrationStore;
+
+  const saveCalibration = (): void => {
+    const saved = persistCalibration();
+    // 保存できなくても作業は続けられる。次回の再利用が効かないだけ
+    setCalibrationSaveError(saved.ok ? null : saved.error);
+  };
+
+  /**
+   * 解決した数字を校正へ焼き込んで保存する。
+   *
+   * 走査は校正の `glyphBank` を出発点にするので（Req 2.6）、ここで残しておけば
+   * 同じ配信者の別クリップでは同じ数字を尋ねられない。
+   *
+   * 束が校正へ載ったあとは条件に掛からなくなるので、ラベルを付け終えた 1 度だけ走る。
+   * この保存が失敗しても画面には出さない。校正そのものは走査の開始時に保存して
+   * あり、容量不足はそこで報告済みで、ここで重ねて言う意味がない。
+   */
+  useEffect(() => {
+    if (analysis.phase !== 'done' || calibration === null) return;
+    const bank = analysis.glyphBank;
+    if (calibration.glyphBank === bank) return;
+    if (!bank.templates.some((template) => template.digit !== null)) return;
+    saveGlyphBank(bank);
+  }, [analysis.glyphBank, analysis.phase, calibration, saveGlyphBank]);
+
   const loadVideoFile = async (file: File): Promise<void> => {
     const result = await video.loadFile(file);
     if (!result.ok) {
@@ -127,14 +154,17 @@ export function ChartAuthorApp({ videoOptions, analysisDeps }: ChartAuthorAppPro
     setLoadFailure(null);
     analysis.reset();
     adoptedRef.current = null;
+    setCalibrationSaveError(null);
     setCalibrating(true);
   };
 
   const beginScan = (): void => {
-    const calibration = calibrationStore.calibration;
     if (calibration === null || video.objectUrl === null) return;
     setCalibrating(false);
     adoptedRef.current = null;
+    // 校正段階を抜けるここが「校正が完了したとき」。次に同じ動画を読んだら
+    // 再利用を提案できるよう、走り出す前に保存する（Req 2.6）
+    saveCalibration();
     void analysis.start(video.objectUrl, calibration);
   };
 
@@ -322,6 +352,16 @@ export function ChartAuthorApp({ videoOptions, analysisDeps }: ChartAuthorAppPro
                 onRestore={restoreDraft}
                 onDiscard={() => setDraftAnswered(true)}
               />
+            )}
+
+            {calibrationSaveError !== null && (
+              <p className={styles.failure} data-testid="calibration-save-error">
+                校正を保存できませんでした（
+                {calibrationSaveError.type === 'quota_exceeded'
+                  ? 'ブラウザの保存容量が足りません'
+                  : '保存に失敗しました'}
+                ）。解析は続けられますが、次に同じ動画を読んでも再利用できません
+              </p>
             )}
 
             {editor.lastStorageError !== null && (

@@ -360,6 +360,10 @@ export function useAnalysisRun(deps: UseAnalysisRunDeps = {}): UseAnalysisRunRet
   const glyphBank = timeline?.glyphBank ?? EMPTY_BANK;
   const unresolved = useMemo(() => unresolvedGlyphs(glyphBank), [glyphBank]);
 
+  /**
+   * 関数更新で書く。続けて 2 件ラベルを付けたとき、描画を挟まないと
+   * 2 件目が 1 件目より前の束を見て、先のラベルを消してしまうため。
+   */
   const labelGlyph = useCallback((key: GlyphKey, digit: number) => {
     setTimeline((previous) => {
       if (previous === null) return previous;

@@ -44,6 +44,12 @@ export interface UseCalibrationStoreReturn {
   setBoostRect(rect: Rect): void;
   /** 解決済みのグリフ束を校正へ載せる。保存すれば次の走査の出発点になる */
   setGlyphBank(bank: GlyphBank): void;
+  /**
+   * グリフ束を載せたうえで保存する。
+   * 載せてから `persist` を続けて呼ぶと 1 つ前の校正を書いてしまうため、
+   * 「載せて保存する」を 1 つの操作として持つ。
+   */
+  saveGlyphBank(bank: GlyphBank): StorageResult<HudCalibration>;
   adoptReusable(): void;
   persist(): StorageResult<HudCalibration>;
 }
@@ -55,6 +61,12 @@ const UNSET_RECT: Rect = { x: 0, y: 0, width: 0, height: 0 };
 
 /** 新しいスロットの既定桁数。弾数表示は 2 桁が最も多い */
 const DEFAULT_DIGIT_COUNT = 2;
+
+/** まだ校正が無いのに保存を求められたときの答え */
+const NOTHING_TO_SAVE: StorageResult<HudCalibration> = {
+  ok: false,
+  error: { type: 'write_error', message: '保存できる校正がありません' },
+};
 
 function hasArea(rect: Rect): boolean {
   return rect.width > 0 && rect.height > 0;
@@ -207,31 +219,44 @@ export function useCalibrationStore(videoKey: VideoKey | null): UseCalibrationSt
     setCalibration(reusable);
   }, [reusable, reusableMatchesVideo]);
 
-  const persist = useCallback((): StorageResult<HudCalibration> => {
-    if (calibration === null) {
-      return {
-        ok: false,
-        error: { type: 'write_error', message: '保存できる校正がありません' },
+  /** 渡された校正をそのまま書く。何を保存するかは呼び出し側が決める */
+  const write = useCallback(
+    (target: HudCalibration): StorageResult<HudCalibration> => {
+      const entry: HudCalibration = { ...target, createdAt: new Date().toISOString() };
+      const next: CalibrationEntries = {
+        ...entries.value,
+        [entry.videoKey.fileName]: entry,
       };
-    }
 
-    const entry: HudCalibration = { ...calibration, createdAt: new Date().toISOString() };
-    const next: CalibrationEntries = {
-      ...entries.value,
-      [entry.videoKey.fileName]: entry,
-    };
+      // glyphBank を同梱するので 1 件が大きい。古い順に捨てて容量超過を避ける
+      const byAge = Object.keys(next).sort((a, b) =>
+        next[a].createdAt.localeCompare(next[b].createdAt),
+      );
+      for (const fileName of byAge.slice(0, Math.max(0, byAge.length - MAX_CALIBRATION_ENTRIES))) {
+        delete next[fileName];
+      }
 
-    // glyphBank を同梱するので 1 件が大きい。古い順に捨てて容量超過を避ける
-    const byAge = Object.keys(next).sort((a, b) =>
-      next[a].createdAt.localeCompare(next[b].createdAt),
-    );
-    for (const fileName of byAge.slice(0, Math.max(0, byAge.length - MAX_CALIBRATION_ENTRIES))) {
-      delete next[fileName];
-    }
+      const written = entries.setValue(next);
+      return written.ok ? { ok: true, value: entry } : written;
+    },
+    [entries],
+  );
 
-    const written = entries.setValue(next);
-    return written.ok ? { ok: true, value: entry } : written;
-  }, [calibration, entries]);
+  const persist = useCallback(
+    (): StorageResult<HudCalibration> =>
+      calibration === null ? NOTHING_TO_SAVE : write(calibration),
+    [calibration, write],
+  );
+
+  const saveGlyphBank = useCallback(
+    (bank: GlyphBank): StorageResult<HudCalibration> => {
+      if (calibration === null) return NOTHING_TO_SAVE;
+      const next: HudCalibration = { ...calibration, glyphBank: bank };
+      setCalibration(next);
+      return write(next);
+    },
+    [calibration, write],
+  );
 
   return {
     calibration,
@@ -243,6 +268,7 @@ export function useCalibrationStore(videoKey: VideoKey | null): UseCalibrationSt
     removeSlot,
     setBoostRect,
     setGlyphBank,
+    saveGlyphBank,
     adoptReusable,
     persist,
   };

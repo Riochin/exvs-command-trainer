@@ -40,8 +40,9 @@ vi.mock('next/script', () => ({
 
 // レイアウトはモジュール読み込み時にフォントを組み立てる。実体は検証に関係ない
 vi.mock('next/font/google', () => ({
-  Geist: () => ({ variable: 'font-geist-sans' }),
-  Geist_Mono: () => ({ variable: 'font-geist-mono' }),
+  Zen_Kaku_Gothic_New: () => ({ variable: 'font-zen-kaku' }),
+  Oswald: () => ({ variable: 'font-oswald' }),
+  Share_Tech_Mono: () => ({ variable: 'font-share-tech-mono' }),
 }));
 
 const trackPageView = vi.fn();

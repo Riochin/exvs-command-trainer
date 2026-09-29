@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import type React from 'react';
 import { useControllerInput } from '@/hooks/useControllerInput';
 import { useChargeInput, type ChargeableButton } from '@/hooks/useChargeInput';
-import { ControllerButton } from './ControllerButton';
+import { BUTTON_LABELS, ControllerButton } from './ControllerButton';
 import type { ButtonType, CommandStep } from '@/types';
 import styles from './ArcadeController.module.css';
 
@@ -342,15 +342,16 @@ export function ArcadeController({
   return (
     <div data-testid="arcade-controller" className={styles.controller}>
       {BUTTONS.map((button) => (
-        <ControllerButton
-          key={button}
-          button={button}
-          isActive={isButtonActive(button)}
-          highlighted={physicalHighlights.includes(button)}
-          state={buttonStateOverride}
-          handlers={getHandlers(button)}
-          className={styles[`btn-${button}`]}
-        />
+        // 台座（ベゼル・黒い台・ステッカー風ラベル）。ラベルは CSS の attr() で描き、DOM テキストは button 側だけに置く
+        <div key={button} className={`${styles.seat} ${styles[`btn-${button}`]}`} data-label={BUTTON_LABELS[button]}>
+          <ControllerButton
+            button={button}
+            isActive={isButtonActive(button)}
+            highlighted={physicalHighlights.includes(button)}
+            state={buttonStateOverride}
+            handlers={getHandlers(button)}
+          />
+        </div>
       ))}
     </div>
   );

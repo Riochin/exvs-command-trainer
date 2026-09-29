@@ -1,43 +1,129 @@
+/* Sanwa 風の凹型ボタン（CSS 疑似3D）。--c がボタン色 */
 .button {
-  width: var(--btn-size, min(22vw, 110px));
+  --c: var(--btn-yellow);
+  --c-hi: color-mix(in oklab, var(--c), white 38%);
+  --c-lo: color-mix(in oklab, var(--c), black 22%);
+  --c-side: color-mix(in oklab, var(--c), black 58%);
+  --size: var(--btn-size, min(22vw, 110px));
+  --depth: calc(var(--size) * 0.07);
+
+  position: relative;
+  z-index: 1;
+  width: var(--size);
   aspect-ratio: 1 / 1;
+  border: 0;
   border-radius: 50%;
-  border: 3px solid rgba(0, 0, 0, 0.6);
-  font-size: calc(var(--btn-size, min(22vw, 110px)) * 0.2);
-  font-weight: bold;
-  color: #fff;
+  padding: 0;
   cursor: pointer;
   touch-action: none;
   user-select: none;
-  transition: transform 0.06s ease, box-shadow var(--transition-base, 200ms ease-out);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  transform: translateY(var(--btn-y, 0px));
-  box-shadow: var(--glow-cyan-sm, 0 0 8px rgba(79, 200, 232, 0.6));
+  -webkit-tap-highlight-color: transparent;
+  /* ラベル文字は台座のステッカーで見せるため、ボタン上では視覚的にだけ隠す（アクセシブルネームは残る） */
+  font-size: 0;
+  color: transparent;
+  /* 外リム（凸面）＋鏡面ハイライト */
+  background:
+    radial-gradient(ellipse 18% 6% at 32% 7%, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0) 100%),
+    linear-gradient(180deg, var(--c-hi) 0%, var(--c) 40%, var(--c-lo) 100%);
+  /* 側面（プランジャー）＋落ち影 */
+  box-shadow:
+    0 var(--depth) 0 var(--c-side),
+    0 calc(var(--depth) + 2px) 8px rgba(0, 0, 0, 0.75),
+    inset 0 1px 1px rgba(255, 255, 255, 0.55),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.25);
+  transform: translateY(calc(var(--depth) * -0.6));
+  transition: transform var(--transition-press), box-shadow var(--transition-press);
 }
 
-.button[data-button="shot"]  { background: #d42f2f; }
-.button[data-button="melee"] { background: #2b5cb8; }
-.button[data-button="jump"]  { background: #27ae60; }
-.button[data-button="sub"] { background: #9b59b6; }
-.button[data-button="special-shot"] { background: #e67e22; }
-.button[data-button="special-melee"] { background: #1abc9c; }
-
-.button[aria-pressed="true"] {
-  transform: translateY(var(--btn-y, 0px)) scale(0.93);
-  box-shadow: var(--glow-cyan-md, 0 0 16px rgba(79, 200, 232, 0.6), 0 0 32px rgba(79, 200, 232, 0.3));
+/* 凹んだ皿面 */
+.button::before {
+  content: '';
+  position: absolute;
+  inset: 14%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse 80% 70% at 50% 78%, var(--c-hi) 0%, var(--c) 52%, var(--c-lo) 100%);
+  box-shadow:
+    inset 0 calc(var(--size) * 0.05) calc(var(--size) * 0.06) rgba(0, 0, 0, 0.32),
+    inset 0 -1px 1px rgba(255, 255, 255, 0.4),
+    0 1px 1px rgba(255, 255, 255, 0.35);
 }
 
-.button[data-highlighted="true"] {
-  box-shadow: var(--glow-cyan-lg, 0 0 24px rgba(79, 200, 232, 0.6), 0 0 48px rgba(79, 200, 232, 0.4));
+/* 状態リング（ボタン本体の色は変えない） */
+.button::after {
+  content: '';
+  position: absolute;
+  inset: -6%;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 120ms;
 }
 
-.button[data-state="success"] {
-  box-shadow: var(--glow-success, 0 0 12px rgba(57, 217, 138, 0.7));
+.button[data-button='shot']  { --c: var(--btn-red); }
+.button[data-button='melee'] { --c: var(--btn-blue); }
+.button[data-button='jump']  { --c: var(--btn-green); }
+
+.button[aria-pressed='true'] {
+  transform: translateY(calc(var(--depth) * 0.3));
+  box-shadow:
+    0 calc(var(--depth) * 0.1) 0 var(--c-side),
+    0 1px 3px rgba(0, 0, 0, 0.85),
+    inset 0 1px 1px rgba(255, 255, 255, 0.35),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.35);
 }
 
-.button[data-state="fail"] {
-  box-shadow: var(--glow-error, 0 0 12px rgba(255, 69, 96, 0.7));
+.button[aria-pressed='true']::before {
+  filter: brightness(0.9);
+}
+
+.button:focus-visible {
+  outline: 3px solid var(--color-text);
+  outline-offset: 6px;
+}
+
+/* 次に押すボタン：黄色い欠けリング */
+.button[data-highlighted='true']::after {
+  opacity: 1;
+  background: conic-gradient(
+    from 200deg,
+    var(--ring-guide) 0 62%,
+    transparent 62% 70%,
+    var(--ring-guide) 70% 76%,
+    transparent 76%
+  );
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 4px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 4px));
+  filter: drop-shadow(0 0 5px var(--ring-guide));
+  animation: guide-spin 3.2s linear infinite;
+}
+
+.button[data-state='success'],
+.button[data-state='fail'] {
+  --ring: var(--ring-success);
+}
+
+.button[data-state='fail'] {
+  --ring: var(--ring-fail);
+}
+
+.button[data-state='success']::after,
+.button[data-state='fail']::after {
+  opacity: 1;
+  background: none;
+  -webkit-mask: none;
+  mask: none;
+  filter: none;
+  animation: none;
+  border: 4px solid var(--ring);
+  box-shadow: 0 0 12px var(--ring), inset 0 0 10px var(--ring);
+}
+
+@keyframes guide-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button[data-highlighted='true']::after {
+    animation: none;
+  }
 }

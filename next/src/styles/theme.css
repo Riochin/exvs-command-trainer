@@ -67,14 +67,9 @@
   --transition-base: 200ms ease-out;
   --transition-slow: 300ms ease-out;
 
-  /* 旧トークン（移行用エイリアス。仕上げで削除） */
-  --color-accent-glow: rgba(242, 194, 26, 0.5);
-  --glow-cyan-sm: var(--shadow-drop-sm);
-  --glow-cyan-md: var(--shadow-drop-md);
-  --glow-cyan-lg: var(--shadow-drop-lg);
+  /* 発光（成功／失敗表示用） */
   --glow-success: 0 0 10px rgba(62, 224, 143, 0.6);
   --glow-error: 0 0 10px rgba(255, 75, 75, 0.6);
-  --border-cyan: var(--border-plate);
 }
 
 @media (prefers-reduced-motion: reduce) {

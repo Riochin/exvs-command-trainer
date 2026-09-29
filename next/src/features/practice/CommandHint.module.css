@@ -1,7 +1,8 @@
+/* インストカード（紙＋黒帯）にミニボタンを並べる */
 .hint {
-  background: var(--color-bg-card, rgba(10, 22, 40, 0.85));
-  border: var(--border-cyan);
+  background: var(--surface-card);
   border-radius: 0.5rem;
+  box-shadow: inset 0 -2px 0 var(--surface-card-rule), var(--shadow-drop-sm);
   padding: 0.6rem 1rem;
   display: flex;
   flex-wrap: nowrap;
@@ -19,31 +20,58 @@
 }
 
 .hint::-webkit-scrollbar-thumb {
-  background: var(--color-accent-primary);
+  background: var(--surface-card-rule);
   border-radius: 2px;
 }
 
+/* ミニ3Dボタン。--c がボタン色（既定は黒：同時押し・サブ等） */
 .step {
+  --c: #2b2b30;
+  position: relative;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 3rem;
   height: 3rem;
   border-radius: 50%;
-  border: var(--border-cyan);
-  background: var(--color-bg-mid, #0a1628);
-  font-family: var(--font-mono);
+  background: radial-gradient(
+    circle at 50% 70%,
+    color-mix(in oklab, var(--c), white 30%),
+    var(--c) 55%,
+    color-mix(in oklab, var(--c), black 25%)
+  );
+  box-shadow:
+    0 2px 0 color-mix(in oklab, var(--c), black 55%),
+    0 0 0 2px var(--ink);
+  font-family: var(--font-body);
   font-size: 0.7rem;
-  letter-spacing: 0.04em;
-  color: var(--color-text-muted, #7ab8cc);
+  font-weight: 900;
+  letter-spacing: 0;
+  color: #fff;
   text-align: center;
   white-space: pre-line;
-  line-height: 1.3;
-  transition: color var(--transition-fast), background var(--transition-fast), box-shadow var(--transition-fast);
+  line-height: 1.2;
+  transition: opacity var(--transition-fast);
 }
 
-.step[data-highlighted='true'] {
-  color: var(--color-accent-primary, #4fc8e8);
-  background: rgba(79, 200, 232, 0.15);
-  box-shadow: var(--glow-cyan-sm);
+.step[data-button='shot'],
+.step[data-button^='shot-charge'] { --c: var(--btn-red); }
+.step[data-button='melee'],
+.step[data-button^='melee-charge'] { --c: var(--btn-blue); }
+.step[data-button='jump'],
+.step[data-button='bd'] { --c: var(--btn-green); }
+
+.step[data-done='true'] {
+  opacity: 0.4;
+}
+
+/* 次に押すステップ：黄色リング */
+.step[data-highlighted='true']::after {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  border: 3px solid var(--ring-guide);
+  box-shadow: 0 0 8px var(--ring-guide);
 }

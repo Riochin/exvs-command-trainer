@@ -58,7 +58,18 @@ export function CommandDetail({ command }: CommandDetailProps) {
       <p className={styles.mobileSuit}>{command.mobileSuit}</p>
       <div className={styles.sequenceList}>
         {displayItems.map((item, i) => (
-          <div key={i} data-testid="detail-step" className={styles.step}>
+          <div
+            key={i}
+            data-testid="detail-step"
+            data-button={
+              item.kind === 'pair'
+                ? command.sequence[item.startIndex].buttons[0]
+                : command.sequence[item.index].buttons.length === 1
+                  ? command.sequence[item.index].buttons[0]
+                  : 'chord'
+            }
+            className={styles.step}
+          >
             <span className={styles.stepIndex}>{i + 1}</span>
             <span className={styles.stepLabel}>
               {item.kind === 'pair'

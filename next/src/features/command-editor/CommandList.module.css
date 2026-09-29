@@ -1,21 +1,22 @@
+/* 機体ごとのインストカード：黒帯に機体名、紙面にコマンド */
 .group {
-  background: var(--color-bg-card, rgba(10, 22, 40, 0.85));
-  border: var(--border-cyan);
+  background: var(--surface-card);
+  color: var(--ink);
   border-radius: 0.5rem;
   overflow: hidden;
+  box-shadow: var(--shadow-drop-md);
   flex: 0 0 220px;
 }
 
 .groupTitle {
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
   font-size: 0.875rem;
-  font-weight: var(--font-weight-heading);
-  letter-spacing: var(--letter-spacing-ui);
-  color: var(--color-accent-primary, #4fc8e8);
-  text-shadow: var(--glow-cyan-sm);
-  padding: 0.6rem 1rem;
+  font-weight: 900;
+  letter-spacing: var(--letter-spacing-body);
+  color: var(--surface-card);
+  background: var(--ink);
+  padding: 0.45rem 1rem;
   margin: 0;
-  border-bottom: var(--border-cyan);
 }
 
 .list {
@@ -27,8 +28,8 @@
 .item {
   display: flex;
   align-items: center;
-  border-bottom: var(--border-cyan);
-  color: var(--color-text, #e8f4f8);
+  border-bottom: 1px dashed var(--surface-card-rule);
+  color: var(--ink);
   letter-spacing: var(--letter-spacing-body);
 }
 
@@ -40,48 +41,56 @@
   flex: 1;
   background: transparent;
   border: none;
-  color: var(--color-text, #e8f4f8);
+  color: var(--ink);
   font-family: var(--font-body);
   font-size: inherit;
+  font-weight: 700;
   letter-spacing: var(--letter-spacing-body);
   cursor: pointer;
   padding: 0.5rem 1rem;
   text-align: left;
-  transition: color var(--transition-fast);
+  transition: background var(--transition-fast);
 }
 
 .itemButton:hover {
-  color: var(--color-accent-primary, #4fc8e8);
+  background: rgba(242, 194, 26, 0.3);
 }
 
 .itemName {
-  color: var(--color-text, #e8f4f8);
+  color: var(--ink);
 }
 
+/* 小さな赤い物理ボタン */
 .deleteButton {
-  font-family: var(--font-mono);
+  --c: var(--btn-red);
+  font-family: var(--font-body);
   font-size: 0.75rem;
-  letter-spacing: var(--letter-spacing-ui);
-  color: var(--color-error, #ff4560);
-  background: transparent;
-  border: 1px solid rgba(255, 69, 96, 0.4);
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(to bottom, color-mix(in oklab, var(--c), white 25%), var(--c));
+  border: 0;
   border-radius: 9999px;
   padding: 0.2rem 0.75rem;
   margin-right: 0.75rem;
   flex-shrink: 0;
   cursor: pointer;
-  transition: box-shadow var(--transition-fast);
+  box-shadow: 0 2px 0 color-mix(in oklab, var(--c), black 55%), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transform: translateY(-1px);
+  transition: transform var(--transition-press), box-shadow var(--transition-press);
 }
 
-.deleteButton:hover,
+.deleteButton:active {
+  transform: translateY(1px);
+  box-shadow: 0 0 0 color-mix(in oklab, var(--c), black 55%), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
 .deleteButton:focus-visible {
-  box-shadow: 0 0 8px rgba(255, 69, 96, 0.6);
-  outline: none;
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
 }
 
 .emptyMessage {
-  color: var(--color-text-muted, #7ab8cc);
-  font-family: var(--font-mono);
-  letter-spacing: var(--letter-spacing-ui);
+  color: var(--ink-muted);
+  font-family: var(--font-body);
   padding: 1rem;
 }

@@ -67,11 +67,16 @@ export function FreePlayForm() {
         <div ref={sequencePreviewRef} data-testid="sequence-preview" className={styles.sequencePreview}>
           {buildPreviewItems(sequence).map((item, i) =>
             item.kind === 'pair' ? (
-              <span key={i} data-testid="sequence-step" className={styles.previewStep}>
+              <span key={i} data-testid="sequence-step" data-button={sequence[item.startIndex].buttons[0]} className={styles.previewStep}>
                 {item.label}
               </span>
             ) : (
-              <span key={i} data-testid="sequence-step" className={styles.previewStep}>
+              <span
+                key={i}
+                data-testid="sequence-step"
+                data-button={sequence[item.index].buttons.length === 1 ? sequence[item.index].buttons[0] : 'chord'}
+                className={styles.previewStep}
+              >
                 {sequence[item.index].buttons.map((b) => BUTTON_LABELS[b]).join('+')}
               </span>
             ),

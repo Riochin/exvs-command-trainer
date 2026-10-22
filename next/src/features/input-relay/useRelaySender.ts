@@ -6,6 +6,7 @@ import type { ButtonType } from '@/types';
 import { decodeRelayMessage, encodeRelayMessage, isRoomCode } from './protocol';
 import {
   CONNECT_TIMEOUT_MS,
+  fetchIceServers,
   isPeerGone,
   P2P_FAILED_MESSAGE,
   pollSignal,
@@ -84,7 +85,9 @@ export function useRelaySender(room: string | null) {
     };
 
     (async () => {
+      const iceServers = await fetchIceServers(abort.signal);
       const offer = await pollSignal(room, 'offer', abort.signal);
+      pc.setConfiguration({ iceServers });
       setIfActive('connecting');
       await pc.setRemoteDescription({ type: 'offer', sdp: offer });
       await pc.setLocalDescription(await pc.createAnswer());

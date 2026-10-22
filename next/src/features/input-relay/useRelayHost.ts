@@ -5,6 +5,7 @@ import { estimateClockOffset, oneWayLatency, pushBounded, roundTripTime, type Pi
 import { decodeRelayMessage, encodeRelayMessage, generateRoomCode } from './protocol';
 import {
   CONNECT_TIMEOUT_MS,
+  fetchIceServers,
   isPeerGone,
   P2P_FAILED_MESSAGE,
   pollSignal,
@@ -134,6 +135,8 @@ export function useRelayHost() {
     };
 
     (async () => {
+      // ICE の収集は setLocalDescription から始まるので、その前なら差し替えられる
+      pc.setConfiguration({ iceServers: await fetchIceServers(abort.signal) });
       await pc.setLocalDescription(await pc.createOffer());
       await waitForIceGathering(pc);
       const offer = pc.localDescription?.sdp;

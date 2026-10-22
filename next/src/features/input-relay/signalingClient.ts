@@ -8,6 +8,26 @@ export const RTC_CONFIGURATION: RTCConfiguration = {
   iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
 };
 
+/**
+ * 接続に使う ICE サーバーを取りに行く。
+ *
+ * サーバー側に TURN が設定されていれば、端末同士が直接つながらないネットワークでも
+ * 中継経由でつながる。取れなければ STUN だけで進める。
+ */
+export async function fetchIceServers(signal?: AbortSignal): Promise<RTCIceServer[]> {
+  try {
+    const res = await fetch('/api/relay/ice-servers', { cache: 'no-store', signal });
+    if (!res.ok) throw new Error(String(res.status));
+    const body: unknown = await res.json();
+    if (typeof body === 'object' && body !== null && 'iceServers' in body && Array.isArray(body.iceServers)) {
+      return body.iceServers as RTCIceServer[];
+    }
+  } catch (error) {
+    if (signal?.aborted) throw error;
+  }
+  return RTC_CONFIGURATION.iceServers ?? [];
+}
+
 /** SDP の交換後、これだけ待っても DataChannel が開かなければ直接つながらないとみなす */
 export const CONNECT_TIMEOUT_MS = 15_000;
 

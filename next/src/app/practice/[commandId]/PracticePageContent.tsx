@@ -9,9 +9,11 @@ import { LandscapeGuard } from '@/components/LandscapeGuard';
 export function PracticePageContent({
   commandId,
   timeLimit,
+  relayRoom = null,
 }: {
   commandId: string;
   timeLimit: number | null;
+  relayRoom?: string | null;
 }) {
   const { getCommand } = useCommandStore();
   const router = useRouter();
@@ -32,6 +34,7 @@ export function PracticePageContent({
         command={command}
         onExit={() => router.push(`/commands/${commandId}`)}
         timeLimit={timeLimit}
+        relayRoom={relayRoom}
       />
     </LandscapeGuard>
   );

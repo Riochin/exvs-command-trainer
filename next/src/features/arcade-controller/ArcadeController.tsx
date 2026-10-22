@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import type React from 'react';
 import { useControllerInput } from '@/hooks/useControllerInput';
 import { useChargeInput, type ChargeableButton } from '@/hooks/useChargeInput';
@@ -299,7 +299,9 @@ export function ArcadeController({
   ]);
 
   const onRawInputRef = useRef(onRawInput);
-  onRawInputRef.current = onRawInput;
+  useLayoutEffect(() => {
+    onRawInputRef.current = onRawInput;
+  }, [onRawInput]);
 
   const getHandlers = useCallback(
     (button: ButtonType) => {

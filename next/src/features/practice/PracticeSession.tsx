@@ -9,6 +9,8 @@ import type { ControllerButtonState } from '@/features/arcade-controller/Control
 import { CommandHint } from './CommandHint';
 import { SessionResult } from './SessionResult';
 import { CapsuleButton } from '@/components/CapsuleButton';
+import { RelayStatusBadge } from '@/features/input-relay/RelayStatusBadge';
+import { useRelaySender } from '@/features/input-relay/useRelaySender';
 import type { ButtonType, Command } from '@/types';
 import type { ArcadePhysicalButton } from '@/features/arcade-controller/ArcadeController';
 import styles from './PracticeSession.module.css';
@@ -41,9 +43,11 @@ export interface PracticeSessionProps {
   command: Command;
   onExit: () => void;
   timeLimit?: number | null;
+  /** 入力リレー（試作）のルームコード。指定時は入力を PC へ送る */
+  relayRoom?: string | null;
 }
 
-export function PracticeSession({ command, onExit, timeLimit = null }: PracticeSessionProps) {
+export function PracticeSession({ command, onExit, timeLimit = null, relayRoom = null }: PracticeSessionProps) {
   const { trackSessionStart, trackAttempt, trackSessionEnd } = useAnalytics();
 
   // sessionId はセッション開始ごとに新しい UUID を生成して ref に保持
@@ -77,6 +81,8 @@ export function PracticeSession({ command, onExit, timeLimit = null }: PracticeS
   };
 
   const { state, start, end, handleButtonPress } = usePracticeSession(analyticsOptions);
+  const relay = useRelaySender(relayRoom);
+  const { sendButton: relaySendButton } = relay;
   const [controllerFeedback, setControllerFeedback] = useState<ControllerButtonState>('neutral');
   const [timeLeft, setTimeLeft] = useState<number | null>(timeLimit);
 
@@ -115,9 +121,10 @@ export function PracticeSession({ command, onExit, timeLimit = null }: PracticeS
   const wrappedHandleButtonPress = useCallback(
     (button: ButtonType) => {
       setControllerFeedback('neutral');
+      relaySendButton(button);
       handleButtonPress(button);
     },
-    [handleButtonPress],
+    [handleButtonPress, relaySendButton],
   );
 
   if (state.status === 'completed') {
@@ -158,6 +165,7 @@ export function PracticeSession({ command, onExit, timeLimit = null }: PracticeS
             )}
             {state.lastResult === 'success' && <div data-testid="result-success" className={styles.resultSuccess}>SUCCESS</div>}
             {state.lastResult === 'failure' && <div data-testid="result-failure" className={styles.resultFailure}>MISS</div>}
+            {relayRoom !== null && <RelayStatusBadge room={relayRoom} connection={relay.connection} />}
           </div>
         </div>
         <CapsuleButton variant="danger" onClick={end}>練習終了</CapsuleButton>
@@ -167,6 +175,7 @@ export function PracticeSession({ command, onExit, timeLimit = null }: PracticeS
           onButtonPress={wrappedHandleButtonPress}
           highlightedPhysicalButtons={highlightedPhysicalButtons}
           buttonStateOverride={controllerFeedback}
+          onRawInput={relay.enabled ? relay.sendRaw : undefined}
         />
       </div>
     </div>

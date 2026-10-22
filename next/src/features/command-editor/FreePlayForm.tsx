@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { ArcadeController } from '@/features/arcade-controller/ArcadeController';
-import { RelayStatusBadge } from '@/features/input-relay/RelayStatusBadge';
+import { RelayControl } from '@/features/input-relay/RelayControl';
 import { useRelaySender } from '@/features/input-relay/useRelaySender';
 import type { ButtonType, CommandStep } from '@/types';
 import styles from './FreePlayForm.module.css';
@@ -48,9 +48,11 @@ function buildPreviewItems(sequence: CommandStep[]): PreviewItem[] {
 export interface FreePlayFormProps {
   /** 入力リレー（試作）のルームコード。指定時は入力を PC へ送る */
   relayRoom?: string | null;
+  /** 指定時は PC連携の入口を出し、ルームコードの変更をここへ通知する */
+  onRelayRoomChange?: (room: string | null) => void;
 }
 
-export function FreePlayForm({ relayRoom = null }: FreePlayFormProps = {}) {
+export function FreePlayForm({ relayRoom = null, onRelayRoomChange }: FreePlayFormProps = {}) {
   const [sequence, setSequence] = useState<CommandStep[]>([]);
   const relay = useRelaySender(relayRoom);
   const sequencePreviewRef = useRef<HTMLDivElement>(null);
@@ -71,7 +73,14 @@ export function FreePlayForm({ relayRoom = null }: FreePlayFormProps = {}) {
     <div className={styles.form}>
       <header className={styles.header}>
         <h1 className={styles.title}>EXVSコマンド道場</h1>
-        {relayRoom !== null && <RelayStatusBadge room={relayRoom} connection={relay.connection} />}
+        {onRelayRoomChange && (
+          <RelayControl
+            room={relayRoom}
+            connection={relay.connection}
+            error={relay.error}
+            onRoomChange={onRelayRoomChange}
+          />
+        )}
       </header>
       <div className={styles.sequenceRow}>
         <div ref={sequencePreviewRef} data-testid="sequence-preview" className={styles.sequencePreview}>

@@ -9,7 +9,7 @@ import type { ControllerButtonState } from '@/features/arcade-controller/Control
 import { CommandHint } from './CommandHint';
 import { SessionResult } from './SessionResult';
 import { CapsuleButton } from '@/components/CapsuleButton';
-import { RelayStatusBadge } from '@/features/input-relay/RelayStatusBadge';
+import { RelayControl } from '@/features/input-relay/RelayControl';
 import { useRelaySender } from '@/features/input-relay/useRelaySender';
 import type { ButtonType, Command } from '@/types';
 import type { ArcadePhysicalButton } from '@/features/arcade-controller/ArcadeController';
@@ -45,9 +45,17 @@ export interface PracticeSessionProps {
   timeLimit?: number | null;
   /** 入力リレー（試作）のルームコード。指定時は入力を PC へ送る */
   relayRoom?: string | null;
+  /** 指定時は PC連携の入口を出し、ルームコードの変更をここへ通知する */
+  onRelayRoomChange?: (room: string | null) => void;
 }
 
-export function PracticeSession({ command, onExit, timeLimit = null, relayRoom = null }: PracticeSessionProps) {
+export function PracticeSession({
+  command,
+  onExit,
+  timeLimit = null,
+  relayRoom = null,
+  onRelayRoomChange,
+}: PracticeSessionProps) {
   const { trackSessionStart, trackAttempt, trackSessionEnd } = useAnalytics();
 
   // sessionId はセッション開始ごとに新しい UUID を生成して ref に保持
@@ -165,7 +173,14 @@ export function PracticeSession({ command, onExit, timeLimit = null, relayRoom =
             )}
             {state.lastResult === 'success' && <div data-testid="result-success" className={styles.resultSuccess}>SUCCESS</div>}
             {state.lastResult === 'failure' && <div data-testid="result-failure" className={styles.resultFailure}>MISS</div>}
-            {relayRoom !== null && <RelayStatusBadge room={relayRoom} connection={relay.connection} />}
+            {onRelayRoomChange && (
+              <RelayControl
+                room={relayRoom}
+                connection={relay.connection}
+                error={relay.error}
+                onRoomChange={onRelayRoomChange}
+              />
+            )}
           </div>
         </div>
         <CapsuleButton variant="danger" onClick={end}>練習終了</CapsuleButton>

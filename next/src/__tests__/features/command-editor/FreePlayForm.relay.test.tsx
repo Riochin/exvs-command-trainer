@@ -24,7 +24,7 @@ describe('FreePlayForm 入力リレー', () => {
     }));
   });
 
-  it('relayRoom がなければ接続状態を出さず、生入力も送らない', async () => {
+  it('onRelayRoomChange がなければ PC連携の入口を出さず、生入力も送らない', async () => {
     render(<FreePlayForm />);
     expect(useRelaySender).toHaveBeenCalledWith(null);
     expect(screen.queryByTestId('relay-status')).toBeNull();
@@ -37,9 +37,9 @@ describe('FreePlayForm 入力リレー', () => {
   });
 
   it('relayRoom があれば接続状態を出し、生入力と解釈済み入力を送る', async () => {
-    render(<FreePlayForm relayRoom="ABCD" />);
+    render(<FreePlayForm relayRoom="ABCD" onRelayRoomChange={vi.fn()} />);
     expect(useRelaySender).toHaveBeenCalledWith('ABCD');
-    expect(screen.getByTestId('relay-status').textContent).toBe('RELAY ON');
+    expect(screen.getByTestId('relay-status').textContent).toBe('PC 接続済');
 
     const shot = screen.getByRole('button', { name: '射撃' });
     fireEvent.pointerDown(shot, { pointerId: 1 });

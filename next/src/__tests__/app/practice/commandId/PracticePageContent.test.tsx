@@ -14,6 +14,7 @@ vi.mock('@/hooks/usePracticeLog', () => ({
 }));
 vi.mock('next/navigation', () => ({
   useRouter: vi.fn(),
+  usePathname: vi.fn().mockReturnValue('/practice/cmd'),
 }));
 vi.mock('next-auth/react', () => ({
   useSession: vi.fn().mockReturnValue({ data: null, status: 'unauthenticated' }),

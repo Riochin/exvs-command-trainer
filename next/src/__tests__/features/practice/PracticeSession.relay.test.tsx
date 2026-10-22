@@ -51,7 +51,7 @@ describe('PracticeSession 入力リレー', () => {
     }));
   });
 
-  it('relayRoom がなければ接続状態を出さず、何も送らない', async () => {
+  it('onRelayRoomChange がなければ PC連携の入口を出さず、何も送らない', async () => {
     render(<PracticeSession command={command} onExit={vi.fn()} />);
     expect(useRelaySender).toHaveBeenCalledWith(null);
     expect(screen.queryByTestId('relay-status')).toBeNull();
@@ -64,9 +64,9 @@ describe('PracticeSession 入力リレー', () => {
   });
 
   it('relayRoom があれば接続状態を出し、生入力と解釈済み入力を送る', async () => {
-    render(<PracticeSession command={command} onExit={vi.fn()} relayRoom="ABCD" />);
+    render(<PracticeSession command={command} onExit={vi.fn()} relayRoom="ABCD" onRelayRoomChange={vi.fn()} />);
     expect(useRelaySender).toHaveBeenCalledWith('ABCD');
-    expect(screen.getByTestId('relay-status').textContent).toBe('RELAY ON');
+    expect(screen.getByTestId('relay-status').textContent).toBe('PC 接続済');
 
     const shot = screen.getByRole('button', { name: '射撃' });
     fireEvent.pointerDown(shot, { pointerId: 1 });

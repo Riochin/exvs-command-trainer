@@ -61,7 +61,6 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
   const host = useRelayHost();
   const rtt = summarize(host.rttMs);
   const latency = summarize(host.latencyMs);
-  const relayQuery = host.room ? `?relay=${host.room}` : '';
 
   return (
     <div className={styles.app}>
@@ -95,10 +94,11 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
                 ) : (
                   <span>このサイト</span>
                 )}{' '}
-                を開き、練習したいコマンドの練習画面に進む
+                を開き、フリー練習かコマンドの練習画面に進む
               </li>
               <li>
-                アドレスの末尾に <code className={styles.code}>{relayQuery || '?relay=XXXX'}</code> を付けて開き直す
+                画面上部の <span className={styles.chip}>PC連携</span> を押し、コード{' '}
+                <code className={styles.code}>{host.room ?? '----'}</code> を入力して「接続」
               </li>
             </ol>
             <button type="button" className={styles.restart} onClick={host.restart}>

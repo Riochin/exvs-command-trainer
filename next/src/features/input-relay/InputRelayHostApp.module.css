@@ -120,6 +120,16 @@
   overflow-wrap: anywhere;
 }
 
+.chip {
+  padding: 0.05rem 0.4rem;
+  background: var(--led-bg);
+  color: var(--led-on);
+  border: 1px solid var(--surface-plate-edge);
+  border-radius: 3px;
+  font-family: var(--font-led);
+  font-size: 0.8rem;
+}
+
 .restart {
   justify-self: start;
   padding: 0.35rem 0.75rem;

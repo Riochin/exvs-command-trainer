@@ -13,7 +13,7 @@ import type { RelayConnectionState } from './types';
 import styles from './InputRelayHostApp.module.css';
 
 export type InputRelayHostAppProps = {
-  /** スマホから開く PC の URL 候補（開発サーバーが LAN IP から求めたもの） */
+  /** スマホから開く PC の URL 候補（開発サーバーが LAN IP から求めたもの）。本番では空 */
   readonly lanOrigins: ReadonlyArray<string>;
 };
 
@@ -67,7 +67,7 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
     <div className={styles.app}>
       <header className={styles.header}>
         <h1 className={styles.title}>INPUT RELAY</h1>
-        <p className={styles.note}>スマホの練習画面の入力を WebRTC で受けて遅延を測る試作（開発サーバー専用）</p>
+        <p className={styles.note}>スマホの練習画面の入力を WebRTC で受けて遅延を測る試作</p>
       </header>
 
       <div className={styles.scrollRegion}>
@@ -93,7 +93,7 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
                     </code>
                   ))
                 ) : (
-                  <span>PC の LAN IP（例: http://192.168.x.x:3000）</span>
+                  <span>このサイト</span>
                 )}{' '}
                 を開き、練習したいコマンドの練習画面に進む
               </li>

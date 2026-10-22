@@ -1,9 +1,17 @@
 import type { SignalKind } from './types';
 
+/**
+ * 本番の https ページではブラウザが LAN 内アドレスを mDNS 名で隠すことがあり、
+ * 環境によっては名前が解決できず同じ Wi-Fi でもつながらない。STUN で得たアドレスを候補に足して補う。
+ */
+export const RTC_CONFIGURATION: RTCConfiguration = {
+  iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+};
+
 /** SDP の取りに行き間隔。接続時に一度だけ待つものなので短めでよい */
 export const SIGNAL_POLL_INTERVAL_MS = 500;
 
-/** ICE 候補が出そろうのを待つ上限。LAN 内なら通常は数十 ms で終わる */
+/** ICE 候補が出そろうのを待つ上限。STUN の応答待ちを含めても通常は 1 秒かからない */
 const ICE_GATHERING_TIMEOUT_MS = 3000;
 
 function endpoint(room: string): string {

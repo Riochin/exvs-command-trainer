@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ArcadeRawInput } from '@/features/arcade-controller/ArcadeController';
 import type { ButtonType } from '@/types';
 import { decodeRelayMessage, encodeRelayMessage, isRoomCode } from './protocol';
-import { isPeerGone, pollSignal, postSignal, waitForIceGathering } from './signalingClient';
+import { isPeerGone, pollSignal, postSignal, RTC_CONFIGURATION, waitForIceGathering } from './signalingClient';
 import type { RelayConnectionState, RelayMessage } from './types';
 
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
@@ -26,7 +26,7 @@ export function useRelaySender(room: string | null) {
     if (room === null || !isRoomCode(room)) return;
 
     const abort = new AbortController();
-    const pc = new RTCPeerConnection({ iceServers: [] });
+    const pc = new RTCPeerConnection(RTC_CONFIGURATION);
     const setIfActive = (next: RelayConnectionState) => {
       if (!abort.signal.aborted) setConnection(next);
     };

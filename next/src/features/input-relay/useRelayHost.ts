@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { estimateClockOffset, oneWayLatency, pushBounded, roundTripTime, type PingSample } from './latencyStats';
 import { decodeRelayMessage, encodeRelayMessage, generateRoomCode } from './protocol';
-import { isPeerGone, pollSignal, postSignal, waitForIceGathering } from './signalingClient';
+import { isPeerGone, pollSignal, postSignal, RTC_CONFIGURATION, waitForIceGathering } from './signalingClient';
 import type { RelayConnectionState, RelayInputMessage } from './types';
 
 export const PING_INTERVAL_MS = 500;
@@ -59,7 +59,7 @@ export function useRelayHost() {
   useEffect(() => {
     const abort = new AbortController();
     const room = generateRoomCode();
-    const pc = new RTCPeerConnection({ iceServers: [] });
+    const pc = new RTCPeerConnection(RTC_CONFIGURATION);
     // 遅れた入力を待たない。届かなければ捨てる
     const channel = pc.createDataChannel('input', { ordered: false, maxRetransmits: 0 });
     let pingTimer: ReturnType<typeof setInterval> | null = null;

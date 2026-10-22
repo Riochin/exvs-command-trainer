@@ -33,17 +33,21 @@ const lookTarget = new Vector3();
 function CameraRig({ worldRef }: { worldRef: RefObject<SimWorld> }) {
   useFrame(({ camera }) => {
     const { mech, enemy } = worldRef.current;
-    const back = 10;
+    // 真後ろだと機体が敵を隠すので、少し右にずらす
+    const back = 13;
+    const side = 2.2;
+    const sinYaw = Math.sin(mech.yaw);
+    const cosYaw = Math.cos(mech.yaw);
     cameraTarget.set(
-      mech.pos.x - Math.sin(mech.yaw) * back,
-      mech.pos.y + 4.5,
-      mech.pos.z - Math.cos(mech.yaw) * back,
+      mech.pos.x - sinYaw * back - cosYaw * side,
+      mech.pos.y + 5.5,
+      mech.pos.z - cosYaw * back + sinYaw * side,
     );
     camera.position.lerp(cameraTarget, 0.12);
     lookTarget.set(
-      mech.pos.x + (enemy.pos.x - mech.pos.x) * 0.35,
-      mech.pos.y + 2 + (enemy.pos.y - mech.pos.y) * 0.35,
-      mech.pos.z + (enemy.pos.z - mech.pos.z) * 0.35,
+      mech.pos.x + (enemy.pos.x - mech.pos.x) * 0.5,
+      mech.pos.y + 1.5 + (enemy.pos.y - mech.pos.y) * 0.5,
+      mech.pos.z + (enemy.pos.z - mech.pos.z) * 0.5,
     );
     camera.lookAt(lookTarget);
   });

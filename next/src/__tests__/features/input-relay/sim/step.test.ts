@@ -71,6 +71,21 @@ describe('sim', () => {
     expect(applyInput(world, 'shot')).toBe(true);
   });
 
+  it('地上でブーストを使い切っても、止まれば硬直のあとに回復する', () => {
+    const world = createWorld();
+    // BD が切れる前に次の BD を重ねて、止まらずに使い切る
+    applyInput(world, 'bd');
+    for (let i = 0; i < 2000 && !world.mech.overheat; i++) {
+      if (world.mech.actionTime > 0.4) applyInput(world, 'bd');
+      stepWorld(world, FIXED_DT);
+    }
+    expect(world.mech.grounded).toBe(true);
+    expect(world.mech.overheat).toBe(true);
+    run(world, LANDING_LAG_S + 0.1);
+    expect(world.mech.overheat).toBe(false);
+    expect(world.mech.boost).toBe(BOOST_MAX);
+  });
+
   it('射撃でビームが出て敵に当たる', () => {
     const world = createWorld();
     applyInput(world, 'shot');
@@ -94,8 +109,9 @@ describe('sim', () => {
     // 遠いと届かないので BD で詰めてから
     for (let i = 0; i < 2; i++) {
       applyInput(world, 'bd');
-      run(world, 0.5);
+      run(world, 0.45);
     }
+    // BD 中に格闘で上書きする
     applyInput(world, 'melee');
     run(world, ACTIONS.melee.duration);
     expect(world.enemy.hitCount).toBe(1);

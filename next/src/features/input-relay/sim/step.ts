@@ -217,6 +217,11 @@ function stepMechPhysics(world: SimWorld, dt: number): void {
     mech.grounded = false;
   }
 
+  // 地上でブーストを使って止まったときも、着地と同じ硬直を挟んで回復させる（地上 BD を使い切ったときなど）
+  if (mech.grounded && mech.action === 'idle' && mech.landingLag === 0 && mech.boost < BOOST_MAX) {
+    mech.landingLag = LANDING_LAG_S;
+  }
+
   if (mech.landingLag > 0) {
     mech.landingLag -= dt;
     if (mech.landingLag <= 0) {
@@ -273,8 +278,11 @@ export function stepWorld(world: SimWorld, dt: number): void {
 /** 描画フレームの間隔がばらついても挙動が変わらないよう、固定刻みで進める */
 export const FIXED_DT = 1 / 120;
 
+/** タブ復帰などで一度に大きく進めすぎないための上限。低フレームレートでも速度は保てる長さにする */
+const MAX_ADVANCE_S = 1;
+
 export function advanceWorld(world: SimWorld, elapsed: number, carry: number): number {
-  let remaining = Math.min(elapsed, 0.25) + carry;
+  let remaining = Math.min(elapsed, MAX_ADVANCE_S) + carry;
   while (remaining >= FIXED_DT) {
     stepWorld(world, FIXED_DT);
     remaining -= FIXED_DT;

@@ -55,8 +55,17 @@ const INITIAL_STATE: RelayHostState = {
  * PC 側。ルームを作って offer を置き、スマホからの answer を待って DataChannel を張る。
  * 接続後は ping で時計を合わせつつ、届いた入力の片道遅延を記録する。
  */
-export function useRelayHost() {
+export type UseRelayHostOptions = {
+  /** 入力が届いた瞬間に呼ぶ（3D ビューの sim に即座に渡すため。React の再描画を待たない） */
+  onInput?: (message: RelayInputMessage) => void;
+};
+
+export function useRelayHost({ onInput }: UseRelayHostOptions = {}) {
   const [state, setState] = useState<RelayHostState>(INITIAL_STATE);
+  const onInputRef = useRef(onInput);
+  useEffect(() => {
+    onInputRef.current = onInput;
+  }, [onInput]);
   const [sessionKey, setSessionKey] = useState(0);
   const samplesRef = useRef<PingSample[]>([]);
 
@@ -113,6 +122,7 @@ export function useRelayHost() {
         return;
       }
       if (message.type === 'ping') return;
+      onInputRef.current?.(message);
 
       const offset = estimateClockOffset(samplesRef.current);
       const latencyMs = offset === null ? null : oneWayLatency(message.t, receivedAt, offset);

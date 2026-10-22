@@ -10,6 +10,14 @@ import styles from './ArcadeController.module.css';
 
 export type ArcadePhysicalButton = 'shot' | 'melee' | 'jump';
 
+export type ArcadeRawInputPhase = 'down' | 'up' | 'cancel';
+
+/** チャージ・同時押し・BD の解釈前の、物理ボタンの押下・解放そのもの */
+export type ArcadeRawInput = {
+  button: ArcadePhysicalButton;
+  phase: ArcadeRawInputPhase;
+};
+
 /** 同時押し判定用の短い遅延（ジャンプ単独／射撃・格闘の tap・charge を、相手ボタンが続く場合に誤発火しないため） */
 export const SIMULTANEOUS_INPUT_DEFER_MS = 50;
 

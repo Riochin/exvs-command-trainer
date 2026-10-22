@@ -5,7 +5,7 @@
  */
 import { useEffect, useState, type RefObject } from 'react';
 import { actionLabel, BOOST_MAX } from '../sim/actions';
-import type { SimEvent, SimWorld } from '../sim/types';
+import type { LeverDirection, SimEvent, SimWorld } from '../sim/types';
 import styles from './MechHud.module.css';
 
 const HUD_INTERVAL_MS = 50;
@@ -25,7 +25,15 @@ type HudSnapshot = {
   chain: string[];
   route: SimEvent | null;
   reject: SimEvent | null;
+  lever: LeverDirection[];
 };
+
+const LEVER_ARROWS: ReadonlyArray<{ direction: LeverDirection; glyph: string }> = [
+  { direction: 'forward', glyph: '▲' },
+  { direction: 'left', glyph: '◀' },
+  { direction: 'right', glyph: '▶' },
+  { direction: 'back', glyph: '▼' },
+];
 
 function latest(world: SimWorld, kind: SimEvent['kind']): SimEvent | null {
   for (let i = world.events.length - 1; i >= 0; i--) {
@@ -50,6 +58,7 @@ function snapshot(world: SimWorld): HudSnapshot {
     chain: mech.action === 'idle' ? [] : mech.chain.map(actionLabel),
     route: latest(world, 'route'),
     reject: latest(world, 'reject'),
+    lever: [...mech.leverHeld],
   };
 }
 
@@ -88,6 +97,13 @@ export function MechHud({ worldRef }: { worldRef: RefObject<SimWorld> }) {
       <div className={styles.charge}>
         {hud.chargingShot && <span className={styles.chargeShot}>射CS チャージ中</span>}
         {hud.chargingMelee && <span className={styles.chargeMelee}>格CS チャージ中</span>}
+      </div>
+      <div className={styles.lever} aria-label="レバー">
+        {LEVER_ARROWS.map(({ direction, glyph }) => (
+          <span key={direction} className={styles.arrow} data-direction={direction} data-on={hud.lever.includes(direction)}>
+            {glyph}
+          </span>
+        ))}
       </div>
       <div className={styles.boost}>
         <div className={styles.boostHead}>

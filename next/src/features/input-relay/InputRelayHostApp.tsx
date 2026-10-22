@@ -6,14 +6,14 @@
  * スマホの練習画面から届いた入力で 3D の機体を動かす。脇には遅延の集計と入力ログを出す。
  */
 import dynamic from 'next/dynamic';
-import { useCallback, useRef } from 'react';
-import { ArcadeController } from '@/features/arcade-controller/ArcadeController';
+import { useCallback, useEffect, useRef } from 'react';
+import { ArcadeController, type ArcadeRawInput } from '@/features/arcade-controller/ArcadeController';
 import type { ButtonType } from '@/types';
 import { inputLabel, phaseLabel } from './inputLabels';
 import { summarize, type LatencySummary } from './latencyStats';
 import { useRelayHost, type RelayLogEntry } from './useRelayHost';
-import { applyInput, createWorld } from './sim/step';
-import type { SimWorld } from './sim/types';
+import { applyInput, applyRawInput, createWorld, setLever } from './sim/step';
+import type { LeverDirection, SimWorld } from './sim/types';
 import type { RelayConnectionState, RelayInputMessage } from './types';
 import { MechHud } from './viewer/MechHud';
 import styles from './InputRelayHostApp.module.css';
@@ -66,15 +66,45 @@ function describeEntry(entry: RelayLogEntry): string {
   return inputLabel(message.button);
 }
 
+/** PC の十字キーをレバー代わりにする */
+const ARROW_TO_LEVER: Readonly<Record<string, LeverDirection>> = {
+  ArrowUp: 'forward',
+  ArrowDown: 'back',
+  ArrowLeft: 'left',
+  ArrowRight: 'right',
+};
+
 export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
   const worldRef = useRef<SimWorld>(createWorld());
   const handleInput = useCallback((message: RelayInputMessage) => {
     if (message.type === 'button') applyInput(worldRef.current, message.button);
+    else applyRawInput(worldRef.current, message);
   }, []);
   const host = useRelayHost({ onInput: handleInput });
   // PC のキーボード（F/Y/I）でも動かせるようにする。判定はアケコンと同じものを使う
   const handleKeyboardInput = useCallback((button: ButtonType) => {
     applyInput(worldRef.current, button);
+  }, []);
+  const handleKeyboardRaw = useCallback((input: ArcadeRawInput) => {
+    applyRawInput(worldRef.current, input);
+  }, []);
+
+  useEffect(() => {
+    const onKey = (pressed: boolean) => (e: KeyboardEvent) => {
+      const direction = ARROW_TO_LEVER[e.key];
+      if (direction === undefined) return;
+      e.preventDefault();
+      if (pressed && e.repeat) return;
+      setLever(worldRef.current, direction, pressed);
+    };
+    const onKeyDown = onKey(true);
+    const onKeyUp = onKey(false);
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+    };
   }, []);
   const rtt = summarize(host.rttMs);
   const latency = summarize(host.latencyMs);
@@ -95,11 +125,11 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
         <button type="button" className={styles.restart} onClick={host.restart}>
           ルームを作り直す
         </button>
-        <p className={styles.keys}>PC のキーボードでも操作できます: F 射撃 / Y 格闘 / I ジャンプ</p>
+        <p className={styles.keys}>PC のキーボードでも操作できます: F 射撃 / Y 格闘 / I ジャンプ（長押しで上昇） / 十字キー 移動（2 回倒してステップ）</p>
       </header>
       {/* キーボード操作の判定だけを借りる。ボタン自体は表示しない */}
       <div className={styles.hiddenController} aria-hidden="true">
-        <ArcadeController onButtonPress={handleKeyboardInput} />
+        <ArcadeController onButtonPress={handleKeyboardInput} onRawInput={handleKeyboardRaw} />
       </div>
 
       <div className={styles.main}>

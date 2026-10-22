@@ -37,7 +37,7 @@ function isSlashing(mech: MechState): boolean {
 }
 
 function isBoosting(mech: MechState): boolean {
-  return mech.action === 'bd' || mech.action === 'jump' || mech.action === 'special-melee' || mech.action === 'melee-cs' || (mech.action === 'melee' && !mech.actionFired);
+  return mech.action === 'bd' || mech.action === 'jump' || mech.action === 'step' || mech.action === 'special-melee' || mech.action === 'melee-cs' || (mech.action === 'melee' && !mech.actionFired);
 }
 
 function Part({
@@ -112,8 +112,17 @@ export function MechModel({ worldRef }: { worldRef: RefObject<SimWorld> }) {
     if (body.current) {
       // 特格は回転斬り、BD・格闘の踏み込みは前傾、着地硬直は沈み込む
       body.current.rotation.y = mech.action === 'special-melee' ? p * Math.PI * 4 : 0;
-      const lean = mech.action === 'bd' ? 0.45 : isSlashing(mech) && !mech.actionFired ? 0.35 : 0;
+      let lean = mech.action === 'bd' ? 0.45 : isSlashing(mech) && !mech.actionFired ? 0.35 : 0;
+      let tilt = 0;
+      // ステップは進む向きへ体を傾ける
+      if (mech.action === 'step' && mech.stepDir) {
+        const forward = mech.stepDir.x * Math.sin(mech.yaw) + mech.stepDir.z * Math.cos(mech.yaw);
+        const right = mech.stepDir.x * -Math.cos(mech.yaw) + mech.stepDir.z * Math.sin(mech.yaw);
+        lean = forward * 0.35;
+        tilt = -right * 0.4;
+      }
       body.current.rotation.x = ease(body.current.rotation.x, lean, 0.25);
+      body.current.rotation.z = ease(body.current.rotation.z, tilt, 0.25);
       body.current.position.y = ease(body.current.position.y, mech.landingLag > 0 ? -0.25 : 0, 0.3);
     }
 

@@ -101,6 +101,45 @@
   color: #ff6ad5;
 }
 
+.lever {
+  position: absolute;
+  /* 左下の隅は開発時の Next のバッジと重なるので少し内側に置く */
+  left: 3.5rem;
+  bottom: 1rem;
+  display: grid;
+  grid-template-areas:
+    '. forward .'
+    'left . right'
+    '. back .';
+  gap: 0.1rem;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.arrow {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.arrow[data-on='true'] {
+  color: var(--led-on);
+}
+
+.arrow[data-direction='forward'] {
+  grid-area: forward;
+}
+
+.arrow[data-direction='back'] {
+  grid-area: back;
+}
+
+.arrow[data-direction='left'] {
+  grid-area: left;
+}
+
+.arrow[data-direction='right'] {
+  grid-area: right;
+}
+
 .boost {
   position: absolute;
   right: 1rem;

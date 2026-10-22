@@ -43,8 +43,9 @@ function CameraRig({ worldRef }: { worldRef: RefObject<SimWorld> }) {
     // 真後ろだと機体が敵を隠すので、少し横にずらす
     const back = 13;
     const side = 2.2;
-    const sinYaw = Math.sin(mech.yaw);
-    const cosYaw = Math.cos(mech.yaw);
+    // 機体の向きではなく敵の方向を基準にする（BD で後ろを向いても画面は敵を見続ける）
+    const sinYaw = Math.sin(mech.lockYaw);
+    const cosYaw = Math.cos(mech.lockYaw);
     cameraTarget.set(
       mech.pos.x - sinYaw * back - cosYaw * side,
       mech.pos.y + 5.5,

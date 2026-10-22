@@ -6,13 +6,13 @@
  * スマホの練習画面から届いた入力で 3D の機体を動かす。脇には遅延の集計と入力ログを出す。
  */
 import dynamic from 'next/dynamic';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArcadeController, type ArcadeRawInput } from '@/features/arcade-controller/ArcadeController';
 import type { ButtonType } from '@/types';
 import { inputLabel, phaseLabel } from './inputLabels';
 import { summarize, type LatencySummary } from './latencyStats';
 import { useRelayHost, type RelayLogEntry } from './useRelayHost';
-import { applyInput, applyRawInput, createWorld, setLever } from './sim/step';
+import { applyInput, applyRawInput, createWorld, ENEMY_FIRE_INTERVAL_S, setLever } from './sim/step';
 import type { LeverDirection, SimWorld } from './sim/types';
 import type { RelayConnectionState, RelayInputMessage } from './types';
 import { MechHud } from './viewer/MechHud';
@@ -75,7 +75,13 @@ const ARROW_TO_LEVER: Readonly<Record<string, LeverDirection>> = {
 };
 
 export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
-  const worldRef = useRef<SimWorld>(createWorld());
+  const worldRef = useRef<SimWorld>(createWorld({ enemyFires: true }));
+  const [enemyFires, setEnemyFires] = useState(true);
+  const toggleEnemyFire = useCallback(() => {
+    const next = !enemyFires;
+    worldRef.current.enemy.fireInterval = next ? ENEMY_FIRE_INTERVAL_S : 0;
+    setEnemyFires(next);
+  }, [enemyFires]);
   const handleInput = useCallback((message: RelayInputMessage) => {
     if (message.type === 'button') applyInput(worldRef.current, message.button);
     else applyRawInput(worldRef.current, message);
@@ -124,6 +130,9 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
         </p>
         <button type="button" className={styles.restart} onClick={host.restart}>
           ルームを作り直す
+        </button>
+        <button type="button" className={styles.restart} onClick={toggleEnemyFire} aria-pressed={enemyFires}>
+          敵の射撃: {enemyFires ? 'ON' : 'OFF'}
         </button>
         <p className={styles.keys}>PC のキーボードでも操作できます: F 射撃 / Y 格闘 / I ジャンプ（長押しで上昇） / 十字キー 移動（2 回倒してステップ）</p>
       </header>

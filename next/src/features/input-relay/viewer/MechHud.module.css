@@ -28,6 +28,19 @@
   color: var(--led-on);
 }
 
+.damage {
+  font-size: 1.6rem;
+  color: var(--color-error);
+}
+
+.uses {
+  color: var(--color-text-muted);
+}
+
+.uses[data-heavy='true'] {
+  color: var(--color-warning);
+}
+
 .action {
   position: absolute;
   top: 18%;

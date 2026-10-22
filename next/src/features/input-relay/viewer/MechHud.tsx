@@ -21,6 +21,8 @@ type HudSnapshot = {
   chargingShot: boolean;
   chargingMelee: boolean;
   hitCount: number;
+  mechHits: number;
+  airBoostUses: number;
   /** つないだ行動の並び（表示名） */
   chain: string[];
   route: SimEvent | null;
@@ -55,6 +57,8 @@ function snapshot(world: SimWorld): HudSnapshot {
     chargingShot: mech.charging.shot,
     chargingMelee: mech.charging.melee,
     hitCount: world.enemy.hitCount,
+    mechHits: world.mechHits,
+    airBoostUses: mech.airBoostUses,
     chain: mech.action === 'idle' ? [] : mech.chain.map(actionLabel),
     route: latest(world, 'route'),
     reject: latest(world, 'reject'),
@@ -79,6 +83,8 @@ export function MechHud({ worldRef }: { worldRef: RefObject<SimWorld> }) {
       <div className={styles.topLeft}>
         <span className={styles.caption}>HIT</span>
         <span className={styles.hits}>{hud.hitCount}</span>
+        <span className={styles.caption}>被弾</span>
+        <span className={styles.damage}>{hud.mechHits}</span>
       </div>
       <div className={styles.action} key={hud.action}>
         {hud.action}
@@ -107,7 +113,9 @@ export function MechHud({ worldRef }: { worldRef: RefObject<SimWorld> }) {
       </div>
       <div className={styles.boost}>
         <div className={styles.boostHead}>
-          <span className={styles.caption}>BOOST</span>
+          <span className={styles.caption}>
+            BOOST <span className={styles.uses} data-heavy={hud.airBoostUses > 3}>×{hud.airBoostUses}</span>
+          </span>
           {status && (
             <span className={styles.status} data-status={status}>
               {status}

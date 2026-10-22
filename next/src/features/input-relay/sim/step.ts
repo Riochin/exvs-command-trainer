@@ -253,7 +253,8 @@ function startAction(world: SimWorld, kind: MechAction, canceled: boolean, quiet
   if (bdFromJump) {
     const before = mech.chain.slice(0, -1);
     mech.chain = [...before, kind];
-    namedCancel = before.length > 0;
+    // ジャンプ中の BD はただの BD。何かの行動からつないだときだけ BDC と呼ぶ
+    namedCancel = before.length > 0 && before[before.length - 1] !== 'jump';
   } else {
     mech.chain = canceled ? [...mech.chain, kind] : [kind];
   }

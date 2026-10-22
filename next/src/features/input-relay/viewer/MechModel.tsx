@@ -97,6 +97,7 @@ export function MechModel({ worldRef }: { worldRef: RefObject<SimWorld> }) {
   const flameL = useRef<Group>(null);
   const flameR = useRef<Group>(null);
   const thrustLight = useRef<PointLight>(null);
+  const hitGlow = useRef<Mesh>(null);
 
   useFrame(({ clock }) => {
     const mech = worldRef.current.mech;
@@ -173,6 +174,10 @@ export function MechModel({ worldRef }: { worldRef: RefObject<SimWorld> }) {
     flameL.current?.scale.set(1, flame, 1);
     flameR.current?.scale.set(1, flame, 1);
     if (thrustLight.current) thrustLight.current.intensity = boosting ? 6 : 0;
+    if (hitGlow.current) {
+      hitGlow.current.visible = mech.hitFlash > 0;
+      hitGlow.current.scale.setScalar(1 + (0.3 - mech.hitFlash) * 2);
+    }
   });
 
   return (
@@ -271,6 +276,11 @@ export function MechModel({ worldRef }: { worldRef: RefObject<SimWorld> }) {
             </group>
           </group>
         </group>
+        {/* 被弾したときの赤い光 */}
+        <mesh ref={hitGlow} position={[0, 1.6, 0]} visible={false}>
+          <sphereGeometry args={[1.6, 16, 12]} />
+          <meshBasicMaterial color="#ff3b3b" transparent opacity={0.35} blending={AdditiveBlending} depthWrite={false} />
+        </mesh>
         {/* サーベルの軌跡。振った直後だけ前方に弧を出す */}
         <mesh ref={saberTrail} position={[0, 1.9, 0.6]} rotation={[0, Math.PI / 2, 0]} visible={false}>
           <torusGeometry args={[1.9, 0.18, 6, 24, Math.PI * 0.9]} />

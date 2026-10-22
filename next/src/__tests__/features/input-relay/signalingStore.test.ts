@@ -1,33 +1,62 @@
+// @vitest-environment node
 import { describe, it, expect, beforeEach } from 'vitest';
-import { clearSignalingStore, getSignal, putSignal, SIGNAL_TTL_MS } from '@/features/input-relay/signalingStore';
+import { createClient } from '@libsql/client';
+import { drizzle } from 'drizzle-orm/libsql';
+import * as schema from '@/lib/db/schema';
+import { createSignalingStore, SIGNAL_TTL_MS, type SignalingStore } from '@/features/input-relay/signalingStore';
 
 describe('signalingStore', () => {
-  beforeEach(() => {
-    clearSignalingStore();
+  let clock: number;
+  let store: SignalingStore;
+
+  beforeEach(async () => {
+    const client = createClient({ url: ':memory:' });
+    await client.execute(
+      'CREATE TABLE relay_signals (room TEXT PRIMARY KEY, offer TEXT, answer TEXT, updated_at INTEGER NOT NULL)',
+    );
+    clock = 0;
+    store = createSignalingStore(drizzle(client, { schema }), () => clock);
   });
 
-  it('置いた offer と answer を取り出せる', () => {
-    putSignal('ABCD', 'offer', 'offer-sdp', 0);
-    putSignal('ABCD', 'answer', 'answer-sdp', 1);
-    expect(getSignal('ABCD', 'offer', 2)).toBe('offer-sdp');
-    expect(getSignal('ABCD', 'answer', 2)).toBe('answer-sdp');
+  it('置いた offer と answer を取り出せる', async () => {
+    await store.put('ABCD', 'offer', 'offer-sdp');
+    clock = 1;
+    expect(await store.put('ABCD', 'answer', 'answer-sdp')).toBe(true);
+    expect(await store.get('ABCD', 'offer')).toBe('offer-sdp');
+    expect(await store.get('ABCD', 'answer')).toBe('answer-sdp');
   });
 
-  it('未登録のルームは null', () => {
-    expect(getSignal('WXYZ', 'offer', 0)).toBeNull();
+  it('未登録のルームは null', async () => {
+    expect(await store.get('WXYZ', 'offer')).toBeNull();
   });
 
-  it('offer を置き直すと古い answer は消える', () => {
-    putSignal('ABCD', 'offer', 'old', 0);
-    putSignal('ABCD', 'answer', 'answer-sdp', 1);
-    putSignal('ABCD', 'offer', 'new', 2);
-    expect(getSignal('ABCD', 'offer', 3)).toBe('new');
-    expect(getSignal('ABCD', 'answer', 3)).toBeNull();
+  it('offer のないルームには answer を置けない', async () => {
+    expect(await store.put('WXYZ', 'answer', 'answer-sdp')).toBe(false);
+    expect(await store.get('WXYZ', 'answer')).toBeNull();
   });
 
-  it('TTL を過ぎたルームは破棄される', () => {
-    putSignal('ABCD', 'offer', 'offer-sdp', 0);
-    expect(getSignal('ABCD', 'offer', SIGNAL_TTL_MS)).toBe('offer-sdp');
-    expect(getSignal('ABCD', 'offer', SIGNAL_TTL_MS + 1)).toBeNull();
+  it('offer を置き直すと古い answer は消える', async () => {
+    await store.put('ABCD', 'offer', 'old');
+    await store.put('ABCD', 'answer', 'answer-sdp');
+    await store.put('ABCD', 'offer', 'new');
+    expect(await store.get('ABCD', 'offer')).toBe('new');
+    expect(await store.get('ABCD', 'answer')).toBeNull();
+  });
+
+  it('TTL を過ぎたルームは読めず、answer も置けない', async () => {
+    await store.put('ABCD', 'offer', 'offer-sdp');
+    clock = SIGNAL_TTL_MS - 1;
+    expect(await store.get('ABCD', 'offer')).toBe('offer-sdp');
+    clock = SIGNAL_TTL_MS + 1;
+    expect(await store.get('ABCD', 'offer')).toBeNull();
+    expect(await store.put('ABCD', 'answer', 'answer-sdp')).toBe(false);
+  });
+
+  it('新しいルームを作るときに期限切れの行を消す', async () => {
+    await store.put('ABCD', 'offer', 'old-room');
+    clock = SIGNAL_TTL_MS + 1;
+    await store.put('WXYZ', 'offer', 'new-room');
+    clock = 0;
+    expect(await store.get('ABCD', 'offer')).toBeNull();
   });
 });

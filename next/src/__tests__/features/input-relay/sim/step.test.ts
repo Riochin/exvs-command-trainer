@@ -21,7 +21,7 @@ describe('sim', () => {
 
   it('ジャンプで上昇してブーストを消費し、着地硬直のあとに全回復する', () => {
     const world = createWorld();
-    expect(applyInput(world, 'jump')).toBe(true);
+    expect(applyInput(world, 'jump')).toBe('started');
     expect(world.mech.boost).toBe(BOOST_MAX - ACTIONS.jump.boostCost);
     run(world, 0.3);
     expect(world.mech.pos.y).toBeGreaterThan(2);
@@ -39,7 +39,7 @@ describe('sim', () => {
     while (!world.mech.grounded || world.mech.landingLag === 0) stepWorld(world, FIXED_DT);
     expect(world.mech.landingLag).toBeGreaterThan(0);
     expect(world.mech.landingLag).toBeLessThanOrEqual(LANDING_LAG_S);
-    expect(applyInput(world, 'shot')).toBe(false);
+    expect(applyInput(world, 'shot')).toBe('rejected');
   });
 
   it('BD は敵の方向へ進み、落下せず、ブーストを使い続ける', () => {
@@ -66,9 +66,9 @@ describe('sim', () => {
     }
     expect(world.mech.overheat).toBe(true);
     expect(world.mech.grounded).toBe(false);
-    expect(applyInput(world, 'bd')).toBe(false);
+    expect(applyInput(world, 'bd')).toBe('rejected');
     // ブーストを使わない射撃は出せる
-    expect(applyInput(world, 'shot')).toBe(true);
+    expect(applyInput(world, 'shot')).toBe('started');
   });
 
   it('地上でブーストを使い切っても、止まれば硬直のあとに回復する', () => {
@@ -129,13 +129,136 @@ describe('sim', () => {
     expect(world.projectiles[0].kind).toBe('cs-beam');
   });
 
-  it('行動中の新しい入力は今の行動を上書きする', () => {
+  describe('キャンセルルート', () => {
+    function fireShot(world: SimWorld) {
+      applyInput(world, 'shot');
+      run(world, ACTIONS.shot.fireAt! + FIXED_DT);
+    }
+
+    function lastEvent(world: SimWorld) {
+      return world.events[world.events.length - 1];
+    }
+
+    it('射撃の硬直は BD でキャンセルでき、BD から射撃を出すとズンダになる', () => {
+      const world = createWorld();
+      fireShot(world);
+      expect(applyInput(world, 'bd')).toBe('canceled');
+      expect(lastEvent(world).label).toBe('BDC');
+      run(world, 0.1);
+      expect(applyInput(world, 'shot')).toBe('canceled');
+      expect(lastEvent(world)).toMatchObject({ kind: 'route', label: 'ズンダ' });
+
+      run(world, ACTIONS.shot.fireAt! + FIXED_DT);
+      applyInput(world, 'bd');
+      run(world, 0.1);
+      applyInput(world, 'shot');
+      expect(lastEvent(world).label).toBe('ズンダ 3発');
+    });
+
+    it('射撃から射撃・格闘・ジャンプへは直接キャンセルできない', () => {
+      for (const next of ['shot', 'melee', 'jump'] as const) {
+        const world = createWorld();
+        fireShot(world);
+        expect(applyInput(world, next)).toBe('rejected');
+        expect(lastEvent(world)).toMatchObject({ kind: 'reject', label: 'キャンセル不可' });
+        expect(world.mech.action).toBe('shot');
+      }
+    });
+
+    it.each([
+      ['sub', 'サブC'],
+      ['special-shot', '特射C'],
+      ['special-melee', '特格C'],
+    ] as const)('射撃から %s へキャンセルできる', (next, label) => {
+      const world = createWorld();
+      fireShot(world);
+      expect(applyInput(world, next)).toBe('canceled');
+      expect(world.mech.action).toBe(next);
+      expect(lastEvent(world).label).toBe(label);
+    });
+
+    it('弾が出る前のキャンセル入力は受付まで待って出す', () => {
+      const world = createWorld();
+      applyInput(world, 'shot');
+      run(world, 0.05);
+      expect(applyInput(world, 'bd')).toBe('buffered');
+      expect(world.mech.action).toBe('shot');
+      run(world, ACTIONS.shot.fireAt!);
+      expect(world.mech.action).toBe('bd');
+      expect(world.projectiles).toHaveLength(1);
+    });
+
+    it('受付まで間が空きすぎた入力は捨てる', () => {
+      const world = createWorld();
+      applyInput(world, 'special-shot');
+      expect(applyInput(world, 'bd')).toBe('buffered');
+      run(world, ACTIONS['special-shot'].fireAt! + FIXED_DT);
+      expect(world.mech.action).toBe('special-shot');
+      expect(world.mech.buffered).toBeNull();
+    });
+
+    it('格闘は追加入力で 3 段目まで出せて、4 段目は出ない', () => {
+      const world = createWorld();
+      // BD 中に格闘を出して間合いを詰める
+      applyInput(world, 'bd');
+      run(world, 0.45);
+      applyInput(world, 'bd');
+      run(world, 0.45);
+      applyInput(world, 'melee');
+      while (!world.mech.actionFired) stepWorld(world, FIXED_DT);
+      expect(world.mech.meleeStage).toBe(1);
+
+      for (const stage of [2, 3]) {
+        expect(applyInput(world, 'melee')).toBe('canceled');
+        expect(world.mech.meleeStage).toBe(stage);
+        expect(lastEvent(world).label).toBe(`格闘 ${stage}段目`);
+        while (!world.mech.actionFired) stepWorld(world, FIXED_DT);
+      }
+      expect(applyInput(world, 'melee')).toBe('rejected');
+      expect(world.enemy.hitCount).toBe(3);
+    });
+
+    it('BD 中は何でも出せる', () => {
+      for (const next of ['shot', 'melee', 'jump', 'sub', 'special-shot', 'special-melee'] as const) {
+        const world = createWorld();
+        applyInput(world, 'bd');
+        run(world, 0.1);
+        expect(applyInput(world, next)).toBe('canceled');
+      }
+    });
+
+    it('オーバーヒート中は BD キャンセルできない', () => {
+      const world = createWorld();
+      applyInput(world, 'jump');
+      run(world, 0.1);
+      world.mech.boost = 0;
+      world.mech.overheat = true;
+      fireShot(world);
+      expect(applyInput(world, 'bd')).toBe('rejected');
+      expect(lastEvent(world).label).toBe('OVERHEAT');
+    });
+
+    it('行動が終わって止まると、つないだ並びはリセットされる', () => {
+      const world = createWorld();
+      fireShot(world);
+      run(world, ACTIONS.shot.duration);
+      expect(world.mech.action).toBe('idle');
+      applyInput(world, 'bd');
+      run(world, 0.1);
+      applyInput(world, 'shot');
+      expect(world.mech.chain).toEqual(['bd', 'shot']);
+    });
+  });
+
+  it('射撃・着地・命中で見た目の効果が出て、寿命で消える', () => {
     const world = createWorld();
     applyInput(world, 'shot');
-    run(world, 0.05);
-    applyInput(world, 'sub');
-    expect(world.mech.action).toBe('sub');
-    expect(world.mech.actionTime).toBe(0);
+    run(world, ACTIONS.shot.fireAt! + FIXED_DT);
+    expect(world.effects.map((e) => e.kind)).toContain('muzzle');
+    run(world, 0.5);
+    expect(world.effects.map((e) => e.kind)).toContain('hit');
+    run(world, 1);
+    expect(world.effects).toHaveLength(0);
   });
 
   it('advanceWorld は固定刻みで進め、余りを返す', () => {

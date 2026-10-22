@@ -8,12 +8,13 @@ import {
   MELEE_REACH,
   type ActionDef,
 } from './actions';
-import type { ActionKind, Projectile, SimWorld, Vec3 } from './types';
+import { cancelState, INPUT_BUFFER_S, routeName } from './cancel';
+import type { EffectKind, InputResult, MechAction, Projectile, SimWorld, Vec3 } from './types';
 
 /**
  * 機体のシミュレーション。毎フレーム呼ぶので、world はコピーせずその場で書き換える。
  *
- * キャンセルルートはまだ扱わない。行動中に新しい入力が来たら今の行動を上書きする。
+ * 行動中の入力は cancel.ts のキャンセルルートに従って、出す・受付まで待たせる・捨てるを決める。
  */
 
 /** 敵は左右にゆっくり動き、ロックオンで機体の向きが追従するのを見せる */
@@ -23,7 +24,10 @@ const ENEMY_SWAY_SPEED = 0.4;
 const ENEMY_HIT_RADIUS = 2.5;
 const HIT_FLASH_S = 0.3;
 
-const INPUT_TO_ACTION: Partial<Record<ButtonType, Exclude<ActionKind, 'idle'>>> = {
+const EVENT_LIMIT = 8;
+const EFFECT_LIFE: Readonly<Record<EffectKind, number>> = { hit: 0.35, muzzle: 0.12, land: 0.4, slash: 0.25 };
+
+const INPUT_TO_ACTION: Partial<Record<ButtonType, MechAction>> = {
   shot: 'shot',
   melee: 'melee',
   jump: 'jump',
@@ -50,10 +54,17 @@ export function createWorld(): SimWorld {
       actionTime: 0,
       actionFired: false,
       charging: { shot: false, melee: false },
+      meleeStage: 0,
+      buffered: null,
+      chain: [],
     },
     enemy: { pos: { ...ENEMY_BASE }, hitFlash: 0, hitCount: 0 },
     projectiles: [],
     nextProjectileId: 1,
+    events: [],
+    nextEventId: 1,
+    effects: [],
+    nextEffectId: 1,
   };
 }
 
@@ -66,30 +77,24 @@ function towardEnemy(world: SimWorld): { dx: number; dz: number; distance: numbe
   return { dx: dx / distance, dz: dz / distance, distance };
 }
 
-/**
- * 入力を受けて行動を始める。受け付けなかったら false。
- * チャージ開始は行動ではなく「溜めている」状態として持つ。
- */
-export function applyInput(world: SimWorld, button: ButtonType): boolean {
+function pushEvent(world: SimWorld, kind: 'route' | 'reject', label: string): void {
+  world.events.push({ id: world.nextEventId++, kind, label, time: world.time });
+  if (world.events.length > EVENT_LIMIT) world.events.splice(0, world.events.length - EVENT_LIMIT);
+}
+
+function spawnEffect(world: SimWorld, kind: EffectKind, pos: Vec3): void {
+  world.effects.push({ id: world.nextEffectId++, kind, pos: { ...pos }, age: 0, life: EFFECT_LIFE[kind] });
+}
+
+/** 行動を始める（キャンセルかどうかの判定は済んでいる前提）。ブーストが足りなければ false */
+function startAction(world: SimWorld, kind: MechAction, canceled: boolean): boolean {
   const mech = world.mech;
-  if (button === 'shot-charge-start') {
-    mech.charging.shot = true;
-    return true;
-  }
-  if (button === 'melee-charge-start') {
-    mech.charging.melee = true;
-    return true;
-  }
-  if (button === 'shot-charge-end') mech.charging.shot = false;
-  if (button === 'melee-charge-end') mech.charging.melee = false;
-
-  const kind = INPUT_TO_ACTION[button];
-  if (kind === undefined) return false;
-  if (mech.landingLag > 0) return false;
-
   const def = ACTIONS[kind];
   const usesBoost = def.boostCost > 0 || def.boostPerSec > 0;
-  if (usesBoost && mech.overheat) return false;
+  if (usesBoost && mech.overheat) {
+    pushEvent(world, 'reject', 'OVERHEAT');
+    return false;
+  }
 
   mech.boost -= def.boostCost;
   if (mech.boost <= 0) {
@@ -97,9 +102,14 @@ export function applyInput(world: SimWorld, button: ButtonType): boolean {
     mech.overheat = true;
   }
 
+  const comboMelee = canceled && kind === 'melee' && mech.action === 'melee';
+  mech.meleeStage = kind === 'melee' ? (comboMelee ? mech.meleeStage + 1 : 1) : 0;
+  mech.chain = canceled ? [...mech.chain, kind] : [kind];
   mech.action = kind;
-  mech.actionTime = 0;
   mech.actionFired = false;
+  mech.buffered = null;
+  // 格闘の 2・3 段目は踏み込みを省いてすぐ振る
+  mech.actionTime = comboMelee && def.fireAt !== undefined ? Math.max(0, def.fireAt - 0.2) : 0;
 
   if (def.riseSpeed !== undefined) {
     mech.vel.y = def.riseSpeed;
@@ -109,7 +119,47 @@ export function applyInput(world: SimWorld, button: ButtonType): boolean {
     // 空中で出しても高度を保つ
     mech.vel.y = 0;
   }
+
+  const name = routeName(mech.chain, mech.meleeStage, canceled);
+  if (name !== null) pushEvent(world, 'route', name);
   return true;
+}
+
+/**
+ * 入力を受けて行動を始める。チャージ開始は行動ではなく「溜めている」状態として持つ。
+ */
+export function applyInput(world: SimWorld, button: ButtonType): InputResult {
+  const mech = world.mech;
+  if (button === 'shot-charge-start') {
+    mech.charging.shot = true;
+    return 'started';
+  }
+  if (button === 'melee-charge-start') {
+    mech.charging.melee = true;
+    return 'started';
+  }
+  if (button === 'shot-charge-end') mech.charging.shot = false;
+  if (button === 'melee-charge-end') mech.charging.melee = false;
+
+  const kind = INPUT_TO_ACTION[button];
+  if (kind === undefined) return 'rejected';
+  if (mech.landingLag > 0) {
+    pushEvent(world, 'reject', '着地硬直');
+    return 'rejected';
+  }
+
+  switch (cancelState(mech, kind)) {
+    case 'free':
+      return startAction(world, kind, false) ? 'started' : 'rejected';
+    case 'open':
+      return startAction(world, kind, true) ? 'canceled' : 'rejected';
+    case 'notYet':
+      mech.buffered = { action: kind, at: world.time };
+      return 'buffered';
+    case 'closed':
+      pushEvent(world, 'reject', 'キャンセル不可');
+      return 'rejected';
+  }
 }
 
 function spawnProjectiles(world: SimWorld, def: ActionDef): void {
@@ -117,6 +167,11 @@ function spawnProjectiles(world: SimWorld, def: ActionDef): void {
   if (!spec) return;
   const { mech } = world;
   const muzzle: Vec3 = { x: mech.pos.x, y: mech.pos.y + 1.8, z: mech.pos.z };
+  spawnEffect(world, 'muzzle', {
+    x: muzzle.x + Math.sin(mech.yaw) * 1.6,
+    y: muzzle.y - 0.6,
+    z: muzzle.z + Math.cos(mech.yaw) * 1.6,
+  });
   const target = world.enemy.pos;
   const dx = target.x - muzzle.x;
   const dy = target.y + 1.5 - muzzle.y;
@@ -145,6 +200,7 @@ function spawnProjectiles(world: SimWorld, def: ActionDef): void {
 function hitEnemy(world: SimWorld): void {
   world.enemy.hitFlash = HIT_FLASH_S;
   world.enemy.hitCount += 1;
+  spawnEffect(world, 'hit', { x: world.enemy.pos.x, y: world.enemy.pos.y + 1.6, z: world.enemy.pos.z });
 }
 
 function stepAction(world: SimWorld, dt: number): void {
@@ -180,10 +236,32 @@ function stepAction(world: SimWorld, dt: number): void {
   if (!mech.actionFired && def.fireAt !== undefined && mech.actionTime >= def.fireAt) {
     mech.actionFired = true;
     spawnProjectiles(world, def);
-    if (def.strike && towardEnemy(world).distance <= MELEE_HIT_RANGE) hitEnemy(world);
+    if (def.strike) {
+      spawnEffect(world, 'slash', {
+        x: mech.pos.x + Math.sin(mech.yaw) * 1.5,
+        y: mech.pos.y + 1.8,
+        z: mech.pos.z + Math.cos(mech.yaw) * 1.5,
+      });
+      if (towardEnemy(world).distance <= MELEE_HIT_RANGE) hitEnemy(world);
+    }
   }
 
-  if (mech.actionTime >= def.duration) mech.action = 'idle';
+  // 受付前に来ていた入力を、受付が始まった時点で出す
+  const buffered = mech.buffered;
+  if (buffered !== null) {
+    if (world.time - buffered.at > INPUT_BUFFER_S) {
+      mech.buffered = null;
+    } else if (cancelState(mech, buffered.action) === 'open') {
+      startAction(world, buffered.action, true);
+      return;
+    }
+  }
+
+  if (mech.actionTime >= def.duration) {
+    mech.action = 'idle';
+    mech.meleeStage = 0;
+    mech.buffered = null;
+  }
 }
 
 function stepMechPhysics(world: SimWorld, dt: number): void {
@@ -209,6 +287,9 @@ function stepMechPhysics(world: SimWorld, dt: number): void {
       mech.grounded = true;
       mech.landingLag = LANDING_LAG_S;
       mech.action = 'idle';
+      mech.meleeStage = 0;
+      mech.buffered = null;
+      spawnEffect(world, 'land', mech.pos);
       mech.vel.x = 0;
       mech.vel.z = 0;
     }
@@ -265,8 +346,14 @@ function stepProjectiles(world: SimWorld, dt: number): void {
   });
 }
 
+function stepEffects(world: SimWorld, dt: number): void {
+  for (const e of world.effects) e.age += dt;
+  world.effects = world.effects.filter((e) => e.age < e.life);
+}
+
 export function stepWorld(world: SimWorld, dt: number): void {
   world.time += dt;
+  stepEffects(world, dt);
   world.enemy.pos.x = ENEMY_BASE.x + Math.sin(world.time * ENEMY_SWAY_SPEED) * ENEMY_SWAY;
   world.enemy.hitFlash = Math.max(0, world.enemy.hitFlash - dt);
 

@@ -53,6 +53,7 @@
 
 .title {
   margin: 0;
+  color: var(--ink);
   font-family: var(--font-label);
   font-size: 1rem;
   letter-spacing: var(--letter-spacing-ui);

@@ -12,6 +12,7 @@ export type ActionKind =
   | 'melee'
   | 'jump'
   | 'bd'
+  | 'step'
   | 'sub'
   | 'special-shot'
   | 'special-melee'
@@ -19,6 +20,12 @@ export type ActionKind =
   | 'melee-cs';
 
 export type MechAction = Exclude<ActionKind, 'idle'>;
+
+/** レバーの方向。前は敵の方向（ロックオン基準） */
+export type LeverDirection = 'forward' | 'back' | 'left' | 'right';
+
+/** レバーの倒し具合。x は右が正、y は前（敵の方向）が正。-1〜1 */
+export type Lever = { x: number; y: number };
 
 /**
  * 入力の扱われ方。
@@ -86,6 +93,14 @@ export type MechState = {
   buffered: { action: MechAction; at: number } | null;
   /** 止まらずにつないだ行動の並び。ルート名の判定に使う */
   chain: MechAction[];
+  /** ジャンプボタンを押しているか。ジャンプの上昇と BD は押している間だけ続く */
+  jumpHeld: boolean;
+  /** いま倒しているレバーの方向（同時に複数倒せる） */
+  leverHeld: LeverDirection[];
+  /** ステップ判定用。直前にレバーを倒した方向と時刻 */
+  lastLeverTap: { direction: LeverDirection; at: number } | null;
+  /** ステップの進む向き（ワールド座標の水平単位ベクトル）。ステップ中だけ使う */
+  stepDir: { x: number; z: number } | null;
 };
 
 export type EnemyState = {

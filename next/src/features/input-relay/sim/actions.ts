@@ -8,6 +8,12 @@ export const LANDING_LAG_S = 0.25;
 export const MELEE_REACH = 3;
 /** 格闘の攻撃判定が届く距離 */
 export const MELEE_HIT_RANGE = 5;
+/** 地上でレバーを倒したときの歩きの速さ */
+export const WALK_SPEED = 9;
+/** 空中・上昇中にレバーで横へ流れる速さ */
+export const AIR_DRIFT_SPEED = 7;
+/** 同じ方向にレバーを 2 回倒してステップになる間隔 */
+export const STEP_TAP_WINDOW_S = 0.25;
 
 /**
  * 行動中の移動の仕方。
@@ -15,8 +21,10 @@ export const MELEE_HIT_RANGE = 5;
  * - halt: 足を止める（地上では水平速度を殺し、空中では落下をゆるめる）
  * - dash: 敵方向へ一定速度。落下しない
  * - lunge: 敵へ踏み込む。届いたら止まる。落下しない
+ * - rise: 上昇し続ける（ジャンプ）。レバーで横に流れる
+ * - step: 決まった向きへ素早く滑る。落下しない
  */
-export type MoveMode = 'free' | 'halt' | 'dash' | 'lunge';
+export type MoveMode = 'free' | 'halt' | 'dash' | 'lunge' | 'rise' | 'step';
 
 export type ProjectileSpec = {
   kind: ProjectileKind;
@@ -42,6 +50,11 @@ export type ActionDef = {
   boostPerSec: number;
   /** 開始時の上向き初速 */
   riseSpeed?: number;
+  /**
+   * ジャンプボタンを押している間だけ続く行動。minTime を過ぎてボタンが離れていたら終わる
+   * （duration は押しっぱなしでも切れる上限）
+   */
+  holdMinTime?: number;
   /** 弾を出す・攻撃判定を出すタイミング（秒） */
   fireAt?: number;
   projectile?: ProjectileSpec;
@@ -73,19 +86,29 @@ export const ACTIONS: Readonly<Record<Exclude<ActionKind, 'idle'>, ActionDef>> =
   },
   jump: {
     label: 'ジャンプ',
-    duration: 0.4,
-    move: 'free',
-    boostCost: 8,
-    boostPerSec: 0,
-    riseSpeed: 18,
+    duration: 10,
+    holdMinTime: 0.12,
+    move: 'rise',
+    speed: 14,
+    boostCost: 4,
+    boostPerSec: 30,
   },
   bd: {
     label: 'BD',
-    duration: 0.5,
+    duration: 10,
+    holdMinTime: 0.35,
     move: 'dash',
     speed: 30,
-    boostCost: 15,
+    boostCost: 12,
     boostPerSec: 25,
+  },
+  step: {
+    label: 'ステップ',
+    duration: 0.38,
+    move: 'step',
+    speed: 26,
+    boostCost: 12,
+    boostPerSec: 0,
   },
   sub: {
     label: 'サブ',

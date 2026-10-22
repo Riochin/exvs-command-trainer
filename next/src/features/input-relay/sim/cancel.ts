@@ -7,8 +7,8 @@ import type { MechAction, MechState } from './types';
  * - 射撃系は弾が出たあと（硬直中）から、BD・サブ・特射・特格・射CS などでキャンセルできる
  * - 格闘は攻撃が出たあとから、格闘の追加入力（2・3 段目）や BD・サブ・特射・特格でキャンセルできる
  * - BD・ジャンプ中はいつでも何でも出せる
- * - 射撃から射撃、射撃から格闘は直接つながらない（ズンダは BD を挟む）
- * ステップはレバーがないので扱わない。
+ * - 射撃から射撃、射撃から格闘は直接つながらない（ズンダは BD かステップを挟む）
+ * - ステップは射撃・格闘のどちらからでも出せる（ステキャン）。ステップ中は何でも出せる
  */
 export type CancelRule = {
   into: ReadonlyArray<MechAction>;
@@ -21,6 +21,7 @@ const EVERYTHING: ReadonlyArray<MechAction> = [
   'melee',
   'jump',
   'bd',
+  'step',
   'sub',
   'special-shot',
   'special-melee',
@@ -29,15 +30,16 @@ const EVERYTHING: ReadonlyArray<MechAction> = [
 ];
 
 export const CANCEL_RULES: Readonly<Record<MechAction, CancelRule>> = {
-  shot: { into: ['bd', 'sub', 'special-shot', 'special-melee', 'shot-cs'], opens: 'afterFire' },
-  sub: { into: ['bd', 'special-melee'], opens: 'afterFire' },
-  'special-shot': { into: ['bd'], opens: 'afterFire' },
-  'shot-cs': { into: ['bd', 'sub'], opens: 'afterFire' },
-  melee: { into: ['melee', 'bd', 'sub', 'special-shot', 'special-melee'], opens: 'afterFire' },
-  'special-melee': { into: ['bd', 'melee'], opens: 'afterFire' },
-  'melee-cs': { into: ['bd', 'melee'], opens: 'afterFire' },
+  shot: { into: ['bd', 'step', 'sub', 'special-shot', 'special-melee', 'shot-cs'], opens: 'afterFire' },
+  sub: { into: ['bd', 'step', 'special-melee'], opens: 'afterFire' },
+  'special-shot': { into: ['bd', 'step'], opens: 'afterFire' },
+  'shot-cs': { into: ['bd', 'step', 'sub'], opens: 'afterFire' },
+  melee: { into: ['melee', 'bd', 'step', 'sub', 'special-shot', 'special-melee'], opens: 'afterFire' },
+  'special-melee': { into: ['bd', 'step', 'melee'], opens: 'afterFire' },
+  'melee-cs': { into: ['bd', 'step', 'melee'], opens: 'afterFire' },
   jump: { into: EVERYTHING, opens: 'always' },
   bd: { into: EVERYTHING, opens: 'always' },
+  step: { into: EVERYTHING, opens: 'always' },
 };
 
 export const MELEE_MAX_STAGE = 3;
@@ -65,6 +67,7 @@ export function cancelState(mech: MechState, next: MechAction): CancelState {
 
 const CANCEL_NAMES: Partial<Record<MechAction, string>> = {
   bd: 'BDC',
+  step: 'ステキャン',
   sub: 'サブC',
   'special-shot': '特射C',
   'special-melee': '特格C',
@@ -79,11 +82,18 @@ export function routeName(chain: ReadonlyArray<MechAction>, meleeStage: number, 
   const last = chain[chain.length - 1];
   if (last === undefined) return null;
 
-  // 射撃 → BD → 射撃 …… の繰り返し
+  // 射撃 → BD（ステップ）→ 射撃 …… の繰り返し。つなぎが全部ステップならステズンダ
   if (last === 'shot') {
     let shots = 1;
-    for (let i = chain.length - 2; i >= 1 && chain[i] === 'bd' && chain[i - 1] === 'shot'; i -= 2) shots++;
-    if (shots >= 2) return shots === 2 ? 'ズンダ' : `ズンダ ${shots}発`;
+    let allSteps = true;
+    for (let i = chain.length - 2; i >= 1 && (chain[i] === 'bd' || chain[i] === 'step') && chain[i - 1] === 'shot'; i -= 2) {
+      shots++;
+      if (chain[i] !== 'step') allSteps = false;
+    }
+    if (shots >= 2) {
+      const name = allSteps ? 'ステズンダ' : 'ズンダ';
+      return shots === 2 ? name : `${name} ${shots}発`;
+    }
   }
 
   if (last === 'melee' && meleeStage >= 2) return `格闘 ${meleeStage}段目`;

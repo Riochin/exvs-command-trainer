@@ -4,7 +4,15 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ArcadeRawInput } from '@/features/arcade-controller/ArcadeController';
 import type { ButtonType } from '@/types';
 import { decodeRelayMessage, encodeRelayMessage, isRoomCode } from './protocol';
-import { isPeerGone, pollSignal, postSignal, RTC_CONFIGURATION, waitForIceGathering } from './signalingClient';
+import {
+  CONNECT_TIMEOUT_MS,
+  isPeerGone,
+  P2P_FAILED_MESSAGE,
+  pollSignal,
+  postSignal,
+  RTC_CONFIGURATION,
+  waitForIceGathering,
+} from './signalingClient';
 import type { RelayConnectionState, RelayMessage } from './types';
 
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
@@ -22,19 +30,37 @@ export function useRelaySender(room: string | null) {
   const channelRef = useRef<RTCDataChannel | null>(null);
   const seqRef = useRef(0);
 
+  // ルームを入れ直したら前の接続の状態とエラーを持ち越さない（描画中に揃える React の推奨形）
+  const [trackedRoom, setTrackedRoom] = useState(room);
+  if (trackedRoom !== room) {
+    setTrackedRoom(room);
+    setConnection('waiting');
+    setError(null);
+  }
+
   useEffect(() => {
     if (room === null || !isRoomCode(room)) return;
 
     const abort = new AbortController();
     const pc = new RTCPeerConnection(RTC_CONFIGURATION);
+    let connectTimer: ReturnType<typeof setTimeout> | null = null;
+    let opened = false;
     const setIfActive = (next: RelayConnectionState) => {
       if (!abort.signal.aborted) setConnection(next);
+    };
+    const failConnect = () => {
+      if (opened || abort.signal.aborted) return;
+      setConnection('error');
+      setError(P2P_FAILED_MESSAGE);
     };
 
     pc.ondatachannel = (event) => {
       const channel = event.channel;
       channel.onopen = () => {
+        opened = true;
+        if (connectTimer !== null) clearTimeout(connectTimer);
         channelRef.current = channel;
+        if (!abort.signal.aborted) setError(null);
         setIfActive('connected');
       };
       channel.onclose = () => {
@@ -50,6 +76,10 @@ export function useRelaySender(room: string | null) {
     };
 
     pc.onconnectionstatechange = () => {
+      if (!opened) {
+        if (pc.connectionState === 'failed') failConnect();
+        return;
+      }
       if (isPeerGone(pc)) setIfActive('disconnected');
     };
 
@@ -62,6 +92,7 @@ export function useRelaySender(room: string | null) {
       const answer = pc.localDescription?.sdp;
       if (!answer) throw new Error('answer を作れませんでした');
       await postSignal(room, 'answer', answer, abort.signal);
+      connectTimer = setTimeout(failConnect, CONNECT_TIMEOUT_MS);
     })().catch((e: unknown) => {
       if (abort.signal.aborted) return;
       setConnection('error');
@@ -70,6 +101,7 @@ export function useRelaySender(room: string | null) {
 
     return () => {
       abort.abort();
+      if (connectTimer !== null) clearTimeout(connectTimer);
       channelRef.current = null;
       pc.close();
     };

@@ -3,7 +3,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { estimateClockOffset, oneWayLatency, pushBounded, roundTripTime, type PingSample } from './latencyStats';
 import { decodeRelayMessage, encodeRelayMessage, generateRoomCode } from './protocol';
-import { isPeerGone, pollSignal, postSignal, RTC_CONFIGURATION, waitForIceGathering } from './signalingClient';
+import {
+  CONNECT_TIMEOUT_MS,
+  isPeerGone,
+  P2P_FAILED_MESSAGE,
+  pollSignal,
+  postSignal,
+  RTC_CONFIGURATION,
+  waitForIceGathering,
+} from './signalingClient';
 import type { RelayConnectionState, RelayInputMessage } from './types';
 
 export const PING_INTERVAL_MS = 500;
@@ -63,6 +71,8 @@ export function useRelayHost() {
     // 遅れた入力を待たない。届かなければ捨てる
     const channel = pc.createDataChannel('input', { ordered: false, maxRetransmits: 0 });
     let pingTimer: ReturnType<typeof setInterval> | null = null;
+    let connectTimer: ReturnType<typeof setTimeout> | null = null;
+    let opened = false;
     let pingId = 0;
     let lastSeq = 0;
     samplesRef.current = [];
@@ -72,15 +82,23 @@ export function useRelayHost() {
       setState((prev) => ({ ...prev, ...patch(prev) }));
     };
 
+    const failConnect = () => {
+      if (!opened) update(() => ({ connection: 'error', error: P2P_FAILED_MESSAGE }));
+    };
+
     channel.onopen = () => {
-      update(() => ({ connection: 'connected' }));
+      opened = true;
+      if (connectTimer !== null) clearTimeout(connectTimer);
+      update(() => ({ connection: 'connected', error: null }));
       pingTimer = setInterval(() => {
         if (channel.readyState !== 'open') return;
         channel.send(encodeRelayMessage({ type: 'ping', id: ++pingId, t0: performance.now() }));
       }, PING_INTERVAL_MS);
     };
 
-    channel.onclose = () => update(() => ({ connection: 'disconnected' }));
+    channel.onclose = () => {
+      if (opened) update(() => ({ connection: 'disconnected' }));
+    };
 
     channel.onmessage = (event: MessageEvent) => {
       const receivedAt = performance.now();
@@ -108,6 +126,10 @@ export function useRelayHost() {
     };
 
     pc.onconnectionstatechange = () => {
+      if (!opened) {
+        if (pc.connectionState === 'failed') failConnect();
+        return;
+      }
       if (isPeerGone(pc)) update(() => ({ connection: 'disconnected' }));
     };
 
@@ -122,6 +144,7 @@ export function useRelayHost() {
       const answer = await pollSignal(room, 'answer', abort.signal);
       update(() => ({ connection: 'connecting' }));
       await pc.setRemoteDescription({ type: 'answer', sdp: answer });
+      connectTimer = setTimeout(failConnect, CONNECT_TIMEOUT_MS);
     })().catch((error: unknown) => {
       if (abort.signal.aborted) return;
       update(() => ({ connection: 'error', error: error instanceof Error ? error.message : String(error) }));
@@ -130,6 +153,7 @@ export function useRelayHost() {
     return () => {
       abort.abort();
       if (pingTimer !== null) clearInterval(pingTimer);
+      if (connectTimer !== null) clearTimeout(connectTimer);
       channel.close();
       pc.close();
     };

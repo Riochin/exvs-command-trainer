@@ -8,6 +8,13 @@ export const RTC_CONFIGURATION: RTCConfiguration = {
   iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
 };
 
+/** SDP の交換後、これだけ待っても DataChannel が開かなければ直接つながらないとみなす */
+export const CONNECT_TIMEOUT_MS = 15_000;
+
+/** SDP の交換はできたが端末同士がつながらないとき（クライアント分離・UDP 遮断など）の説明 */
+export const P2P_FAILED_MESSAGE =
+  'PC とスマホが直接つながりませんでした。職場や学校の Wi-Fi など、端末同士の通信が制限されたネットワークの可能性があります';
+
 /** SDP の取りに行き間隔。接続時に一度だけ待つものなので短めでよい */
 export const SIGNAL_POLL_INTERVAL_MS = 500;
 

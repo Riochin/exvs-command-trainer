@@ -84,6 +84,8 @@ export interface ArcadeControllerProps {
   highlightedPhysicalButtons?: ReadonlyArray<ArcadePhysicalButton> | null;
   /** 全ボタンに一括適用する状態フィードバック（success / fail / neutral） */
   buttonStateOverride?: import('./ControllerButton').ControllerButtonState;
+  /** 物理ボタンの押下・解放を解釈前にそのまま通知する（入力リレー等の外部送信用） */
+  onRawInput?: (input: ArcadeRawInput) => void;
 }
 
 export function ArcadeController({
@@ -92,6 +94,7 @@ export function ArcadeController({
   highlightedButton,
   highlightedPhysicalButtons,
   buttonStateOverride,
+  onRawInput,
 }: ArcadeControllerProps) {
   const { activeButtons, getButtonHandlers, setOnButtonPress, getHeldButtonsSync } = useControllerInput();
   const {
@@ -295,12 +298,28 @@ export function ArcadeController({
     emitJumpOrBd,
   ]);
 
+  const onRawInputRef = useRef(onRawInput);
+  onRawInputRef.current = onRawInput;
+
   const getHandlers = useCallback(
     (button: ButtonType) => {
-      if (button === 'shot') return wrapChargeHandlers('shot');
-      if (button === 'melee') return wrapChargeHandlers('melee');
-      if (button === 'jump') return wrapJumpHandlers();
-      return getButtonHandlers(button);
+      if (button !== 'shot' && button !== 'melee' && button !== 'jump') return getButtonHandlers(button);
+      const inner = button === 'jump' ? wrapJumpHandlers() : wrapChargeHandlers(button);
+      // 解釈の前に通知し、外部に送る時刻をできるだけ押した瞬間に近づける
+      return {
+        onPointerDown(event: React.PointerEvent<HTMLElement>) {
+          onRawInputRef.current?.({ button, phase: 'down' });
+          inner.onPointerDown(event);
+        },
+        onPointerUp(event: React.PointerEvent<HTMLElement>) {
+          onRawInputRef.current?.({ button, phase: 'up' });
+          inner.onPointerUp(event);
+        },
+        onPointerCancel(event: React.PointerEvent<HTMLElement>) {
+          onRawInputRef.current?.({ button, phase: 'cancel' });
+          inner.onPointerCancel(event);
+        },
+      };
     },
     [wrapChargeHandlers, wrapJumpHandlers, getButtonHandlers],
   );

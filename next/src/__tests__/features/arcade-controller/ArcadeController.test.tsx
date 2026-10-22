@@ -500,4 +500,51 @@ describe('ArcadeController', () => {
       expect(onButtonPress).not.toHaveBeenCalled();
     });
   });
+
+  describe('onRawInput（解釈前の物理入力通知）', () => {
+    it('ポインターの押下・解放・キャンセルをそのまま通知する', () => {
+      const onRawInput = vi.fn();
+      render(<ArcadeController onRawInput={onRawInput} />);
+      const shot = screen.getByText('射撃').closest('button')!;
+      const jump = screen.getByText('ジャンプ').closest('button')!;
+      fireEvent.pointerDown(shot, { pointerId: 1 });
+      fireEvent.pointerUp(shot, { pointerId: 1 });
+      fireEvent.pointerDown(jump, { pointerId: 2 });
+      fireEvent.pointerCancel(jump, { pointerId: 2 });
+      expect(onRawInput.mock.calls.map(([input]) => input)).toEqual([
+        { button: 'shot', phase: 'down' },
+        { button: 'shot', phase: 'up' },
+        { button: 'jump', phase: 'down' },
+        { button: 'jump', phase: 'cancel' },
+      ]);
+    });
+
+    it('デバッグキー（y）の押下・解放も通知する', () => {
+      const onRawInput = vi.fn();
+      render(<ArcadeController onRawInput={onRawInput} />);
+      fireEvent.keyDown(window, { key: 'y' });
+      fireEvent.keyUp(window, { key: 'y' });
+      expect(onRawInput.mock.calls.map(([input]) => input)).toEqual([
+        { button: 'melee', phase: 'down' },
+        { button: 'melee', phase: 'up' },
+      ]);
+    });
+
+    it('同時押しの解釈は onRawInput があっても変わらない', () => {
+      vi.useFakeTimers();
+      const onButtonPress = vi.fn();
+      const onRawInput = vi.fn();
+      render(<ArcadeController onButtonPress={onButtonPress} onRawInput={onRawInput} />);
+      const shot = screen.getByText('射撃').closest('button')!;
+      const melee = screen.getByText('格闘').closest('button')!;
+      fireEvent.pointerDown(shot, { pointerId: 1 });
+      fireEvent.pointerDown(melee, { pointerId: 2 });
+      act(() => {
+        vi.advanceTimersByTime(SIMULTANEOUS_INPUT_DEFER_MS);
+      });
+      expect(onButtonPress).toHaveBeenCalledWith('sub');
+      expect(onRawInput).toHaveBeenCalledTimes(2);
+      vi.useRealTimers();
+    });
+  });
 });

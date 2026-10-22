@@ -1,6 +1,20 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+// @vitest-environment node
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+vi.mock('@/lib/db/client', async () => {
+  const { createClient } = await import('@libsql/client');
+  const { drizzle } = await import('drizzle-orm/libsql');
+  const schema = await import('@/lib/db/schema');
+  const client = createClient({ url: ':memory:' });
+  await client.execute(
+    'CREATE TABLE relay_signals (room TEXT PRIMARY KEY, offer TEXT, answer TEXT, updated_at INTEGER NOT NULL)',
+  );
+  return { db: drizzle(client, { schema }), client };
+});
+
 import { GET, POST } from '@/app/api/relay/[room]/route';
-import { clearSignalingStore } from '@/features/input-relay/signalingStore';
+import { db } from '@/lib/db/client';
+import { relaySignals } from '@/lib/db/schema';
 
 const ctx = (room: string) => ({ params: Promise.resolve({ room }) });
 
@@ -16,22 +30,24 @@ function get(room: string, kind: string) {
 }
 
 describe('/api/relay/[room]', () => {
-  beforeEach(() => {
-    clearSignalingStore();
+  beforeEach(async () => {
+    await db.delete(relaySignals);
   });
 
-  afterEach(() => {
-    vi.unstubAllEnvs();
-  });
-
-  it('POST した offer を GET で取り出せる', async () => {
-    const res = await post('ABCD', { kind: 'offer', sdp: 'v=0' });
-    expect(res.status).toBe(200);
-    expect(await (await get('ABCD', 'offer')).json()).toEqual({ sdp: 'v=0' });
+  it('POST した offer と answer を GET で取り出せる', async () => {
+    expect((await post('ABCD', { kind: 'offer', sdp: 'offer-sdp' })).status).toBe(200);
+    expect((await post('ABCD', { kind: 'answer', sdp: 'answer-sdp' })).status).toBe(200);
+    expect(await (await get('ABCD', 'offer')).json()).toEqual({ sdp: 'offer-sdp' });
+    expect(await (await get('ABCD', 'answer')).json()).toEqual({ sdp: 'answer-sdp' });
   });
 
   it('まだない answer は sdp: null', async () => {
+    await post('ABCD', { kind: 'offer', sdp: 'offer-sdp' });
     expect(await (await get('ABCD', 'answer')).json()).toEqual({ sdp: null });
+  });
+
+  it('offer のないルームへの answer は 404', async () => {
+    expect((await post('WXYZ', { kind: 'answer', sdp: 'answer-sdp' })).status).toBe(404);
   });
 
   it('不正なルームコードは 400', async () => {
@@ -43,11 +59,5 @@ describe('/api/relay/[room]', () => {
     expect((await get('ABCD', 'candidate')).status).toBe(400);
     expect((await post('ABCD', { kind: 'offer', sdp: '' })).status).toBe(400);
     expect((await post('ABCD', { kind: 'candidate', sdp: 'v=0' })).status).toBe(400);
-  });
-
-  it('本番環境では 404', async () => {
-    vi.stubEnv('NODE_ENV', 'production');
-    expect((await get('ABCD', 'offer')).status).toBe(404);
-    expect((await post('ABCD', { kind: 'offer', sdp: 'v=0' })).status).toBe(404);
   });
 });

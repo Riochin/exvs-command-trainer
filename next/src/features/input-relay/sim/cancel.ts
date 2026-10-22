@@ -14,6 +14,8 @@ export type CancelRule = {
   into: ReadonlyArray<MechAction>;
   /** always: 行動の最初から / afterFire: 弾や攻撃が出たあとから */
   opens: 'always' | 'afterFire';
+  /** afterFire でも、弾が出る前から出せる行動（移動撃ちの BR からのステップなど） */
+  early?: ReadonlyArray<MechAction>;
 };
 
 const EVERYTHING: ReadonlyArray<MechAction> = [
@@ -30,8 +32,10 @@ const EVERYTHING: ReadonlyArray<MechAction> = [
 ];
 
 export const CANCEL_RULES: Readonly<Record<MechAction, CancelRule>> = {
-  shot: { into: ['bd', 'step', 'sub', 'special-shot', 'special-melee', 'shot-cs'], opens: 'afterFire' },
-  sub: { into: ['bd', 'step', 'special-melee'], opens: 'afterFire' },
+  // 移動撃ちの BR は撃ちながらステップできる（動き撃ちステップ）
+  shot: { into: ['bd', 'step', 'sub', 'special-shot', 'special-melee', 'shot-cs'], opens: 'afterFire', early: ['step'] },
+  // サブ（アシスト）→ BR はアメキャン（自由落下に移る）
+  sub: { into: ['bd', 'step', 'special-melee', 'shot'], opens: 'afterFire' },
   'special-shot': { into: ['bd', 'step'], opens: 'afterFire' },
   'shot-cs': { into: ['bd', 'step', 'sub'], opens: 'afterFire' },
   melee: { into: ['melee', 'bd', 'step', 'sub', 'special-shot', 'special-melee'], opens: 'afterFire' },
@@ -61,7 +65,11 @@ export function cancelState(mech: MechState, next: MechAction): CancelState {
   const rule = CANCEL_RULES[mech.action];
   if (!rule.into.includes(next)) return 'closed';
   if (next === 'melee' && mech.action === 'melee' && mech.meleeStage >= MELEE_MAX_STAGE) return 'closed';
-  if (rule.opens === 'afterFire' && !mech.actionFired) return 'notYet';
+  if (rule.opens === 'afterFire' && !mech.actionFired) {
+    // 振り向き撃ちは足が止まるので、撃つ前のステップはできない
+    if (rule.early?.includes(next) && !mech.turnShot) return 'open';
+    return 'notYet';
+  }
   return 'open';
 }
 

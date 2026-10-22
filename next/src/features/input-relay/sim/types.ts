@@ -55,11 +55,13 @@ export type Effect = {
   life: number;
 };
 
-export type ProjectileKind = 'beam' | 'missile' | 'big-beam' | 'cs-beam';
+export type ProjectileKind = 'beam' | 'missile' | 'big-beam' | 'cs-beam' | 'enemy-beam';
 
 export type Projectile = {
   id: number;
   kind: ProjectileKind;
+  /** 誰が撃ったか。敵の弾は機体に当たり、機体の弾は敵に当たる */
+  owner: 'mech' | 'enemy';
   pos: Vec3;
   vel: Vec3;
   /** 残り寿命（秒） */
@@ -72,8 +74,10 @@ export type Projectile = {
 export type MechState = {
   pos: Vec3;
   vel: Vec3;
-  /** 向き（rad）。常に敵の方向 */
+  /** 機体の向き（rad）。BD 中は進む向き、止まっていれば敵の方へ向き直る */
   yaw: number;
+  /** 敵の方向（rad）。カメラと振り向き撃ちの判定に使う */
+  lockYaw: number;
   /** 0〜BOOST_MAX */
   boost: number;
   /** ブーストを使い切って空中にいる。着地するまでブーストを使う行動ができない */
@@ -101,10 +105,28 @@ export type MechState = {
   lastLeverTap: { direction: LeverDirection; at: number } | null;
   /** ステップの進む向き（ワールド座標の水平単位ベクトル）。ステップ中だけ使う */
   stepDir: { x: number; z: number } | null;
+  /** BD の進む向き。レバーの方向へ少しずつ曲がる（BD 旋回） */
+  bdDir: { x: number; z: number } | null;
+  /** BD・ステップの慣性を次のジャンプに乗せられるか。慣性ジャンプを 1 回出すと消える */
+  inertiaAvailable: boolean;
+  /** いまのジャンプに慣性が乗っているか */
+  carryInertia: boolean;
+  /** いまの射撃が振り向き撃ち（足が止まる）か */
+  turnShot: boolean;
+  /** 滑り特射で滑っている */
+  sliding: boolean;
+  /** 着地してからブーストを吹かした回数。多いほど着地硬直が長くなる */
+  airBoostUses: number;
+  /** 被弾時に光らせる残り時間（秒） */
+  hitFlash: number;
 };
 
 export type EnemyState = {
   pos: Vec3;
+  /** 射撃の間隔（秒）。0 なら撃たない */
+  fireInterval: number;
+  /** 次に撃つまでの残り（秒） */
+  fireTimer: number;
   /** 被弾時に光らせる残り時間（秒） */
   hitFlash: number;
   hitCount: number;
@@ -120,4 +142,6 @@ export type SimWorld = {
   nextEventId: number;
   effects: Effect[];
   nextEffectId: number;
+  /** 機体が敵の弾に当たった回数 */
+  mechHits: number;
 };

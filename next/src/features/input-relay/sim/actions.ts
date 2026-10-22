@@ -14,11 +14,28 @@ export const WALK_SPEED = 9;
 export const AIR_DRIFT_SPEED = 7;
 /** 同じ方向にレバーを 2 回倒してステップになる間隔 */
 export const STEP_TAP_WINDOW_S = 0.25;
+/** BD 中にレバーの方向へ曲がる速さ（rad/s）。BD 旋回 */
+export const BD_TURN_RATE = 3.2;
+/** 機体が向き直る速さ（rad/s） */
+export const FACE_TURN_RATE = 9;
+/** 慣性ジャンプ中、慣性の方向にレバーを入れたときの加速（m/s²） */
+export const INERTIA_LEVER_ACCEL = 14;
+/** 慣性ジャンプ中の水平速度の上限 */
+export const INERTIA_MAX_SPEED = 34;
+/** 振り向き撃ちで向き直るのにかかる時間。この分だけ発射と硬直が遅れる */
+export const TURN_SHOT_DELAY_S = 0.22;
+/** 滑り特射: ジャンプを押してからこの時間内に特射を出し、レバーを入れていれば滑る */
+export const SLIDE_WINDOW_S = 0.15;
+export const SLIDE_SPEED = 24;
+/** 着地硬直が延び始めるブーストの吹かし回数と、1 回ごとの延び（秒） */
+export const AIR_BOOST_FREE_USES = 3;
+export const LANDING_LAG_PER_USE_S = 0.1;
+export const LANDING_LAG_MAX_S = 0.75;
 
 /**
  * 行動中の移動の仕方。
  * - free: 重力と慣性に任せる
- * - halt: 足を止める（地上では水平速度を殺し、空中では落下をゆるめる）
+ * - halt: 足を止める（地上では水平速度を殺し、空中では落下をゆるめる）。振り向き撃ちもこれ
  * - dash: 敵方向へ一定速度。落下しない
  * - lunge: 敵へ踏み込む。届いたら止まる。落下しない
  * - rise: 上昇し続ける（ジャンプ）。レバーで横に流れる
@@ -64,10 +81,11 @@ export type ActionDef = {
 };
 
 export const ACTIONS: Readonly<Record<Exclude<ActionKind, 'idle'>, ActionDef>> = {
+  // BR は移動撃ち（慣性と落下はそのまま）。敵が後ろにいるときだけ振り向き撃ちで足が止まる
   shot: {
     label: 'BR',
     duration: 0.45,
-    move: 'halt',
+    move: 'free',
     boostCost: 0,
     boostPerSec: 0,
     fireAt: 0.15,

@@ -5,6 +5,7 @@ import {
   applyInput,
   applyRawInput,
   createWorld,
+  ENEMY_FIRE_INTERVAL_S,
   FIXED_DT,
   setLever,
   stepWorld,
@@ -390,5 +391,216 @@ describe('sim', () => {
     const carry = advanceWorld(world, FIXED_DT * 2.5, 0);
     expect(world.time).toBeCloseTo(FIXED_DT * 2, 10);
     expect(carry).toBeCloseTo(FIXED_DT * 0.5, 10);
+  });
+});
+
+describe('EXVS のテクニック', () => {
+  function lastRoute(world: SimWorld) {
+    return [...world.events].reverse().find((e) => e.kind === 'route')?.label;
+  }
+
+  function speedXZ(world: SimWorld) {
+    return Math.hypot(world.mech.vel.x, world.mech.vel.z);
+  }
+
+  /** BD を出して seconds 秒続け、ジャンプボタンを離す */
+  function bdFor(world: SimWorld, seconds: number) {
+    startBd(world);
+    run(world, seconds);
+    jumpUp(world);
+  }
+
+  it('BD 慣性ジャンプ: BD を離した直後のジャンプは BD の慣性を乗せて飛ぶ', () => {
+    const world = createWorld();
+    holdJump(world, 0.15);
+    bdFor(world, 0.4);
+    run(world, 0.05);
+    jumpDown(world);
+    expect(lastRoute(world)).toBe('慣性ジャンプ');
+    run(world, 0.2);
+    expect(speedXZ(world)).toBeGreaterThan(20);
+    expect(world.mech.vel.y).toBeGreaterThan(0);
+  });
+
+  it('慣性は一度きり。離してもう一度押すとその場で跳ねるだけ', () => {
+    const world = createWorld();
+    holdJump(world, 0.15);
+    bdFor(world, 0.4);
+    holdJump(world, 0.1);
+    run(world, 0.05);
+    jumpDown(world);
+    run(world, 0.05);
+    expect(speedXZ(world)).toBeLessThan(1);
+  });
+
+  it('慣性ジャンプ中に慣性の方向へレバーを入れるとさらに伸びる', () => {
+    const plain = createWorld();
+    const boosted = createWorld();
+    for (const world of [plain, boosted]) {
+      holdJump(world, 0.15);
+      bdFor(world, 0.4);
+      jumpDown(world);
+    }
+    setLever(boosted, 'forward', true);
+    run(plain, 0.4);
+    run(boosted, 0.4);
+    expect(speedXZ(boosted)).toBeGreaterThan(speedXZ(plain) + 3);
+  });
+
+  it('BD 旋回: BD 中にレバーを倒すと、その方向へ少しずつ曲がる', () => {
+    const world = createWorld();
+    startBd(world);
+    const start = world.mech.bdDir!;
+    setLever(world, 'right', true);
+    run(world, 0.1);
+    const early = world.mech.bdDir!;
+    // 一瞬では真横を向かない
+    expect(Math.abs(early.x)).toBeLessThan(0.6);
+    run(world, 0.6);
+    // しばらくすると右（+x）へ向く
+    expect(world.mech.bdDir!.x).toBeGreaterThan(0.9);
+    expect(start.z).toBeLessThan(-0.9);
+  });
+
+  it('BD 中は進む向きを向き、後ろ BD のあとの射撃は振り向き撃ちになる', () => {
+    const world = createWorld();
+    holdJump(world, 0.15);
+    setLever(world, 'back', true);
+    bdFor(world, 0.4);
+    setLever(world, 'back', false);
+    expect(Math.abs(world.mech.yaw - world.mech.lockYaw)).toBeGreaterThan(Math.PI / 2);
+    applyInput(world, 'shot');
+    expect(world.mech.turnShot).toBe(true);
+    expect(lastRoute(world)).toBe('振り向き撃ち');
+    // 振り向き撃ちは撃つまでに向き直りの時間がかかる
+    run(world, ACTIONS.shot.fireAt! + FIXED_DT);
+    expect(world.projectiles).toHaveLength(0);
+    run(world, 0.3);
+    expect(world.projectiles).toHaveLength(1);
+  });
+
+  it('移動撃ち: 前を向いて撃つ BR は慣性を殺さない', () => {
+    const world = createWorld();
+    holdJump(world, 0.15);
+    bdFor(world, 0.3);
+    applyInput(world, 'shot');
+    expect(world.mech.turnShot).toBe(false);
+    run(world, 0.1);
+    expect(speedXZ(world)).toBeGreaterThan(15);
+  });
+
+  it('動き撃ちステップ: 撃つ前の BR からステップしても弾は出る', () => {
+    const world = createWorld();
+    applyInput(world, 'shot');
+    run(world, 0.05);
+    tapLever(world, 'left');
+    expect(tapLever(world, 'left')).toBe('canceled');
+    expect(lastRoute(world)).toBe('動き撃ちステップ');
+    expect(world.projectiles).toHaveLength(1);
+  });
+
+  it('フワステ: ステップをジャンプでキャンセルすると、ステップの慣性で膨らんで飛ぶ', () => {
+    const world = createWorld();
+    tapLever(world, 'left');
+    tapLever(world, 'left');
+    run(world, 0.1);
+    expect(jumpDown(world)).toBe('canceled');
+    expect(lastRoute(world)).toBe('フワステ');
+    run(world, 0.1);
+    jumpUp(world);
+    expect(speedXZ(world)).toBeGreaterThan(10);
+    expect(world.mech.pos.y).toBeGreaterThan(0.5);
+  });
+
+  it('ふわふわ: 落下中にジャンプを一瞬押すと落下が止まって少し浮く', () => {
+    const world = createWorld();
+    holdJump(world, 0.5);
+    run(world, 0.6);
+    expect(world.mech.vel.y).toBeLessThan(0);
+    const height = world.mech.pos.y;
+    holdJump(world, 0.12);
+    expect(lastRoute(world)).toBe('ふわふわ');
+    expect(world.mech.pos.y).toBeGreaterThan(height);
+  });
+
+  it('BD ステ・ステ BD: BD とステップは互いにすぐキャンセルできる', () => {
+    const world = createWorld();
+    startBd(world);
+    run(world, 0.1);
+    tapLever(world, 'right');
+    expect(tapLever(world, 'right')).toBe('canceled');
+    expect(lastRoute(world)).toBe('BDステ');
+    run(world, 0.05);
+    expect(startBd(world)).toBe('canceled');
+    expect(lastRoute(world)).toBe('ステBD');
+  });
+
+  it('アメキャン: 足の止まるサブを BR でキャンセルすると上昇を打ち消して落ちる', () => {
+    const world = createWorld();
+    holdJump(world, 0.3);
+    applyInput(world, 'sub');
+    run(world, ACTIONS.sub.fireAt! + FIXED_DT);
+    world.mech.vel.y = 3;
+    expect(applyInput(world, 'shot')).toBe('canceled');
+    expect(lastRoute(world)).toBe('アメキャン');
+    expect(world.mech.vel.y).toBeLessThanOrEqual(0);
+  });
+
+  it('滑り特射: ジャンプ直後にレバーを入れて特射を出すと、その方向へ滑る', () => {
+    const world = createWorld();
+    setLever(world, 'left', true);
+    jumpDown(world);
+    run(world, 0.05);
+    applyInput(world, 'special-shot');
+    expect(lastRoute(world)).toBe('滑り特射');
+    run(world, 0.3);
+    expect(world.mech.pos.x).toBeLessThan(-4);
+  });
+
+  it('レバーなしの特射は滑らない', () => {
+    const world = createWorld();
+    jumpDown(world);
+    run(world, 0.05);
+    applyInput(world, 'special-shot');
+    run(world, 0.3);
+    expect(Math.abs(world.mech.pos.x)).toBeLessThan(1);
+  });
+
+  it('ブーストを 3 回より多く吹かすと着地硬直が延びる', () => {
+    function landingLagAfter(boosts: number) {
+      const world = createWorld();
+      holdJump(world, 0.2);
+      for (let i = 1; i < boosts; i++) holdJump(world, 0.05);
+      while (!world.mech.grounded) stepWorld(world, FIXED_DT);
+      return world.mech.landingLag;
+    }
+    expect(landingLagAfter(2)).toBeCloseTo(LANDING_LAG_S, 1);
+    expect(landingLagAfter(6)).toBeGreaterThan(LANDING_LAG_S + 0.2);
+  });
+
+  describe('誘導切り', () => {
+    it('敵は一定間隔で誘導するビームを撃ち、当たると被弾が増える', () => {
+      const world = createWorld({ enemyFires: true });
+      run(world, ENEMY_FIRE_INTERVAL_S + 0.05);
+      expect(world.projectiles.some((p) => p.owner === 'enemy')).toBe(true);
+      run(world, 1.5);
+      expect(world.mechHits).toBe(1);
+    });
+
+    it('ステップすると飛んできている弾の誘導が切れる', () => {
+      const world = createWorld({ enemyFires: true });
+      run(world, ENEMY_FIRE_INTERVAL_S + 0.05);
+      tapLever(world, 'left');
+      tapLever(world, 'left');
+      expect(lastRoute(world)).toBe('誘導切り');
+      expect(world.projectiles.filter((p) => p.owner === 'enemy').every((p) => p.homing === 0)).toBe(true);
+    });
+
+    it('BD では誘導は切れない', () => {
+      const world = createWorld({ enemyFires: true });
+      run(world, ENEMY_FIRE_INTERVAL_S + 0.05);
+      startBd(world);
+      expect(world.projectiles.filter((p) => p.owner === 'enemy').every((p) => p.homing > 0)).toBe(true);
+    });
   });
 });

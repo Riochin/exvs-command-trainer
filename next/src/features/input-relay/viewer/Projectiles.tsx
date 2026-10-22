@@ -20,6 +20,7 @@ const LOOKS: Readonly<Record<ProjectileKind, { color: string; length: number; wi
   missile: { color: '#ffb347', length: 1.0, width: 0.22 },
   'big-beam': { color: '#ffe066', length: 12, width: 0.7 },
   'cs-beam': { color: '#7ef9ff', length: 16, width: 1.0 },
+  'enemy-beam': { color: '#b6ff5e', length: 6, width: 0.22 },
 };
 
 export function Projectiles({ worldRef }: { worldRef: RefObject<SimWorld> }) {

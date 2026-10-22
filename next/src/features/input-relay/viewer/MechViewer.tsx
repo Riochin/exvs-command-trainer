@@ -11,6 +11,8 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { BackSide, Color, PerspectiveCamera, Vector3, type DirectionalLight } from 'three';
 import { advanceWorld } from '../sim/step';
 import type { SimWorld } from '../sim/types';
+import { unitById } from '../sim/units';
+import { Assists } from './Assists';
 import { Effects } from './Effects';
 import { EnemyDummy } from './EnemyDummy';
 import { MechModel } from './MechModel';
@@ -151,7 +153,8 @@ function Buildings() {
   );
 }
 
-export function MechViewer({ worldRef }: { worldRef: RefObject<SimWorld> }) {
+export function MechViewer({ worldRef, unitId }: { worldRef: RefObject<SimWorld>; unitId: string }) {
+  const look = unitById(unitId).look;
   return (
     <Canvas shadows camera={{ fov: BASE_FOV, near: 0.1, far: 900, position: [0, 5.5, 13] }}>
       <SimDriver worldRef={worldRef} />
@@ -166,7 +169,8 @@ export function MechViewer({ worldRef }: { worldRef: RefObject<SimWorld> }) {
       </mesh>
       <gridHelper args={[900, 180, '#4b5747', '#55614f']} position={[0, 0.01, 0]} />
       <Buildings />
-      <MechModel worldRef={worldRef} />
+      <MechModel key={unitId} worldRef={worldRef} look={look} />
+      <Assists worldRef={worldRef} />
       <EnemyDummy worldRef={worldRef} />
       <Projectiles worldRef={worldRef} />
       <Effects worldRef={worldRef} />

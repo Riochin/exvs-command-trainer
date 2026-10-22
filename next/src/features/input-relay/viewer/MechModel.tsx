@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * 箱と円柱で組んだ仮のロボ（白・青・赤のトリコロール）。
+ * 箱と円柱で組んだ仮のロボ。配色・背中の装備・格闘武器は機体データ（UnitLook）で変える。
  *
  * 姿勢は React の state を通さず、useFrame で sim の状態を読んで直接書き換える
  * （毎フレームの再描画を避けるため）。
@@ -9,31 +9,35 @@
 import { useRef, type RefObject } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { AdditiveBlending, type Group, type Mesh, type PointLight } from 'three';
-import { ACTIONS } from '../sim/actions';
+import { poseOf } from '../sim/actions';
 import type { MechState, SimWorld } from '../sim/types';
+import type { UnitLook } from '../sim/units';
 
-const WHITE = '#eef0f3';
 const GREY = '#9aa1ab';
-const BLUE = '#2546c9';
-const RED = '#d8352c';
-const YELLOW = '#f2c21a';
 const DARK = '#2f3238';
 const EYE = '#59ff8a';
 const THRUST = '#7ef9ff';
 const SABER = '#ff5fd2';
+const SEED_AURA = '#ff8fd0';
+const BLADE = '#c9d1db';
 
 /** 0→1 の進み具合（行動していなければ 0） */
 function progress(mech: MechState): number {
-  if (mech.action === 'idle') return 0;
-  return Math.min(1, mech.actionTime / ACTIONS[mech.action].duration);
+  if (mech.action === 'idle' || mech.move === null) return 0;
+  return Math.max(0, Math.min(1, mech.actionTime / mech.move.duration));
 }
 
 function isShooting(mech: MechState): boolean {
-  return mech.action === 'shot' || mech.action === 'sub' || mech.action === 'special-shot' || mech.action === 'shot-cs';
+  const pose = poseOf(mech.action, mech.move);
+  return pose === 'shoot' || pose === 'throw';
 }
 
 function isSlashing(mech: MechState): boolean {
-  return mech.action === 'melee' || mech.action === 'special-melee' || mech.action === 'melee-cs';
+  return poseOf(mech.action, mech.move) === 'slash';
+}
+
+function isSummoning(mech: MechState): boolean {
+  return poseOf(mech.action, mech.move) === 'summon';
 }
 
 function isBoosting(mech: MechState): boolean {
@@ -83,7 +87,8 @@ function Flame({ flameRef }: { flameRef: RefObject<Group | null> }) {
   );
 }
 
-export function MechModel({ worldRef }: { worldRef: RefObject<SimWorld> }) {
+export function MechModel({ worldRef, look }: { worldRef: RefObject<SimWorld>; look: UnitLook }) {
+  const { frame: WHITE, chest: BLUE, accent: RED, trim: YELLOW } = look;
   const root = useRef<Group>(null);
   const body = useRef<Group>(null);
   const rightArm = useRef<Group>(null);
@@ -98,6 +103,8 @@ export function MechModel({ worldRef }: { worldRef: RefObject<SimWorld> }) {
   const flameR = useRef<Group>(null);
   const thrustLight = useRef<PointLight>(null);
   const hitGlow = useRef<Mesh>(null);
+  const seedAura = useRef<Mesh>(null);
+  const ootori = useRef<Group>(null);
 
   useFrame(({ clock }) => {
     const mech = worldRef.current.mech;
@@ -112,7 +119,7 @@ export function MechModel({ worldRef }: { worldRef: RefObject<SimWorld> }) {
 
     if (body.current) {
       // 特格は回転斬り、BD・格闘の踏み込みは前傾、着地硬直は沈み込む
-      body.current.rotation.y = mech.action === 'special-melee' ? p * Math.PI * 4 : 0;
+      body.current.rotation.y = mech.move?.id === 'special-melee' ? p * Math.PI * 4 : 0;
       let lean = mech.action === 'bd' ? 0.45 : isSlashing(mech) && !mech.actionFired ? 0.35 : 0;
       let tilt = 0;
       // ステップは進む向きへ体を傾ける
@@ -135,11 +142,12 @@ export function MechModel({ worldRef }: { worldRef: RefObject<SimWorld> }) {
     // 射撃系は右腕（ライフル）を前に構え、撃った瞬間に反動で少し跳ねる
     if (rightArm.current) {
       let recoil = 0;
-      if (mech.action !== 'idle' && isShooting(mech) && mech.actionFired) {
-        const sinceFire = mech.actionTime - (ACTIONS[mech.action].fireAt ?? 0);
+      if (mech.move && isShooting(mech) && mech.actionFired) {
+        const sinceFire = mech.actionTime - (mech.move.fireAt ?? 0);
         recoil = Math.max(0, 0.25 - sinceFire * 2);
       }
-      const aim = isShooting(mech) || mech.charging.shot ? -Math.PI / 2 - recoil : -0.12;
+      // 呼び出し系は腕を高く掲げる
+      const aim = isSummoning(mech) ? -Math.PI * 0.9 : isShooting(mech) || mech.charging.shot ? -Math.PI / 2 - recoil : -0.12;
       rightArm.current.rotation.x = ease(rightArm.current.rotation.x, aim, 0.35);
     }
 
@@ -174,6 +182,12 @@ export function MechModel({ worldRef }: { worldRef: RefObject<SimWorld> }) {
     flameL.current?.scale.set(1, flame, 1);
     flameR.current?.scale.set(1, flame, 1);
     if (thrustLight.current) thrustLight.current.intensity = boosting ? 6 : 0;
+    if (seedAura.current) {
+      const seed = mech.seedTime > 0;
+      seedAura.current.visible = seed;
+      if (seed) seedAura.current.scale.setScalar(1 + Math.sin(t * 6) * 0.05);
+    }
+    if (ootori.current) ootori.current.visible = !mech.packOut;
     if (hitGlow.current) {
       hitGlow.current.visible = mech.hitFlash > 0;
       hitGlow.current.scale.setScalar(1 + (0.3 - mech.hitFlash) * 2);
@@ -218,9 +232,25 @@ export function MechModel({ worldRef }: { worldRef: RefObject<SimWorld> }) {
         </group>
         {/* バックパックとスラスター、サーベルの柄 */}
         <Part args={[0.7, 0.6, 0.3]} position={[0, 1.95, -0.42]} color={GREY} />
-        {([-0.22, 0.22] as const).map((x) => (
-          <Part key={`hilt-${x}`} args={[0.07, 0.4, 0.07]} position={[x, 2.32, -0.5]} rotation={[-0.4, 0, 0]} color={WHITE} />
-        ))}
+        {look.backpack === 'standard' &&
+          ([-0.22, 0.22] as const).map((x) => (
+            <Part key={`hilt-${x}`} args={[0.07, 0.4, 0.07]} position={[x, 2.32, -0.5]} rotation={[-0.4, 0, 0]} color={WHITE} />
+          ))}
+        {/* オオトリ: 左右の大きな翼と、肩越しのビームランチャー・レールガン、対艦刀 */}
+        {look.backpack === 'ootori' && (
+          <group ref={ootori} position={[0, 2.0, -0.75]}>
+            <Part args={[0.6, 0.5, 0.6]} position={[0, 0, 0]} color={RED} />
+            {([-1, 1] as const).map((side) => (
+              <group key={side}>
+                <Part args={[1.7, 0.1, 0.7]} position={[side * 1.05, 0.25, -0.15]} rotation={[0, 0, side * -0.35]} color={WHITE} />
+                <Part args={[0.5, 0.11, 0.5]} position={[side * 1.7, 0.53, -0.15]} rotation={[0, 0, side * -0.35]} color={RED} />
+                <Part args={[0.16, 0.16, 2.2]} position={[side * 0.45, 0.55, 0.55]} color={DARK} />
+                <Part args={[0.22, 0.22, 0.5]} position={[side * 0.45, 0.55, -0.2]} color={GREY} />
+              </group>
+            ))}
+            <Part args={[0.12, 1.6, 0.18]} position={[0.32, -0.35, -0.3]} rotation={[0, 0, 0.3]} color={BLADE} />
+          </group>
+        )}
         {([-0.22, 0.22] as const).map((x, i) => (
           <group key={x} position={[x, 1.68, -0.55]} rotation={[0.55, 0, 0]}>
             <mesh>
@@ -265,17 +295,36 @@ export function MechModel({ worldRef }: { worldRef: RefObject<SimWorld> }) {
               <Part args={[0.1, 0.5, 0.1]} position={[-0.02, 0.2, 0]} color={YELLOW} />
             </group>
             <group ref={saber} position={[-0.08, -1.18, 0.15]} rotation={[Math.PI / 2, 0, 0]} visible={false}>
-              <mesh position={[0, 1.0, 0]}>
-                <cylinderGeometry args={[0.05, 0.05, 2.0, 8]} />
-                <meshBasicMaterial color="#ffffff" />
-              </mesh>
-              <mesh position={[0, 1.0, 0]}>
-                <cylinderGeometry args={[0.13, 0.11, 2.1, 10]} />
-                <meshBasicMaterial color={SABER} transparent opacity={0.6} blending={AdditiveBlending} depthWrite={false} />
-              </mesh>
+              {look.meleeWeapon === 'blade' ? (
+                <>
+                  {/* 対艦刀: 長い実体剣と、刃先のビーム */}
+                  <Part args={[0.12, 2.6, 0.32]} position={[0, 1.3, 0]} color={BLADE} />
+                  <Part args={[0.14, 0.4, 0.14]} position={[0, -0.05, 0]} color={DARK} />
+                  <mesh position={[0, 1.3, 0.2]}>
+                    <boxGeometry args={[0.06, 2.5, 0.08]} />
+                    <meshBasicMaterial color={SABER} transparent opacity={0.7} blending={AdditiveBlending} depthWrite={false} />
+                  </mesh>
+                </>
+              ) : (
+                <>
+                  <mesh position={[0, 1.0, 0]}>
+                    <cylinderGeometry args={[0.05, 0.05, 2.0, 8]} />
+                    <meshBasicMaterial color="#ffffff" />
+                  </mesh>
+                  <mesh position={[0, 1.0, 0]}>
+                    <cylinderGeometry args={[0.13, 0.11, 2.1, 10]} />
+                    <meshBasicMaterial color={SABER} transparent opacity={0.6} blending={AdditiveBlending} depthWrite={false} />
+                  </mesh>
+                </>
+              )}
             </group>
           </group>
         </group>
+        {/* SEED 発現中の淡いピンクのオーラ */}
+        <mesh ref={seedAura} position={[0, 1.6, 0]} visible={false}>
+          <sphereGeometry args={[1.9, 20, 14]} />
+          <meshBasicMaterial color={SEED_AURA} transparent opacity={0.16} blending={AdditiveBlending} depthWrite={false} />
+        </mesh>
         {/* 被弾したときの赤い光 */}
         <mesh ref={hitGlow} position={[0, 1.6, 0]} visible={false}>
           <sphereGeometry args={[1.6, 16, 12]} />

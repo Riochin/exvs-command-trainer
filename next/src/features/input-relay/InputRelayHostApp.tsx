@@ -15,6 +15,8 @@ import { useRelayHost, type RelayLogEntry } from './useRelayHost';
 import { applyInput, applyRawInput, createWorld, ENEMY_FIRE_INTERVAL_S, setLever } from './sim/step';
 import type { LeverDirection, SimWorld } from './sim/types';
 import type { RelayConnectionState, RelayInputMessage } from './types';
+import { GENERIC_UNIT, unitById } from './sim/units';
+import { CommandList, UnitSelect } from './UnitSelect';
 import { MechHud } from './viewer/MechHud';
 import styles from './InputRelayHostApp.module.css';
 
@@ -77,6 +79,20 @@ const ARROW_TO_LEVER: Readonly<Record<string, LeverDirection>> = {
 export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
   const worldRef = useRef<SimWorld>(createWorld({ enemyFires: true }));
   const [enemyFires, setEnemyFires] = useState(true);
+  const [unitId, setUnitId] = useState(GENERIC_UNIT.id);
+  // 開いたときは機体選択から始める
+  const [selecting, setSelecting] = useState(true);
+  const selectUnit = useCallback(
+    (id: string) => {
+      worldRef.current = createWorld({ enemyFires, unitId: id });
+      setUnitId(id);
+      setSelecting(false);
+    },
+    [enemyFires],
+  );
+  const closeSelect = useCallback(() => setSelecting(false), []);
+  // キーボードだけで練習するときは接続案内を閉じられる
+  const [guideHidden, setGuideHidden] = useState(false);
   const toggleEnemyFire = useCallback(() => {
     const next = !enemyFires;
     worldRef.current.enemy.fireInterval = next ? ENEMY_FIRE_INTERVAL_S : 0;
@@ -131,6 +147,9 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
         <button type="button" className={styles.restart} onClick={host.restart}>
           ルームを作り直す
         </button>
+        <button type="button" className={styles.unitButton} onClick={() => setSelecting(true)}>
+          機体: {unitById(unitId).name}
+        </button>
         <button type="button" className={styles.restart} onClick={toggleEnemyFire} aria-pressed={enemyFires}>
           敵の射撃: {enemyFires ? 'ON' : 'OFF'}
         </button>
@@ -143,10 +162,13 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
 
       <div className={styles.main}>
         <div className={styles.stage}>
-          <MechViewer worldRef={worldRef} />
+          <MechViewer worldRef={worldRef} unitId={unitId} />
           <MechHud worldRef={worldRef} />
-          {host.connection !== 'connected' && (
+          {host.connection !== 'connected' && !guideHidden && (
             <section className={styles.connect} aria-label="接続">
+              <button type="button" className={styles.guideClose} onClick={() => setGuideHidden(true)} aria-label="接続案内を閉じる">
+                ×
+              </button>
               <div className={styles.roomBlock}>
                 <span className={styles.caption}>ROOM</span>
                 <span className={styles.room}>{host.room ?? '----'}</span>
@@ -181,6 +203,10 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
         </div>
 
         <aside className={styles.side}>
+          <details className={styles.commandsSection} open>
+            <summary className={styles.heading}>技表</summary>
+            <CommandList unit={unitById(unitId)} />
+          </details>
           <section aria-label="遅延">
             <h2 className={styles.heading}>遅延（ms）</h2>
             <table className={styles.stats}>
@@ -223,6 +249,7 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
           </section>
         </aside>
       </div>
+      {selecting && <UnitSelect currentId={unitId} onSelect={selectUnit} onClose={closeSelect} />}
     </div>
   );
 }

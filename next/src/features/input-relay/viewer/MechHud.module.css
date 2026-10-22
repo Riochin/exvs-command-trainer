@@ -14,6 +14,85 @@
   opacity: 0.85;
 }
 
+.unit {
+  position: absolute;
+  top: 0.75rem;
+  right: 1rem;
+  display: grid;
+  gap: 0.3rem;
+  justify-items: end;
+  font-size: 0.8rem;
+}
+
+.unitName {
+  font-family: var(--font-label);
+  font-size: 0.85rem;
+  letter-spacing: 0.06em;
+}
+
+.ammo {
+  display: grid;
+  gap: 0.15rem;
+  list-style: none;
+}
+
+.ammoRow {
+  display: grid;
+  grid-template-columns: auto 3.2rem 4rem;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.ammoLabel {
+  color: var(--color-text-muted);
+  text-align: right;
+}
+
+.ammoCount {
+  color: var(--led-on);
+  text-align: right;
+}
+
+.ammoRow[data-empty='true'] .ammoCount {
+  color: var(--color-error);
+}
+
+.reload,
+.seedBar {
+  display: block;
+  height: 0.35rem;
+  background: rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.reload > span,
+.seedBar > span {
+  display: block;
+  height: 100%;
+  background: var(--led-on);
+  transform-origin: left center;
+}
+
+.seed {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #ff8fd0;
+  font-weight: 700;
+}
+
+.seedBar {
+  width: 6rem;
+}
+
+.seedBar > span {
+  background: #ff8fd0;
+}
+
+.seedWait {
+  color: var(--color-text-muted);
+}
+
 .topLeft {
   position: absolute;
   top: 0.75rem;

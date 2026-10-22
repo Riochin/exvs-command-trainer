@@ -31,6 +31,8 @@ export type ResolveContext = {
 export type Rejection = { reject: string };
 
 export type AmmoDef = {
+  /** HUD に出す名前 */
+  label: string;
   max: number;
   /** 1 発（empty なら全弾）が戻るまでの秒数 */
   reload: number;
@@ -369,10 +371,10 @@ export const STRIKE_ROUGE_OOTORI: UnitDef = {
   seedDuration: 20,
   seedCooldown: 15,
   ammo: {
-    main: { max: 8, reload: 3, mode: 'each' },
-    sub: { max: 2, reload: 7, mode: 'each', seedReload: 4, refillOnSeed: true },
-    freedom: { max: 2, reload: 14, mode: 'empty' },
-    ootori: { max: 1, reload: 10, mode: 'each', waitsForPack: true },
+    main: { label: 'BR', max: 8, reload: 3, mode: 'each' },
+    sub: { label: 'ランチャー', max: 2, reload: 7, mode: 'each', seedReload: 4, refillOnSeed: true },
+    freedom: { label: 'フリーダム', max: 2, reload: 14, mode: 'empty' },
+    ootori: { label: 'オオトリ', max: 1, reload: 10, mode: 'each', waitsForPack: true },
   },
   resolve: resolveRouge,
   look: {

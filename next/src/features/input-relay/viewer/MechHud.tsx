@@ -6,6 +6,7 @@
 import { useEffect, useState, type RefObject } from 'react';
 import { BOOST_MAX } from '../sim/actions';
 import type { LeverDirection, SimEvent, SimWorld } from '../sim/types';
+import { unitById } from '../sim/units';
 import styles from './MechHud.module.css';
 
 const HUD_INTERVAL_MS = 50;
@@ -28,6 +29,12 @@ type HudSnapshot = {
   route: SimEvent | null;
   reject: SimEvent | null;
   lever: LeverDirection[];
+  unitName: string;
+  ammo: Array<{ key: string; label: string; count: number; max: number; reloadRatio: number }>;
+  /** 時限強化の残り（0〜1）。強化がない機体・使っていないときは null */
+  seed: number | null;
+  seedCooldown: number;
+  packOut: boolean;
 };
 
 const LEVER_ARROWS: ReadonlyArray<{ direction: LeverDirection; glyph: string }> = [
@@ -44,6 +51,22 @@ function latest(world: SimWorld, kind: SimEvent['kind']): SimEvent | null {
     return world.time - e.time <= EVENT_SHOW_S ? e : null;
   }
   return null;
+}
+
+function unitSnapshot(world: SimWorld): Pick<HudSnapshot, 'unitName' | 'ammo' | 'seed' | 'seedCooldown' | 'packOut'> {
+  const unit = unitById(world.unitId);
+  const { mech } = world;
+  return {
+    unitName: unit.name,
+    ammo: Object.entries(unit.ammo).map(([key, def]) => {
+      const state = mech.ammo[key] ?? { count: def.max, timer: 0 };
+      const reload = mech.seedTime > 0 ? (def.seedReload ?? def.reload) : def.reload;
+      return { key, label: def.label, count: state.count, max: def.max, reloadRatio: Math.min(1, state.timer / reload) };
+    }),
+    seed: mech.seedTime > 0 && unit.seedDuration ? mech.seedTime / unit.seedDuration : null,
+    seedCooldown: mech.seedCooldown,
+    packOut: mech.packOut,
+  };
 }
 
 function snapshot(world: SimWorld): HudSnapshot {
@@ -63,6 +86,7 @@ function snapshot(world: SimWorld): HudSnapshot {
     route: latest(world, 'route'),
     reject: latest(world, 'reject'),
     lever: [...mech.leverHeld],
+    ...unitSnapshot(world),
   };
 }
 
@@ -103,6 +127,32 @@ export function MechHud({ worldRef }: { worldRef: RefObject<SimWorld> }) {
       <div className={styles.charge}>
         {hud.chargingShot && <span className={styles.chargeShot}>射CS チャージ中</span>}
         {hud.chargingMelee && <span className={styles.chargeMelee}>格CS チャージ中</span>}
+      </div>
+      <div className={styles.unit}>
+        <span className={styles.unitName}>{hud.unitName}</span>
+        {hud.ammo.length > 0 && (
+          <ul className={styles.ammo}>
+            {hud.ammo.map((a) => (
+              <li key={a.key} className={styles.ammoRow} data-empty={a.count === 0}>
+                <span className={styles.ammoLabel}>{a.label}</span>
+                <span className={styles.ammoCount}>
+                  {a.key === 'ootori' && hud.packOut ? '射出中' : `${a.count}/${a.max}`}
+                </span>
+                <span className={styles.reload}>
+                  <span style={{ transform: `scaleX(${a.count < a.max ? a.reloadRatio : 0})` }} />
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+        {hud.seed !== null && (
+          <div className={styles.seed}>
+            SEED <span className={styles.seedBar}><span style={{ transform: `scaleX(${hud.seed})` }} /></span>
+          </div>
+        )}
+        {hud.seed === null && hud.seedCooldown > 0 && (
+          <div className={styles.seedWait}>SEED まで {Math.ceil(hud.seedCooldown)}s</div>
+        )}
       </div>
       <div className={styles.lever} aria-label="レバー">
         {LEVER_ARROWS.map(({ direction, glyph }) => (

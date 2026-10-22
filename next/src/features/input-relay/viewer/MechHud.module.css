@@ -41,6 +41,41 @@
   animation: pop 0.2s ease-out;
 }
 
+.route {
+  position: absolute;
+  top: 28%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-label);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #fff;
+  background: linear-gradient(to right, transparent, rgba(216, 53, 44, 0.85) 20%, rgba(216, 53, 44, 0.85) 80%, transparent);
+  padding: 0.1rem 2.5rem;
+  animation: pop 0.2s ease-out;
+}
+
+.reject {
+  position: absolute;
+  top: 36%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.95rem;
+  color: var(--color-error);
+  animation: pop 0.15s ease-out;
+}
+
+.chain {
+  position: absolute;
+  left: 50%;
+  bottom: 3.5rem;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
 @keyframes pop {
   from {
     transform: translateX(-50%) scale(1.4);

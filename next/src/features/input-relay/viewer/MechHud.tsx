@@ -5,10 +5,12 @@
  */
 import { useEffect, useState, type RefObject } from 'react';
 import { actionLabel, BOOST_MAX } from '../sim/actions';
-import type { SimWorld } from '../sim/types';
+import type { SimEvent, SimWorld } from '../sim/types';
 import styles from './MechHud.module.css';
 
 const HUD_INTERVAL_MS = 50;
+/** ルート名や「出せなかった」表示を残す時間（sim の秒） */
+const EVENT_SHOW_S = 0.9;
 
 type HudSnapshot = {
   boost: number;
@@ -19,7 +21,20 @@ type HudSnapshot = {
   chargingShot: boolean;
   chargingMelee: boolean;
   hitCount: number;
+  /** つないだ行動の並び（表示名） */
+  chain: string[];
+  route: SimEvent | null;
+  reject: SimEvent | null;
 };
+
+function latest(world: SimWorld, kind: SimEvent['kind']): SimEvent | null {
+  for (let i = world.events.length - 1; i >= 0; i--) {
+    const e = world.events[i];
+    if (e.kind !== kind) continue;
+    return world.time - e.time <= EVENT_SHOW_S ? e : null;
+  }
+  return null;
+}
 
 function snapshot(world: SimWorld): HudSnapshot {
   const { mech } = world;
@@ -32,6 +47,9 @@ function snapshot(world: SimWorld): HudSnapshot {
     chargingShot: mech.charging.shot,
     chargingMelee: mech.charging.melee,
     hitCount: world.enemy.hitCount,
+    chain: mech.action === 'idle' ? [] : mech.chain.map(actionLabel),
+    route: latest(world, 'route'),
+    reject: latest(world, 'reject'),
   };
 }
 
@@ -56,6 +74,17 @@ export function MechHud({ worldRef }: { worldRef: RefObject<SimWorld> }) {
       <div className={styles.action} key={hud.action}>
         {hud.action}
       </div>
+      {hud.route && (
+        <div className={styles.route} key={`route-${hud.route.id}`}>
+          {hud.route.label}
+        </div>
+      )}
+      {hud.reject && (
+        <div className={styles.reject} key={`reject-${hud.reject.id}`}>
+          × {hud.reject.label}
+        </div>
+      )}
+      {hud.chain.length > 1 && <div className={styles.chain}>{hud.chain.join(' › ')}</div>}
       <div className={styles.charge}>
         {hud.chargingShot && <span className={styles.chargeShot}>射CS チャージ中</span>}
         {hud.chargingMelee && <span className={styles.chargeMelee}>格CS チャージ中</span>}

@@ -72,7 +72,14 @@ export function useChargeInput(options?: UseChargeInputOptions): UseChargeInputR
 
   const suppressChainedOutputForChargeableButton = useCallback((button: ChargeableButton) => {
     for (const [pointerId, b] of pointerMapRef.current) {
-      if (b === button) suppressedPointerIdsRef.current.add(pointerId);
+      if (b !== button) continue;
+      suppressedPointerIdsRef.current.add(pointerId);
+      // 同時押しに使った押下ではチャージも始めない。開始だけ出て終わりが抑制される食い違いを防ぐ
+      const chargeStartTimer = chargeStartTimersRef.current.get(pointerId);
+      if (chargeStartTimer !== undefined) {
+        clearTimeout(chargeStartTimer);
+        chargeStartTimersRef.current.delete(pointerId);
+      }
     }
   }, []);
 

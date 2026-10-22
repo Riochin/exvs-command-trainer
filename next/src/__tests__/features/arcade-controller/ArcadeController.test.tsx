@@ -112,6 +112,31 @@ describe('ArcadeController', () => {
       expect(onButtonPress).toHaveBeenCalledWith('special-shot');
     });
 
+    it.each([
+      ['特射', '射撃', 'ジャンプ', 'special-shot', 'shot-charge-start'],
+      ['サブ', '射撃', '格闘', 'sub', 'shot-charge-start'],
+      ['特格', '格闘', 'ジャンプ', 'special-melee', 'melee-charge-start'],
+    ])('%s に使った押下を押し続けてもチャージは始まらない（開始だけ出て終わりが出ない状態を防ぐ）', (_label, held, partner, chord, chargeStart) => {
+      vi.useFakeTimers();
+      const onButtonPress = vi.fn();
+      render(<ArcadeController onButtonPress={onButtonPress} />);
+      const heldEl = screen.getByText(held).closest('button')!;
+      const partnerEl = screen.getByText(partner).closest('button')!;
+      fireEvent.pointerDown(heldEl, { pointerId: 1 });
+      fireEvent.pointerDown(partnerEl, { pointerId: 2 });
+      fireEvent.pointerUp(partnerEl, { pointerId: 2 });
+      act(() => {
+        vi.advanceTimersByTime(CHARGE_THRESHOLD_MS + BD_WINDOW_MS);
+      });
+      fireEvent.pointerUp(heldEl, { pointerId: 1 });
+      act(() => {
+        vi.advanceTimersByTime(SIMULTANEOUS_INPUT_DEFER_MS + BD_WINDOW_MS);
+      });
+      expect(onButtonPress).toHaveBeenCalledWith(chord);
+      expect(onButtonPress).not.toHaveBeenCalledWith(chargeStart);
+      vi.useRealTimers();
+    });
+
     it('格闘保持中にジャンプで onButtonPress が "special-melee" で呼ばれる', () => {
       const onButtonPress = vi.fn();
       render(<ArcadeController onButtonPress={onButtonPress} />);

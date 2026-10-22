@@ -4,7 +4,7 @@
  * 3D ビューに重ねる HUD。sim は ref の中で毎フレーム動くので、ここは間引いて読む。
  */
 import { useEffect, useState, type RefObject } from 'react';
-import { actionLabel, BOOST_MAX } from '../sim/actions';
+import { BOOST_MAX } from '../sim/actions';
 import type { LeverDirection, SimEvent, SimWorld } from '../sim/types';
 import styles from './MechHud.module.css';
 
@@ -53,13 +53,13 @@ function snapshot(world: SimWorld): HudSnapshot {
     overheat: mech.overheat,
     landing: mech.landingLag > 0,
     grounded: mech.grounded,
-    action: actionLabel(mech.action),
+    action: mech.move?.label ?? '',
     chargingShot: mech.charging.shot,
     chargingMelee: mech.charging.melee,
     hitCount: world.enemy.hitCount,
     mechHits: world.mechHits,
     airBoostUses: mech.airBoostUses,
-    chain: mech.action === 'idle' ? [] : mech.chain.map(actionLabel),
+    chain: mech.action === 'idle' ? [] : mech.chainLabels,
     route: latest(world, 'route'),
     reject: latest(world, 'reject'),
     lever: [...mech.leverHeld],

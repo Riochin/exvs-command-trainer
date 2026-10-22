@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { ACTIONS, BOOST_MAX, LANDING_LAG_S, STEP_TAP_WINDOW_S, WALK_SPEED } from '@/features/input-relay/sim/actions';
+import {
+  ACTIONS,
+  BOOST_MAX,
+  INERTIA_LEVER_WINDOW_S,
+  LANDING_LAG_S,
+  STEP_TAP_WINDOW_S,
+  WALK_SPEED,
+} from '@/features/input-relay/sim/actions';
 import {
   advanceWorld,
   applyInput,
@@ -410,41 +417,113 @@ describe('EXVS のテクニック', () => {
     jumpUp(world);
   }
 
-  it('BD 慣性ジャンプ: BD を離した直後のジャンプは BD の慣性を乗せて飛ぶ', () => {
-    const world = createWorld();
-    holdJump(world, 0.15);
-    bdFor(world, 0.4);
-    run(world, 0.05);
-    jumpDown(world);
-    expect(lastRoute(world)).toBe('慣性ジャンプ');
-    run(world, 0.2);
-    expect(speedXZ(world)).toBeGreaterThan(20);
-    expect(world.mech.vel.y).toBeGreaterThan(0);
-  });
+  /** レバーを倒したまま BD して、BD とレバーを離す（レバーはニュートラルに戻る） */
+  function leverBd(world: SimWorld, direction: LeverDirection, seconds: number) {
+    setLever(world, direction, true);
+    bdFor(world, seconds);
+    setLever(world, direction, false);
+  }
 
-  it('慣性は一度きり。離してもう一度押すとその場で跳ねるだけ', () => {
-    const world = createWorld();
-    holdJump(world, 0.15);
-    bdFor(world, 0.4);
-    holdJump(world, 0.1);
-    run(world, 0.05);
-    jumpDown(world);
-    run(world, 0.05);
-    expect(speedXZ(world)).toBeLessThan(1);
-  });
-
-  it('慣性ジャンプ中に慣性の方向へレバーを入れるとさらに伸びる', () => {
-    const plain = createWorld();
-    const boosted = createWorld();
-    for (const world of [plain, boosted]) {
+  describe('慣性ジャンプ', () => {
+    it('BD → レバーを戻す → ジャンプとほぼ同時に同じ方向へ入れ直すと成立する', () => {
+      const world = createWorld();
       holdJump(world, 0.15);
+      leverBd(world, 'forward', 0.4);
+      run(world, 0.05);
+      jumpDown(world);
+      run(world, 0.05);
+      setLever(world, 'forward', true);
+      expect(lastRoute(world)).toBe('慣性ジャンプ');
+      run(world, 0.2);
+      expect(speedXZ(world)).toBeGreaterThan(15);
+      expect(world.mech.vel.y).toBeGreaterThan(0);
+    });
+
+    it('レバーをジャンプより少し先に入れ直しても成立する', () => {
+      const world = createWorld();
+      holdJump(world, 0.15);
+      leverBd(world, 'left', 0.4);
+      run(world, 0.05);
+      setLever(world, 'left', true);
+      run(world, 0.1);
+      jumpDown(world);
+      expect(lastRoute(world)).toBe('慣性ジャンプ');
+    });
+
+    it('レバーを戻さずに倒しっぱなしだと成立しない', () => {
+      const world = createWorld();
+      holdJump(world, 0.15);
+      setLever(world, 'forward', true);
       bdFor(world, 0.4);
       jumpDown(world);
-    }
-    setLever(boosted, 'forward', true);
-    run(plain, 0.4);
-    run(boosted, 0.4);
-    expect(speedXZ(boosted)).toBeGreaterThan(speedXZ(plain) + 3);
+      run(world, 0.2);
+      expect(world.events.some((e) => e.label === '慣性ジャンプ')).toBe(false);
+    });
+
+    it('BD と違う方向に入れ直したり、間が空きすぎたりすると成立しない', () => {
+      const other = createWorld();
+      holdJump(other, 0.15);
+      leverBd(other, 'forward', 0.4);
+      jumpDown(other);
+      setLever(other, 'right', true);
+      expect(other.events.some((e) => e.label === '慣性ジャンプ')).toBe(false);
+
+      const late = createWorld();
+      holdJump(late, 0.15);
+      leverBd(late, 'forward', 0.4);
+      jumpDown(late);
+      run(late, INERTIA_LEVER_WINDOW_S + 0.1);
+      setLever(late, 'forward', true);
+      expect(late.events.some((e) => e.label === '慣性ジャンプ')).toBe(false);
+    });
+
+    it('普通のジャンプよりずっと進み、BD ほどは進まない', () => {
+      function travel(setup: (world: SimWorld) => void) {
+        const world = createWorld();
+        holdJump(world, 0.15);
+        const start = { ...world.mech.pos };
+        setup(world);
+        run(world, 0.8);
+        return Math.hypot(world.mech.pos.x - start.x, world.mech.pos.z - start.z);
+      }
+      const inertia = travel((w) => {
+        leverBd(w, 'right', 0.3);
+        jumpDown(w);
+        setLever(w, 'right', true);
+        run(w, 0.3);
+        jumpUp(w);
+        setLever(w, 'right', false);
+      });
+      const plain = travel((w) => {
+        leverBd(w, 'right', 0.3);
+        run(w, 0.4);
+        jumpDown(w);
+        run(w, 0.3);
+        jumpUp(w);
+      });
+      const bd = travel((w) => {
+        setLever(w, 'right', true);
+        bdFor(w, 1.1);
+      });
+      expect(inertia).toBeGreaterThan(plain + 8);
+      expect(inertia).toBeLessThan(bd);
+    });
+
+    it('一度きり。離してもう一度押すとその場で跳ねるだけ', () => {
+      const world = createWorld();
+      holdJump(world, 0.15);
+      leverBd(world, 'forward', 0.4);
+      jumpDown(world);
+      setLever(world, 'forward', true);
+      run(world, 0.1);
+      jumpUp(world);
+      setLever(world, 'forward', false);
+      run(world, 0.05);
+      jumpDown(world);
+      setLever(world, 'forward', true);
+      const count = world.events.filter((e) => e.label === '慣性ジャンプ').length;
+      expect(count).toBe(1);
+    });
   });
 
   it('BD 旋回: BD 中にレバーを倒すと、その方向へ少しずつ曲がる', () => {

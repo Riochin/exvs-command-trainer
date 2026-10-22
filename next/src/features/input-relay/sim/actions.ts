@@ -18,6 +18,15 @@ export const STEP_TAP_WINDOW_S = 0.25;
 export const BD_TURN_RATE = 3.2;
 /** 機体が向き直る速さ（rad/s） */
 export const FACE_TURN_RATE = 9;
+/**
+ * 慣性ジャンプ: BD（レバー入れ）→ レバーを一度戻す → ジャンプとほぼ同時に同じ方向へ入れ直すと成立。
+ * ジャンプとレバーの入れ直しの間がこの秒数以内なら成立とみなす（実機の猶予は未確認の仮の値）
+ */
+export const INERTIA_LEVER_WINDOW_S = 0.25;
+/** 慣性ジャンプが成立したときの横の初速（BD は 30。普通のジャンプの横流れは 7） */
+export const INERTIA_JUMP_SPEED = 21;
+/** 慣性ジャンプで飛んでいる間の、空中での横の減速（普通の空中は 1.5） */
+export const INERTIA_AIR_DAMPING = 0.45;
 /** 慣性ジャンプ中、慣性の方向にレバーを入れたときの加速（m/s²） */
 export const INERTIA_LEVER_ACCEL = 14;
 /** 慣性ジャンプ中の水平速度の上限 */
@@ -40,8 +49,15 @@ export const LANDING_LAG_MAX_S = 0.75;
  * - lunge: 敵へ踏み込む。届いたら止まる。落下しない
  * - rise: 上昇し続ける（ジャンプ）。レバーで横に流れる
  * - step: 決まった向きへ素早く滑る。落下しない
+ * - roll: 横へ転がりながら撃つ（横サブなど）。出だしが速く、だんだん止まる
  */
-export type MoveMode = 'free' | 'halt' | 'dash' | 'lunge' | 'rise' | 'step';
+export type MoveMode = 'free' | 'halt' | 'dash' | 'lunge' | 'rise' | 'step' | 'roll';
+
+/** 描画の姿勢。射撃系は銃を構え、格闘系は剣を振り、呼び出し系は手を掲げる */
+export type MovePose = 'shoot' | 'slash' | 'throw' | 'summon' | 'none';
+
+/** 呼び出す僚機（アシスト）・射出物 */
+export type AssistKind = 'murasame' | 'freedom-shot' | 'freedom-melee' | 'ootori';
 
 export type ProjectileSpec = {
   kind: ProjectileKind;
@@ -55,6 +71,8 @@ export type ProjectileSpec = {
 };
 
 export type ActionDef = {
+  /** 技の識別子。汎用機はスロット名と同じ。キャンセルルートでも使う */
+  id?: string;
   duration: number;
   move: MoveMode;
   /** dash / lunge の速度 */
@@ -75,14 +93,38 @@ export type ActionDef = {
   /** 弾を出す・攻撃判定を出すタイミング（秒） */
   fireAt?: number;
   projectile?: ProjectileSpec;
+  /** 同時に撃つ弾が複数種類あるとき（ビーム＋レールガンなど）。projectile の代わりに使う */
+  projectiles?: ReadonlyArray<ProjectileSpec>;
+  /** 照射やミサイル連射のように、fireAt から一定間隔で何回も撃つ */
+  volley?: { count: number; interval: number };
   /** 近接攻撃 */
   strike?: boolean;
+  /** 格闘の最大段数（追加入力で何段まで出せるか）。省略時は 3 */
+  comboMax?: number;
+  /** 横格闘のように回り込む強さ（m/s）。レバーの左右で向きが決まる */
+  curve?: number;
+  /** 使う弾。弾がなければ出せない */
+  ammo?: string;
+  /** 1 回で使う弾数。省略時は 1 */
+  ammoCost?: number;
+  /** この技をメイン射撃でキャンセルすると自由落下に移れる（アメキャン対応） */
+  fallCancel?: boolean;
+  /** この技からのキャンセルルート。省略時はスロットの標準ルート */
+  cancels?: { into: ReadonlyArray<string>; opens: 'always' | 'afterFire'; early?: ReadonlyArray<string> };
+  /** fireAt で呼び出すアシスト・射出物 */
+  assist?: AssistKind;
+  /** fireAt で発動する時限強化 */
+  buff?: 'seed';
+  /** メイン射撃に合わせて、追従アシストも撃つ */
+  linkAssists?: boolean;
+  pose?: MovePose;
   label: string;
 };
 
 export const ACTIONS: Readonly<Record<Exclude<ActionKind, 'idle'>, ActionDef>> = {
   // BR は移動撃ち（慣性と落下はそのまま）。敵が後ろにいるときだけ振り向き撃ちで足が止まる
   shot: {
+    id: 'shot',
     label: 'BR',
     duration: 0.45,
     move: 'free',
@@ -92,6 +134,7 @@ export const ACTIONS: Readonly<Record<Exclude<ActionKind, 'idle'>, ActionDef>> =
     projectile: { kind: 'beam', speed: 120, radius: 0.18, life: 1.2, homing: 0.6, count: 1, spread: 0 },
   },
   melee: {
+    id: 'melee',
     label: '格闘',
     duration: 0.95,
     move: 'lunge',
@@ -103,6 +146,7 @@ export const ACTIONS: Readonly<Record<Exclude<ActionKind, 'idle'>, ActionDef>> =
     strike: true,
   },
   jump: {
+    id: 'jump',
     label: 'ジャンプ',
     duration: 10,
     holdMinTime: 0.12,
@@ -112,6 +156,7 @@ export const ACTIONS: Readonly<Record<Exclude<ActionKind, 'idle'>, ActionDef>> =
     boostPerSec: 30,
   },
   bd: {
+    id: 'bd',
     label: 'BD',
     duration: 10,
     holdMinTime: 0.35,
@@ -121,6 +166,7 @@ export const ACTIONS: Readonly<Record<Exclude<ActionKind, 'idle'>, ActionDef>> =
     boostPerSec: 25,
   },
   step: {
+    id: 'step',
     label: 'ステップ',
     duration: 0.38,
     move: 'step',
@@ -129,7 +175,9 @@ export const ACTIONS: Readonly<Record<Exclude<ActionKind, 'idle'>, ActionDef>> =
     boostPerSec: 0,
   },
   sub: {
+    id: 'sub',
     label: 'サブ',
+    fallCancel: true,
     duration: 0.6,
     move: 'halt',
     boostCost: 0,
@@ -138,6 +186,7 @@ export const ACTIONS: Readonly<Record<Exclude<ActionKind, 'idle'>, ActionDef>> =
     projectile: { kind: 'missile', speed: 45, radius: 0.3, life: 3, homing: 2.5, count: 3, spread: 0.5 },
   },
   'special-shot': {
+    id: 'special-shot',
     label: '特射',
     duration: 0.8,
     move: 'halt',
@@ -147,6 +196,7 @@ export const ACTIONS: Readonly<Record<Exclude<ActionKind, 'idle'>, ActionDef>> =
     projectile: { kind: 'big-beam', speed: 90, radius: 0.6, life: 1.5, homing: 0.3, count: 1, spread: 0 },
   },
   'special-melee': {
+    id: 'special-melee',
     label: '特格',
     duration: 0.7,
     move: 'free',
@@ -157,6 +207,7 @@ export const ACTIONS: Readonly<Record<Exclude<ActionKind, 'idle'>, ActionDef>> =
     strike: true,
   },
   'shot-cs': {
+    id: 'shot-cs',
     label: '射CS',
     duration: 0.9,
     move: 'halt',
@@ -166,6 +217,7 @@ export const ACTIONS: Readonly<Record<Exclude<ActionKind, 'idle'>, ActionDef>> =
     projectile: { kind: 'cs-beam', speed: 80, radius: 0.9, life: 1.8, homing: 0, count: 1, spread: 0 },
   },
   'melee-cs': {
+    id: 'melee-cs',
     label: '格CS',
     duration: 0.9,
     move: 'lunge',
@@ -178,6 +230,21 @@ export const ACTIONS: Readonly<Record<Exclude<ActionKind, 'idle'>, ActionDef>> =
   },
 };
 
-export function actionLabel(action: ActionKind): string {
-  return action === 'idle' ? '' : ACTIONS[action].label;
+const SLOT_POSES: Readonly<Record<Exclude<ActionKind, 'idle'>, MovePose>> = {
+  shot: 'shoot',
+  sub: 'shoot',
+  'special-shot': 'shoot',
+  'shot-cs': 'shoot',
+  melee: 'slash',
+  'special-melee': 'slash',
+  'melee-cs': 'slash',
+  jump: 'none',
+  bd: 'none',
+  step: 'none',
+};
+
+/** 技の姿勢。技に指定がなければスロットから決める */
+export function poseOf(action: ActionKind, move: ActionDef | null): MovePose {
+  if (action === 'idle') return 'none';
+  return move?.pose ?? SLOT_POSES[action];
 }

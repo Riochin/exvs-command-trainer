@@ -1,3 +1,4 @@
+import type { ActionDef } from './actions';
 import type { MechAction, MechState } from './types';
 
 /**
@@ -57,17 +58,27 @@ export const INPUT_BUFFER_S = 0.25;
  * - open: キャンセルできる
  * - notYet: キャンセルできる組み合わせだが、まだ受付前
  * - closed: この組み合わせではキャンセルできない
+ *
+ * nextMove を渡すと、技ごとのキャンセルルート（技の id で書かれたもの）も見る。
+ * 今の技が独自のルートを持っていればスロットの標準ルートの代わりに使う。
  */
 export type CancelState = 'free' | 'open' | 'notYet' | 'closed';
 
-export function cancelState(mech: MechState, next: MechAction): CancelState {
+export function cancelState(mech: MechState, next: MechAction, nextMove?: ActionDef | null): CancelState {
   if (mech.action === 'idle') return 'free';
-  const rule = CANCEL_RULES[mech.action];
-  if (!rule.into.includes(next)) return 'closed';
-  if (next === 'melee' && mech.action === 'melee' && mech.meleeStage >= MELEE_MAX_STAGE) return 'closed';
+  const rule = mech.move?.cancels ?? CANCEL_RULES[mech.action];
+  const nextId = nextMove?.id;
+  const listed = (list: ReadonlyArray<string> | undefined) =>
+    list !== undefined && (list.includes(next) || (nextId !== undefined && list.includes(nextId)));
+  if (!listed(rule.into)) return 'closed';
+  // 同じ格闘の追加入力は、その技の段数まで
+  const sameMove = nextId !== undefined && nextId === mech.move?.id;
+  if ((next === 'melee' || next === 'special-melee') && next === mech.action && (sameMove || nextMove == null)) {
+    if (mech.meleeStage >= (mech.move?.comboMax ?? MELEE_MAX_STAGE)) return 'closed';
+  }
   if (rule.opens === 'afterFire' && !mech.actionFired) {
     // 振り向き撃ちは足が止まるので、撃つ前のステップはできない
-    if (rule.early?.includes(next) && !mech.turnShot) return 'open';
+    if (listed(rule.early) && !mech.turnShot) return 'open';
     return 'notYet';
   }
   return 'open';

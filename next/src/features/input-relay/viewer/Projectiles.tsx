@@ -21,6 +21,11 @@ const LOOKS: Readonly<Record<ProjectileKind, { color: string; length: number; wi
   'big-beam': { color: '#ffe066', length: 12, width: 0.7 },
   'cs-beam': { color: '#7ef9ff', length: 16, width: 1.0 },
   'enemy-beam': { color: '#b6ff5e', length: 6, width: 0.22 },
+  rail: { color: '#ffd28a', length: 9, width: 0.14 },
+  laser: { color: '#ff7ab8', length: 14, width: 0.75 },
+  'small-missile': { color: '#ffb347', length: 0.6, width: 0.12 },
+  sword: { color: '#dfe6f0', length: 2.6, width: 0.18 },
+  'assist-beam': { color: '#8fd3ff', length: 6, width: 0.16 },
 };
 
 export function Projectiles({ worldRef }: { worldRef: RefObject<SimWorld> }) {

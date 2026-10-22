@@ -4,6 +4,8 @@
  * 描画（three）に依存しない純粋なデータにしておき、vitest で挙動を確かめられるようにする。
  * 座標はメートル、時間は秒。y が上。
  */
+import type { ActionDef, AssistKind } from './actions';
+
 export type Vec3 = { x: number; y: number; z: number };
 
 export type ActionKind =
@@ -55,7 +57,32 @@ export type Effect = {
   life: number;
 };
 
-export type ProjectileKind = 'beam' | 'missile' | 'big-beam' | 'cs-beam' | 'enemy-beam';
+export type ProjectileKind =
+  | 'beam'
+  | 'missile'
+  | 'big-beam'
+  | 'cs-beam'
+  | 'enemy-beam'
+  | 'rail'
+  | 'laser'
+  | 'small-missile'
+  | 'sword'
+  | 'assist-beam';
+
+/** 呼び出したアシストや射出物。機体の周りに付いてくるものと、敵へ向かうものがある */
+export type Assist = {
+  id: number;
+  kind: AssistKind;
+  pos: Vec3;
+  /** 向き（rad） */
+  yaw: number;
+  age: number;
+  life: number;
+  /** 追従アシストの左右（-1 / 1） */
+  side: number;
+  /** 何回撃ったか・何回殴ったか */
+  shots: number;
+};
 
 export type Projectile = {
   id: number;
@@ -86,6 +113,10 @@ export type MechState = {
   /** 着地硬直の残り（秒）。0 より大きいあいだは行動できない */
   landingLag: number;
   action: ActionKind;
+  /** 今出している技（機体ごとの技データ）。何もしていなければ null */
+  move: ActionDef | null;
+  /** つないだ技の表示名。HUD に出す */
+  chainLabels: string[];
   /** 今の行動の経過時間（秒） */
   actionTime: number;
   /** 今の行動で弾や攻撃判定をもう出したか */
@@ -94,7 +125,7 @@ export type MechState = {
   /** 格闘の何段目か（1〜3）。格闘以外では 0 */
   meleeStage: number;
   /** キャンセル受付前に来た入力。受付が始まったときにまだ新しければ出す */
-  buffered: { action: MechAction; at: number } | null;
+  buffered: { action: MechAction; move: ActionDef; at: number } | null;
   /** 止まらずにつないだ行動の並び。ルート名の判定に使う */
   chain: MechAction[];
   /** ジャンプボタンを押しているか。ジャンプの上昇と BD は押している間だけ続く */
@@ -119,6 +150,28 @@ export type MechState = {
   airBoostUses: number;
   /** 被弾時に光らせる残り時間（秒） */
   hitFlash: number;
+  /** 弾数。キーは機体データの弾の名前 */
+  ammo: Record<string, { count: number; timer: number }>;
+  /** 時限強化（SEED 発現など）の残り時間（秒） */
+  seedTime: number;
+  /** 時限強化を使い終わってから、また使えるまでの残り（秒） */
+  seedCooldown: number;
+  /** 背中の装備（オオトリなど）を射出している */
+  packOut: boolean;
+  /** 今の技で何発撃ったか（照射・連射用） */
+  shotsFired: number;
+  /** 横格闘の回り込みの向き（-1 / 0 / 1） */
+  curveSign: number;
+  /** BD 中に倒していたレバーの方向。慣性ジャンプはこの方向に入れ直すと成立する */
+  bdLever: LeverDirection | null;
+  /** BD のあとレバーを一度ニュートラルに戻したか */
+  leverNeutralSinceBd: boolean;
+  /** 最後にレバーを倒した方向と時刻 */
+  lastLeverPress: { direction: LeverDirection; at: number } | null;
+  /** ジャンプを押したあと、レバーの入れ直しを待っている慣性ジャンプ */
+  inertiaPending: { direction: LeverDirection; until: number } | null;
+  /** 慣性ジャンプで飛んでいる。着地するまで横の勢いが落ちにくい */
+  inertiaFlight: boolean;
 };
 
 export type EnemyState = {
@@ -134,6 +187,10 @@ export type EnemyState = {
 
 export type SimWorld = {
   time: number;
+  /** 選んでいる機体 */
+  unitId: string;
+  assists: Assist[];
+  nextAssistId: number;
   mech: MechState;
   enemy: EnemyState;
   projectiles: Projectile[];

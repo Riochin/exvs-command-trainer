@@ -87,3 +87,20 @@ export const events = sqliteTable(
     index('ev_client_event_idx').on(t.clientId, t.eventType),
   ],
 );
+
+/**
+ * 入力リレー（試作）の WebRTC 接続情報の受け渡し場所。
+ * 接続時に一度だけ使う一時データで、古い行は書き込みのついでに消す。
+ */
+export const relaySignals = sqliteTable(
+  'relay_signals',
+  {
+    room:      text('room').primaryKey(),
+    offer:     text('offer'),
+    answer:    text('answer'),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (t) => [
+    index('rs_updated_at_idx').on(t.updatedAt),
+  ],
+);

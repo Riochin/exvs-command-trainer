@@ -112,6 +112,31 @@ describe('ArcadeController', () => {
       expect(onButtonPress).toHaveBeenCalledWith('special-shot');
     });
 
+    it.each([
+      ['特射', '射撃', 'ジャンプ', 'special-shot', 'shot-charge-start'],
+      ['サブ', '射撃', '格闘', 'sub', 'shot-charge-start'],
+      ['特格', '格闘', 'ジャンプ', 'special-melee', 'melee-charge-start'],
+    ])('%s に使った押下を押し続けてもチャージは始まらない（開始だけ出て終わりが出ない状態を防ぐ）', (_label, held, partner, chord, chargeStart) => {
+      vi.useFakeTimers();
+      const onButtonPress = vi.fn();
+      render(<ArcadeController onButtonPress={onButtonPress} />);
+      const heldEl = screen.getByText(held).closest('button')!;
+      const partnerEl = screen.getByText(partner).closest('button')!;
+      fireEvent.pointerDown(heldEl, { pointerId: 1 });
+      fireEvent.pointerDown(partnerEl, { pointerId: 2 });
+      fireEvent.pointerUp(partnerEl, { pointerId: 2 });
+      act(() => {
+        vi.advanceTimersByTime(CHARGE_THRESHOLD_MS + BD_WINDOW_MS);
+      });
+      fireEvent.pointerUp(heldEl, { pointerId: 1 });
+      act(() => {
+        vi.advanceTimersByTime(SIMULTANEOUS_INPUT_DEFER_MS + BD_WINDOW_MS);
+      });
+      expect(onButtonPress).toHaveBeenCalledWith(chord);
+      expect(onButtonPress).not.toHaveBeenCalledWith(chargeStart);
+      vi.useRealTimers();
+    });
+
     it('格闘保持中にジャンプで onButtonPress が "special-melee" で呼ばれる', () => {
       const onButtonPress = vi.fn();
       render(<ArcadeController onButtonPress={onButtonPress} />);
@@ -499,5 +524,64 @@ describe('ArcadeController', () => {
       fireEvent.pointerUp(melee, { pointerId: 2 });
       expect(onButtonPress).not.toHaveBeenCalled();
     });
+  });
+
+  describe('onRawInput（解釈前の物理入力通知）', () => {
+    it('ポインターの押下・解放・キャンセルをそのまま通知する', () => {
+      const onRawInput = vi.fn();
+      render(<ArcadeController onRawInput={onRawInput} />);
+      const shot = screen.getByText('射撃').closest('button')!;
+      const jump = screen.getByText('ジャンプ').closest('button')!;
+      fireEvent.pointerDown(shot, { pointerId: 1 });
+      fireEvent.pointerUp(shot, { pointerId: 1 });
+      fireEvent.pointerDown(jump, { pointerId: 2 });
+      fireEvent.pointerCancel(jump, { pointerId: 2 });
+      expect(onRawInput.mock.calls.map(([input]) => input)).toEqual([
+        { button: 'shot', phase: 'down' },
+        { button: 'shot', phase: 'up' },
+        { button: 'jump', phase: 'down' },
+        { button: 'jump', phase: 'cancel' },
+      ]);
+    });
+
+    it('デバッグキー（y）の押下・解放も通知する', () => {
+      const onRawInput = vi.fn();
+      render(<ArcadeController onRawInput={onRawInput} />);
+      fireEvent.keyDown(window, { key: 'y' });
+      fireEvent.keyUp(window, { key: 'y' });
+      expect(onRawInput.mock.calls.map(([input]) => input)).toEqual([
+        { button: 'melee', phase: 'down' },
+        { button: 'melee', phase: 'up' },
+      ]);
+    });
+
+    it('同時押しの解釈は onRawInput があっても変わらない', () => {
+      vi.useFakeTimers();
+      const onButtonPress = vi.fn();
+      const onRawInput = vi.fn();
+      render(<ArcadeController onButtonPress={onButtonPress} onRawInput={onRawInput} />);
+      const shot = screen.getByText('射撃').closest('button')!;
+      const melee = screen.getByText('格闘').closest('button')!;
+      fireEvent.pointerDown(shot, { pointerId: 1 });
+      fireEvent.pointerDown(melee, { pointerId: 2 });
+      act(() => {
+        vi.advanceTimersByTime(SIMULTANEOUS_INPUT_DEFER_MS);
+      });
+      expect(onButtonPress).toHaveBeenCalledWith('sub');
+      expect(onRawInput).toHaveBeenCalledTimes(2);
+      vi.useRealTimers();
+    });
+  });
+
+  it('keyboardKeys でキーの割り当てを差し替えられる（標準の f は効かなくなる）', () => {
+    const onRawInput = vi.fn();
+    render(<ArcadeController onRawInput={onRawInput} keyboardKeys={{ j: 'shot', o: 'melee', '[': 'jump' }} />);
+    fireEvent.keyDown(window, { key: 'f' });
+    fireEvent.keyDown(window, { key: '[' });
+    fireEvent.keyUp(window, { key: '[' });
+    expect(onRawInput.mock.calls.map(([input]) => input)).toEqual([
+      { button: 'jump', phase: 'down' },
+      { button: 'jump', phase: 'up' },
+    ]);
   });
 });

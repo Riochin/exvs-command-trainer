@@ -1,0 +1,366 @@
+.hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  font-family: var(--font-led);
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.caption {
+  font-family: var(--font-label);
+  font-size: 0.75rem;
+  letter-spacing: var(--letter-spacing-ui);
+  opacity: 0.85;
+}
+
+.unit {
+  position: absolute;
+  /* 右上の固定メニューボタンを避ける */
+  top: 3.2rem;
+  right: 1rem;
+  display: grid;
+  gap: 0.3rem;
+  justify-items: end;
+  font-size: 0.8rem;
+}
+
+.unitName {
+  font-family: var(--font-label);
+  font-size: 0.85rem;
+  letter-spacing: 0.06em;
+}
+
+.ammo {
+  display: grid;
+  gap: 0.15rem;
+  list-style: none;
+}
+
+.ammoRow {
+  display: grid;
+  grid-template-columns: auto 3.2rem 4rem;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.ammoLabel {
+  color: var(--color-text-muted);
+  text-align: right;
+}
+
+.ammoCount {
+  color: var(--led-on);
+  text-align: right;
+}
+
+.ammoRow[data-empty='true'] .ammoCount {
+  color: var(--color-error);
+}
+
+.reload,
+.seedBar {
+  display: block;
+  height: 0.35rem;
+  background: rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.reload > span,
+.seedBar > span {
+  display: block;
+  height: 100%;
+  background: var(--led-on);
+  transform-origin: left center;
+}
+
+.seed {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #ff8fd0;
+  font-weight: 700;
+}
+
+.seedBar {
+  width: 6rem;
+}
+
+.seedBar > span {
+  background: #ff8fd0;
+}
+
+.seedWait {
+  color: var(--color-text-muted);
+}
+
+.topLeft {
+  position: absolute;
+  /* 左上の「戻る」リンクを避ける */
+  top: 2.6rem;
+  left: 0.75rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
+.hits {
+  font-size: 1.6rem;
+  color: var(--led-on);
+}
+
+.damage {
+  font-size: 1.6rem;
+  color: var(--color-error);
+}
+
+.uses {
+  color: var(--color-text-muted);
+}
+
+.uses[data-heavy='true'] {
+  color: var(--color-warning);
+}
+
+.action {
+  position: absolute;
+  top: 18%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-label);
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--color-accent-primary);
+  animation: pop 0.2s ease-out;
+}
+
+.route {
+  position: absolute;
+  top: 28%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-label);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #fff;
+  background: linear-gradient(to right, transparent, rgba(216, 53, 44, 0.85) 20%, rgba(216, 53, 44, 0.85) 80%, transparent);
+  padding: 0.1rem 2.5rem;
+  animation: pop 0.2s ease-out;
+}
+
+.reject {
+  position: absolute;
+  top: 36%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.95rem;
+  color: var(--color-error);
+  animation: pop 0.15s ease-out;
+}
+
+.chain {
+  position: absolute;
+  left: 50%;
+  bottom: 4.6rem;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+@keyframes pop {
+  from {
+    transform: translateX(-50%) scale(1.4);
+    opacity: 0.3;
+  }
+}
+
+.charge {
+  position: absolute;
+  bottom: 6.5rem;
+  left: 50%;
+  display: flex;
+  gap: 0.75rem;
+  transform: translateX(-50%);
+  font-size: 0.9rem;
+}
+
+.chargeShot {
+  color: #7ef9ff;
+}
+
+.chargeMelee {
+  color: #ff6ad5;
+}
+
+.lever {
+  position: absolute;
+  /* 左下の隅は開発時の Next のバッジと重なるので少し内側に置く */
+  left: 3.5rem;
+  bottom: 1rem;
+  display: grid;
+  grid-template-areas:
+    '. forward .'
+    'left . right'
+    '. back .';
+  gap: 0.1rem;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.arrow {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.arrow[data-on='true'] {
+  color: var(--led-on);
+}
+
+.arrow[data-direction='forward'] {
+  grid-area: forward;
+}
+
+.arrow[data-direction='back'] {
+  grid-area: back;
+}
+
+.arrow[data-direction='left'] {
+  grid-area: left;
+}
+
+.arrow[data-direction='right'] {
+  grid-area: right;
+}
+
+.boost {
+  position: absolute;
+  left: 50%;
+  bottom: 1.1rem;
+  display: grid;
+  justify-items: center;
+  gap: 0.2rem;
+  width: min(26rem, 42%);
+  transform: translateX(-50%);
+}
+
+.boostLabel {
+  font-family: var(--font-label);
+  font-size: 0.7rem;
+  letter-spacing: 0.25em;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.status {
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+  color: var(--color-text-muted);
+}
+
+.status[data-status='OVERHEAT'] {
+  color: var(--color-error);
+  animation: blink 0.4s step-end infinite;
+}
+
+.status[data-status='LANDING'] {
+  color: var(--color-warning);
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.gauge {
+  width: 100%;
+  height: 1.1rem;
+  padding: 2px;
+  background: rgba(10, 14, 22, 0.75);
+  border: 2px solid rgba(200, 225, 255, 0.55);
+  border-radius: 3px;
+  /* EXVS のゲージのように斜めに切る */
+  transform: skewX(-24deg);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.fill {
+  height: 100%;
+  background: linear-gradient(to bottom, #b9f6ff, #36c8f2 55%, #1b8fd1);
+  transform-origin: left center;
+  transition: transform 60ms linear;
+}
+
+.fill[data-overheat='true'] {
+  background: var(--color-error);
+}
+
+/* 右下の残弾。大きな数字と、武装名・リロードの細いゲージを斜めの札に載せる */
+.weapons {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 1rem;
+  display: grid;
+  gap: 0.35rem;
+  list-style: none;
+}
+
+.weapon {
+  display: grid;
+  grid-template-columns: 2.6rem 9rem;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.6rem 0.25rem 0.8rem;
+  background: linear-gradient(to right, rgba(12, 18, 28, 0.35), rgba(12, 18, 28, 0.85));
+  border-right: 3px solid rgba(120, 200, 255, 0.7);
+  clip-path: polygon(0.9rem 0, 100% 0, 100% 100%, 0 100%);
+}
+
+.weaponCount {
+  font-family: var(--font-led);
+  font-size: 1.8rem;
+  line-height: 1;
+  color: #fff;
+  text-align: right;
+}
+
+.weapon[data-empty='true'] .weaponCount {
+  color: var(--color-error);
+}
+
+.weaponBody {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.weaponName {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.85);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.weaponReload {
+  display: block;
+  height: 0.3rem;
+  background: rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+}
+
+.weaponReload > span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(to right, #36c8f2, #b9f6ff);
+  transform-origin: left center;
+}
+
+.weaponCaption {
+  font-family: var(--font-label);
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: right;
+}

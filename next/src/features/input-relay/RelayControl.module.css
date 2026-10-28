@@ -1,30 +1,36 @@
-/* 練習画面の LED 表示（試行カウンター）と並べる前提の小さな表示 */
+/* 練習画面のヘッダーに置く、接続状態のチップ */
 .badge {
-  font-family: var(--font-led);
-  font-size: 0.7rem;
-  letter-spacing: 0.1em;
-  color: var(--color-text-muted);
-  background: var(--led-bg);
-  padding: 0.15rem 0.5rem;
-  border: 1px solid var(--surface-plate-edge);
-  border-radius: 3px;
-  box-shadow: inset 0 0 6px #000;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-2);
+  background: rgba(54, 200, 242, 0.12);
+  color: var(--cyan-hi);
+  border: 0;
+  clip-path: polygon(var(--cut-xs) 0, 100% 0, 100% calc(100% - var(--cut-xs)), calc(100% - var(--cut-xs)) 100%, 0 100%, 0 var(--cut-xs));
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
   cursor: pointer;
   white-space: nowrap;
 }
 
 .badge[data-state='connected'] {
-  color: var(--color-success);
+  background: rgba(62, 224, 143, 0.14);
+  color: var(--ok);
 }
 
 .badge[data-state='waiting'],
 .badge[data-state='connecting'] {
-  color: var(--led-on);
+  background: rgba(255, 176, 32, 0.14);
+  color: var(--warn);
 }
 
 .badge[data-state='disconnected'],
 .badge[data-state='error'] {
-  color: var(--color-error);
+  background: rgba(255, 75, 75, 0.14);
+  color: var(--danger);
 }
 
 /* 横持ちでソフトキーボードが下半分を覆うので、ダイアログは上寄せにする */
@@ -37,38 +43,41 @@
   justify-content: center;
   padding: max(0.75rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
     max(0.75rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(3, 6, 10, 0.62);
 }
 
 .dialog {
   display: grid;
-  gap: 0.6rem;
+  gap: var(--space-3);
   width: min(26rem, 100%);
-  padding: 1rem 1.25rem;
-  background: var(--surface-card);
-  color: var(--ink);
-  border-top: 6px solid var(--ink);
-  border-radius: 0.5rem;
-  box-shadow: var(--shadow-drop-lg);
+  padding: var(--space-4) var(--space-5);
+  background:
+    linear-gradient(var(--cyan), var(--cyan)) top left / 3.5rem 2px no-repeat,
+    linear-gradient(to bottom, #0d1622, var(--ink-1));
+  box-shadow: inset 0 0 0 1px var(--line), var(--drop-modal);
+  clip-path: polygon(var(--cut-lg) 0, 100% 0, 100% calc(100% - var(--cut-lg)), calc(100% - var(--cut-lg)) 100%, 0 100%, 0 var(--cut-lg));
+  color: var(--text);
 }
 
 .title {
   margin: 0;
-  color: var(--ink);
+  color: var(--text);
   font-family: var(--font-label);
   font-size: 1rem;
-  letter-spacing: var(--letter-spacing-ui);
+  font-weight: 800;
+  letter-spacing: 0.06em;
 }
 
 .help {
   margin: 0;
-  color: var(--ink-muted);
+  color: var(--text-muted);
   font-size: 0.75rem;
-  line-height: 1.5;
+  line-height: 1.55;
 }
 
 .path {
-  font-family: var(--font-led);
+  color: var(--cyan-hi);
+  font-family: var(--font-num);
   overflow-wrap: anywhere;
 }
 
@@ -80,21 +89,22 @@
 
 .input {
   width: 8rem;
-  padding: 0.25rem 0.5rem;
-  background: var(--led-bg);
-  color: var(--led-on);
+  padding: var(--space-1) var(--space-2);
+  background: var(--ink-0);
+  color: var(--cyan-hi);
   border: 0;
-  border-radius: 4px;
-  box-shadow: inset 0 0 6px #000;
-  font-family: var(--font-led);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+  clip-path: polygon(var(--cut-sm) 0, 100% 0, 100% calc(100% - var(--cut-sm)), calc(100% - var(--cut-sm)) 100%, 0 100%, 0 var(--cut-sm));
+  font-family: var(--font-num);
   font-size: 1.5rem;
+  font-weight: 700;
   letter-spacing: 0.2em;
   text-align: center;
   text-transform: uppercase;
 }
 
 .input::placeholder {
-  color: color-mix(in oklab, var(--led-on), transparent 75%);
+  color: color-mix(in oklab, var(--cyan-hi), transparent 75%);
 }
 
 .status {
@@ -104,12 +114,12 @@
 }
 
 .status[data-state='connected'] {
-  color: color-mix(in oklab, var(--color-success), black 35%);
+  color: var(--ok);
 }
 
 .status[data-state='disconnected'],
 .status[data-state='error'] {
-  color: color-mix(in oklab, var(--color-error), black 20%);
+  color: var(--danger);
 }
 
 .error {
@@ -126,8 +136,9 @@
 .close {
   background: none;
   border: 0;
-  color: var(--ink-muted);
-  font-size: 0.8rem;
-  text-decoration: underline;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 700;
   cursor: pointer;
 }

@@ -88,6 +88,23 @@ export async function pollSignal(room: string, kind: SignalKind, signal: AbortSi
   }
 }
 
+/** つなぎ直しのとき、相手がまだ使っていない（answer の付いていない）offer を待つ間隔 */
+export const RECONNECT_DELAY_MS = 800;
+
+/**
+ * まだ誰も答えていない新しい offer が置かれるまで待つ。
+ *
+ * スマホの再読み込みやページ移動のあと、PC が古い接続の終わりに気づいて offer を置き直すまでの間は
+ * 古い offer が残っている。それに答えてもつながらないので、answer 済みのものと前回使ったものは飛ばす。
+ */
+export async function pollFreshOffer(room: string, usedOffer: string | null, signal: AbortSignal): Promise<string> {
+  for (;;) {
+    const offer = await fetchSignal(room, 'offer', signal);
+    if (offer !== null && offer !== usedOffer && (await fetchSignal(room, 'answer', signal)) === null) return offer;
+    await delay(SIGNAL_POLL_INTERVAL_MS, signal);
+  }
+}
+
 /**
  * ICE 候補の収集完了を待つ（non-trickle）。
  *

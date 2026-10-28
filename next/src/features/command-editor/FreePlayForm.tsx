@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArcadeController } from '@/features/arcade-controller/ArcadeController';
 import { RelayControl } from '@/features/input-relay/RelayControl';
-import { useRelaySender } from '@/features/input-relay/useRelaySender';
+import { useRelay } from '@/features/input-relay/RelayProvider';
 import type { ButtonType, CommandStep } from '@/types';
 import styles from './FreePlayForm.module.css';
 
@@ -45,16 +45,10 @@ function buildPreviewItems(sequence: CommandStep[]): PreviewItem[] {
   return items;
 }
 
-export interface FreePlayFormProps {
-  /** 入力リレー（試作）のルームコード。指定時は入力を PC へ送る */
-  relayRoom?: string | null;
-  /** 指定時は PC連携の入口を出し、ルームコードの変更をここへ通知する */
-  onRelayRoomChange?: (room: string | null) => void;
-}
-
-export function FreePlayForm({ relayRoom = null, onRelayRoomChange }: FreePlayFormProps = {}) {
+export function FreePlayForm() {
   const [sequence, setSequence] = useState<CommandStep[]>([]);
-  const relay = useRelaySender(relayRoom);
+  // PC 連携（3D 画面）。つないでいれば入力を PC へも送る
+  const relay = useRelay();
   const sequencePreviewRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -63,7 +57,7 @@ export function FreePlayForm({ relayRoom = null, onRelayRoomChange }: FreePlayFo
   }, [sequence]);
 
   const handleStepAdded = (step: CommandStep) => {
-    for (const button of step.buttons) relay.sendButton(button);
+    for (const button of step.buttons) relay?.sendButton(button);
     setSequence((prev) => [...prev, step]);
   };
 
@@ -73,12 +67,12 @@ export function FreePlayForm({ relayRoom = null, onRelayRoomChange }: FreePlayFo
     <div className={styles.form}>
       <header className={styles.header}>
         <h1 className={styles.title}>EXVSコマンド道場</h1>
-        {onRelayRoomChange && (
+        {relay && (
           <RelayControl
-            room={relayRoom}
+            room={relay.room}
             connection={relay.connection}
             error={relay.error}
-            onRoomChange={onRelayRoomChange}
+            onRoomChange={relay.setRoom}
           />
         )}
       </header>
@@ -111,7 +105,7 @@ export function FreePlayForm({ relayRoom = null, onRelayRoomChange }: FreePlayFo
         </button>
       </div>
       <div className={styles.controllerArea}>
-        <ArcadeController onStepAdded={handleStepAdded} onRawInput={relay.enabled ? relay.sendRaw : undefined} />
+        <ArcadeController onStepAdded={handleStepAdded} onRawInput={relay?.room ? relay.sendRaw : undefined} />
       </div>
     </div>
   );

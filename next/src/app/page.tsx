@@ -1,14 +1,11 @@
 'use client';
 
-import { use, useEffect } from 'react';
+import { useEffect } from 'react';
 import { FreePlayForm } from '@/features/command-editor/FreePlayForm';
 import { LandscapeGuard } from '@/components/LandscapeGuard';
 import { useAnalytics } from '@/features/analytics/useAnalytics';
-import { useRelayRoomParam } from '@/features/input-relay/useRelayRoomParam';
 
-export default function FreePlayPage({ searchParams }: { searchParams: Promise<{ relay?: string }> }) {
-  const { relay } = use(searchParams);
-  const setRelayRoom = useRelayRoomParam();
+export default function FreePlayPage() {
   const { trackEvent } = useAnalytics();
 
   useEffect(() => {
@@ -19,7 +16,7 @@ export default function FreePlayPage({ searchParams }: { searchParams: Promise<{
 
   return (
     <LandscapeGuard>
-      <FreePlayForm relayRoom={relay ?? null} onRelayRoomChange={setRelayRoom} />
+      <FreePlayForm />
     </LandscapeGuard>
   );
 }

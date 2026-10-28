@@ -10,7 +10,7 @@ import { CommandHint } from './CommandHint';
 import { SessionResult } from './SessionResult';
 import { CapsuleButton } from '@/components/CapsuleButton';
 import { RelayControl } from '@/features/input-relay/RelayControl';
-import { useRelaySender } from '@/features/input-relay/useRelaySender';
+import { useRelay } from '@/features/input-relay/RelayProvider';
 import type { ButtonType, Command } from '@/types';
 import type { ArcadePhysicalButton } from '@/features/arcade-controller/ArcadeController';
 import styles from './PracticeSession.module.css';
@@ -43,19 +43,9 @@ export interface PracticeSessionProps {
   command: Command;
   onExit: () => void;
   timeLimit?: number | null;
-  /** 入力リレー（試作）のルームコード。指定時は入力を PC へ送る */
-  relayRoom?: string | null;
-  /** 指定時は PC連携の入口を出し、ルームコードの変更をここへ通知する */
-  onRelayRoomChange?: (room: string | null) => void;
 }
 
-export function PracticeSession({
-  command,
-  onExit,
-  timeLimit = null,
-  relayRoom = null,
-  onRelayRoomChange,
-}: PracticeSessionProps) {
+export function PracticeSession({ command, onExit, timeLimit = null }: PracticeSessionProps) {
   const { trackSessionStart, trackAttempt, trackSessionEnd } = useAnalytics();
 
   // sessionId はセッション開始ごとに新しい UUID を生成して ref に保持
@@ -89,8 +79,9 @@ export function PracticeSession({
   };
 
   const { state, start, end, handleButtonPress } = usePracticeSession(analyticsOptions);
-  const relay = useRelaySender(relayRoom);
-  const { sendButton: relaySendButton } = relay;
+  // PC 連携（3D 画面）。つないでいれば入力を PC へも送る
+  const relay = useRelay();
+  const relaySendButton = relay?.sendButton;
   const [controllerFeedback, setControllerFeedback] = useState<ControllerButtonState>('neutral');
   const [timeLeft, setTimeLeft] = useState<number | null>(timeLimit);
 
@@ -129,7 +120,7 @@ export function PracticeSession({
   const wrappedHandleButtonPress = useCallback(
     (button: ButtonType) => {
       setControllerFeedback('neutral');
-      relaySendButton(button);
+      relaySendButton?.(button);
       handleButtonPress(button);
     },
     [handleButtonPress, relaySendButton],
@@ -173,12 +164,12 @@ export function PracticeSession({
             )}
             {state.lastResult === 'success' && <div data-testid="result-success" className={styles.resultSuccess}>SUCCESS</div>}
             {state.lastResult === 'failure' && <div data-testid="result-failure" className={styles.resultFailure}>MISS</div>}
-            {onRelayRoomChange && (
+            {relay && (
               <RelayControl
-                room={relayRoom}
+                room={relay.room}
                 connection={relay.connection}
                 error={relay.error}
-                onRoomChange={onRelayRoomChange}
+                onRoomChange={relay.setRoom}
               />
             )}
           </div>
@@ -190,7 +181,7 @@ export function PracticeSession({
           onButtonPress={wrappedHandleButtonPress}
           highlightedPhysicalButtons={highlightedPhysicalButtons}
           buttonStateOverride={controllerFeedback}
-          onRawInput={relay.enabled ? relay.sendRaw : undefined}
+          onRawInput={relay?.room ? relay.sendRaw : undefined}
         />
       </div>
     </div>

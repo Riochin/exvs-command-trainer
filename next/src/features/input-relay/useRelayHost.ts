@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { estimateClockOffset, oneWayLatency, pushBounded, roundTripTime, type PingSample } from './latencyStats';
-import { decodeRelayMessage, encodeRelayMessage, generateRoomCode } from './protocol';
+import { decodeRelayMessage, encodeRelayMessage, generateRoomCode, isRoomCode } from './protocol';
 import {
   CONNECT_TIMEOUT_MS,
   fetchIceServers,
@@ -10,6 +10,7 @@ import {
   P2P_FAILED_MESSAGE,
   pollSignal,
   postSignal,
+  RECONNECT_DELAY_MS,
   RTC_CONFIGURATION,
   waitForIceGathering,
 } from './signalingClient';
@@ -55,6 +56,26 @@ const INITIAL_STATE: RelayHostState = {
  * PC 側。ルームを作って offer を置き、スマホからの answer を待って DataChannel を張る。
  * 接続後は ping で時計を合わせつつ、届いた入力の片道遅延を記録する。
  */
+const HOST_ROOM_KEY = 'input-relay:host-room';
+
+function loadHostRoom(): string | null {
+  try {
+    const stored = window.sessionStorage.getItem(HOST_ROOM_KEY);
+    return isRoomCode(stored) ? stored : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveHostRoom(room: string | null): void {
+  try {
+    if (room === null) window.sessionStorage.removeItem(HOST_ROOM_KEY);
+    else window.sessionStorage.setItem(HOST_ROOM_KEY, room);
+  } catch {
+    // 保存できなくても、このページの間は同じコードで待ち受けられる
+  }
+}
+
 export type UseRelayHostOptions = {
   /** 入力が届いた瞬間に呼ぶ（3D ビューの sim に即座に渡すため。React の再描画を待たない） */
   onInput?: (message: RelayInputMessage) => void;
@@ -68,20 +89,29 @@ export function useRelayHost({ onInput }: UseRelayHostOptions = {}) {
   }, [onInput]);
   const [sessionKey, setSessionKey] = useState(0);
   const samplesRef = useRef<PingSample[]>([]);
+  // つなぎ直しでは同じルームコードを使い続け、スマホ側が入れ直さなくて済むようにする
+  const roomRef = useRef<string | null>(null);
 
+  /** 新しいルームコードで最初からやり直す */
   const restart = useCallback(() => {
+    roomRef.current = null;
+    saveHostRoom(null);
     setState(INITIAL_STATE);
     setSessionKey((k) => k + 1);
   }, []);
 
   useEffect(() => {
     const abort = new AbortController();
-    const room = generateRoomCode();
+    // PC を再読み込みしても同じコードを使い、スマホがそのままつながり直せるようにする
+    const room = roomRef.current ?? loadHostRoom() ?? generateRoomCode();
+    roomRef.current = room;
+    saveHostRoom(room);
     const pc = new RTCPeerConnection(RTC_CONFIGURATION);
     // 遅れた入力を待たない。届かなければ捨てる
     const channel = pc.createDataChannel('input', { ordered: false, maxRetransmits: 0 });
     let pingTimer: ReturnType<typeof setInterval> | null = null;
     let connectTimer: ReturnType<typeof setTimeout> | null = null;
+    let renewTimer: ReturnType<typeof setTimeout> | null = null;
     let opened = false;
     let pingId = 0;
     let lastSeq = 0;
@@ -92,8 +122,20 @@ export function useRelayHost({ onInput }: UseRelayHostOptions = {}) {
       setState((prev) => ({ ...prev, ...patch(prev) }));
     };
 
+    /**
+     * 切れたりつながらなかったりしたら、同じルームで offer を置き直してスマホを待つ。
+     * スマホの再読み込みや画面移動のあとも、コードを入れ直さずにつながり直せる。
+     */
+    const renew = (patch: Partial<RelayHostState>) => {
+      update(() => patch);
+      if (renewTimer !== null || abort.signal.aborted) return;
+      renewTimer = setTimeout(() => {
+        if (!abort.signal.aborted) setSessionKey((k) => k + 1);
+      }, RECONNECT_DELAY_MS);
+    };
+
     const failConnect = () => {
-      if (!opened) update(() => ({ connection: 'error', error: P2P_FAILED_MESSAGE }));
+      if (!opened) renew({ connection: 'error', error: P2P_FAILED_MESSAGE });
     };
 
     channel.onopen = () => {
@@ -107,7 +149,7 @@ export function useRelayHost({ onInput }: UseRelayHostOptions = {}) {
     };
 
     channel.onclose = () => {
-      if (opened) update(() => ({ connection: 'disconnected' }));
+      if (opened) renew({ connection: 'disconnected' });
     };
 
     channel.onmessage = (event: MessageEvent) => {
@@ -141,7 +183,7 @@ export function useRelayHost({ onInput }: UseRelayHostOptions = {}) {
         if (pc.connectionState === 'failed') failConnect();
         return;
       }
-      if (isPeerGone(pc)) update(() => ({ connection: 'disconnected' }));
+      if (isPeerGone(pc)) renew({ connection: 'disconnected' });
     };
 
     (async () => {
@@ -160,13 +202,14 @@ export function useRelayHost({ onInput }: UseRelayHostOptions = {}) {
       connectTimer = setTimeout(failConnect, CONNECT_TIMEOUT_MS);
     })().catch((error: unknown) => {
       if (abort.signal.aborted) return;
-      update(() => ({ connection: 'error', error: error instanceof Error ? error.message : String(error) }));
+      renew({ connection: 'error', error: error instanceof Error ? error.message : String(error) });
     });
 
     return () => {
       abort.abort();
       if (pingTimer !== null) clearInterval(pingTimer);
       if (connectTimer !== null) clearTimeout(connectTimer);
+      if (renewTimer !== null) clearTimeout(renewTimer);
       channel.close();
       pc.close();
     };

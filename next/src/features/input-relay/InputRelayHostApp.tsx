@@ -6,7 +6,7 @@
  * スマホの練習画面から届いた入力で 3D の機体を動かす。脇には遅延の集計と入力ログを出す。
  */
 import dynamic from 'next/dynamic';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { ArcadeController, type ArcadeRawInput } from '@/features/arcade-controller/ArcadeController';
 import type { ButtonType } from '@/types';
 import { inputLabel, phaseLabel } from './inputLabels';
@@ -17,6 +17,7 @@ import type { LeverDirection, SimWorld } from './sim/types';
 import type { RelayConnectionState, RelayInputMessage } from './types';
 import { GENERIC_UNIT, unitById } from './sim/units';
 import { CommandList, UnitSelect } from './UnitSelect';
+import { JoinQrCode } from './JoinQrCode';
 import { MechHud } from './viewer/MechHud';
 import styles from './InputRelayHostApp.module.css';
 
@@ -68,6 +69,10 @@ function describeEntry(entry: RelayLogEntry): string {
   return inputLabel(message.button);
 }
 
+const noopSubscribe = () => () => {};
+const readOrigin = () => window.location.origin;
+const readServerOrigin = () => null;
+
 /** PC の十字キーをレバー代わりにする */
 const ARROW_TO_LEVER: Readonly<Record<string, LeverDirection>> = {
   ArrowUp: 'forward',
@@ -93,6 +98,9 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
   const closeSelect = useCallback(() => setSelecting(false), []);
   // キーボードだけで練習するときは接続案内を閉じられる
   const [guideHidden, setGuideHidden] = useState(false);
+  // スマホから開く URL。開発中は LAN の IP、本番はこのサイトそのもの（サーバー描画では分からないので null）
+  const browserOrigin = useSyncExternalStore(noopSubscribe, readOrigin, readServerOrigin);
+  const siteOrigin = lanOrigins[0] ?? browserOrigin;
   const toggleEnemyFire = useCallback(() => {
     const next = !enemyFires;
     worldRef.current.enemy.fireInterval = next ? ENEMY_FIRE_INTERVAL_S : 0;
@@ -134,7 +142,7 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
   return (
     <div className={styles.app}>
       <header className={styles.header}>
-        <h1 className={styles.title}>INPUT RELAY</h1>
+        <h1 className={styles.title}>3D VIEW</h1>
         <div className={styles.roomInline}>
           <span className={styles.caption}>ROOM</span>
           <span className={styles.roomSmall} data-testid="relay-room">
@@ -169,6 +177,7 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
               <button type="button" className={styles.guideClose} onClick={() => setGuideHidden(true)} aria-label="接続案内を閉じる">
                 ×
               </button>
+              <JoinQrCode origin={siteOrigin} room={host.room} />
               <div className={styles.roomBlock}>
                 <span className={styles.caption}>ROOM</span>
                 <span className={styles.room}>{host.room ?? '----'}</span>
@@ -179,8 +188,9 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
                   {host.error && <span className={styles.error}>：{host.error}</span>}
                 </p>
                 <ol className={styles.steps}>
+                  <li>スマホのカメラで QR コードを読み取る。フリー練習が開いて、そのままつながる</li>
                   <li>
-                    スマホで{' '}
+                    または、スマホで{' '}
                     {lanOrigins.length > 0 ? (
                       lanOrigins.map((origin) => (
                         <code key={origin} className={styles.code}>
@@ -190,12 +200,10 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
                     ) : (
                       <span>このサイト</span>
                     )}{' '}
-                    を開き、フリー練習かコマンドの練習画面に進む
+                    を開き、練習画面上部の <span className={styles.chip}>PC連携</span> でコード{' '}
+                    <code className={styles.code}>{host.room ?? '----'}</code> を入力
                   </li>
-                  <li>
-                    画面上部の <span className={styles.chip}>PC連携</span> を押し、コード{' '}
-                    <code className={styles.code}>{host.room ?? '----'}</code> を入力して「接続」
-                  </li>
+                  <li>つないだあとは、フリー練習とコマンド練習を行き来しても、再読み込みしてもつながったまま</li>
                 </ol>
               </div>
             </section>

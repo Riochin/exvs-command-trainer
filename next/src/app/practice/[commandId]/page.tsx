@@ -5,10 +5,10 @@ export default async function PracticePage({
   searchParams,
 }: {
   params: Promise<{ commandId: string }>;
-  searchParams: Promise<{ timeLimit?: string; relay?: string }>;
+  searchParams: Promise<{ timeLimit?: string }>;
 }) {
   const { commandId } = await params;
-  const { timeLimit, relay } = await searchParams;
+  const { timeLimit } = await searchParams;
   const parsedLimit = timeLimit ? Number(timeLimit) : null;
-  return <PracticePageContent commandId={commandId} timeLimit={parsedLimit} relayRoom={relay ?? null} />;
+  return <PracticePageContent commandId={commandId} timeLimit={parsedLimit} />;
 }

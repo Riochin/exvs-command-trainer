@@ -9,8 +9,9 @@ import {
   fetchIceServers,
   isPeerGone,
   P2P_FAILED_MESSAGE,
-  pollSignal,
+  pollFreshOffer,
   postSignal,
+  RECONNECT_DELAY_MS,
   RTC_CONFIGURATION,
   waitForIceGathering,
 } from './signalingClient';
@@ -23,7 +24,7 @@ type OutgoingInput = DistributiveOmit<Extract<RelayMessage, { type: 'raw' | 'but
  * スマホ側。ホストの offer を取りに行って answer を返し、DataChannel で入力を送る。
  *
  * `room` が null（リレーなしの通常の練習）のときは何もしない。送信は判定とは独立で、
- * 未接続のあいだの入力は捨てる。
+ * 未接続のあいだの入力は捨てる。切れたら自動でつなぎ直す。
  */
 export function useRelaySender(room: string | null) {
   const [connection, setConnection] = useState<RelayConnectionState>('waiting');
@@ -43,70 +44,95 @@ export function useRelaySender(room: string | null) {
     if (room === null || !isRoomCode(room)) return;
 
     const abort = new AbortController();
-    const pc = new RTCPeerConnection(RTC_CONFIGURATION);
+    let pc: RTCPeerConnection | null = null;
     let connectTimer: ReturnType<typeof setTimeout> | null = null;
-    let opened = false;
-    const setIfActive = (next: RelayConnectionState) => {
-      if (!abort.signal.aborted) setConnection(next);
-    };
-    const failConnect = () => {
-      if (opened || abort.signal.aborted) return;
-      setConnection('error');
-      setError(P2P_FAILED_MESSAGE);
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    // 前回答えた offer。つなぎ直しでは、PC が置き直した新しい offer を待つ
+    let usedOffer: string | null = null;
+
+    const clearTimers = () => {
+      if (connectTimer !== null) clearTimeout(connectTimer);
+      if (retryTimer !== null) clearTimeout(retryTimer);
+      connectTimer = null;
+      retryTimer = null;
     };
 
-    pc.ondatachannel = (event) => {
-      const channel = event.channel;
-      channel.onopen = () => {
-        opened = true;
-        if (connectTimer !== null) clearTimeout(connectTimer);
-        channelRef.current = channel;
-        if (!abort.signal.aborted) setError(null);
-        setIfActive('connected');
-      };
-      channel.onclose = () => {
-        if (channelRef.current === channel) channelRef.current = null;
-        setIfActive('disconnected');
-      };
-      channel.onmessage = (message: MessageEvent) => {
-        const t1 = performance.now();
-        const decoded = decodeRelayMessage(message.data);
-        if (decoded?.type !== 'ping' || channel.readyState !== 'open') return;
-        channel.send(encodeRelayMessage({ type: 'pong', id: decoded.id, t0: decoded.t0, t1 }));
-      };
-    };
-
-    pc.onconnectionstatechange = () => {
-      if (!opened) {
-        if (pc.connectionState === 'failed') failConnect();
-        return;
-      }
-      if (isPeerGone(pc)) setIfActive('disconnected');
-    };
-
-    (async () => {
-      const iceServers = await fetchIceServers(abort.signal);
-      const offer = await pollSignal(room, 'offer', abort.signal);
-      pc.setConfiguration({ iceServers });
-      setIfActive('connecting');
-      await pc.setRemoteDescription({ type: 'offer', sdp: offer });
-      await pc.setLocalDescription(await pc.createAnswer());
-      await waitForIceGathering(pc);
-      const answer = pc.localDescription?.sdp;
-      if (!answer) throw new Error('answer を作れませんでした');
-      await postSignal(room, 'answer', answer, abort.signal);
-      connectTimer = setTimeout(failConnect, CONNECT_TIMEOUT_MS);
-    })().catch((e: unknown) => {
+    /**
+     * 切れたりつながらなかったりしたら、少し待ってから最初からやり直す。
+     * PC の再読み込みや、スマホ側の画面移動のあとでも、そのままつながり直す。
+     */
+    const scheduleRetry = (reason: string | null) => {
       if (abort.signal.aborted) return;
-      setConnection('error');
-      setError(e instanceof Error ? e.message : String(e));
-    });
+      clearTimers();
+      channelRef.current = null;
+      pc?.close();
+      pc = null;
+      setConnection('waiting');
+      if (reason !== null) setError(reason);
+      retryTimer = setTimeout(attempt, RECONNECT_DELAY_MS);
+    };
+
+    const attempt = () => {
+      if (abort.signal.aborted) return;
+      const current = new RTCPeerConnection(RTC_CONFIGURATION);
+      pc = current;
+      let opened = false;
+
+      current.ondatachannel = (event) => {
+        const channel = event.channel;
+        channel.onopen = () => {
+          opened = true;
+          if (connectTimer !== null) clearTimeout(connectTimer);
+          channelRef.current = channel;
+          if (abort.signal.aborted) return;
+          setError(null);
+          setConnection('connected');
+        };
+        channel.onclose = () => {
+          if (pc === current) scheduleRetry(null);
+        };
+        channel.onmessage = (message: MessageEvent) => {
+          const t1 = performance.now();
+          const decoded = decodeRelayMessage(message.data);
+          if (decoded?.type !== 'ping' || channel.readyState !== 'open') return;
+          channel.send(encodeRelayMessage({ type: 'pong', id: decoded.id, t0: decoded.t0, t1 }));
+        };
+      };
+
+      current.onconnectionstatechange = () => {
+        if (pc !== current) return;
+        if (!opened && current.connectionState === 'failed') scheduleRetry(P2P_FAILED_MESSAGE);
+        else if (opened && isPeerGone(current)) scheduleRetry(null);
+      };
+
+      (async () => {
+        const iceServers = await fetchIceServers(abort.signal);
+        const offer = await pollFreshOffer(room, usedOffer, abort.signal);
+        usedOffer = offer;
+        current.setConfiguration({ iceServers });
+        if (!abort.signal.aborted) setConnection('connecting');
+        await current.setRemoteDescription({ type: 'offer', sdp: offer });
+        await current.setLocalDescription(await current.createAnswer());
+        await waitForIceGathering(current);
+        const answer = current.localDescription?.sdp;
+        if (!answer) throw new Error('answer を作れませんでした');
+        await postSignal(room, 'answer', answer, abort.signal);
+        connectTimer = setTimeout(() => {
+          if (!opened && pc === current) scheduleRetry(P2P_FAILED_MESSAGE);
+        }, CONNECT_TIMEOUT_MS);
+      })().catch((e: unknown) => {
+        if (abort.signal.aborted || pc !== current) return;
+        scheduleRetry(e instanceof Error ? e.message : String(e));
+      });
+    };
+
+    attempt();
 
     return () => {
       abort.abort();
-      if (connectTimer !== null) clearTimeout(connectTimer);
+      clearTimers();
       channelRef.current = null;
-      pc.close();
+      pc?.close();
     };
   }, [room]);
 

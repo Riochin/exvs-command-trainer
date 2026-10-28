@@ -21,10 +21,10 @@ vi.mock('@/features/analytics/useClientId', () => ({
 
 const sendRaw = vi.fn();
 const sendButton = vi.fn();
-const useRelaySender = vi.fn();
+const useRelay = vi.fn();
 
-vi.mock('@/features/input-relay/useRelaySender', () => ({
-  useRelaySender: (room: string | null) => useRelaySender(room),
+vi.mock('@/features/input-relay/RelayProvider', () => ({
+  useRelay: () => useRelay(),
 }));
 
 import { PracticeSession } from '@/features/practice/PracticeSession';
@@ -42,18 +42,11 @@ const command: Command = {
 describe('PracticeSession 入力リレー', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    useRelaySender.mockImplementation((room: string | null) => ({
-      enabled: room !== null,
-      connection: room === null ? 'idle' : 'connected',
-      error: null,
-      sendRaw,
-      sendButton,
-    }));
+    useRelay.mockReturnValue(null);
   });
 
-  it('onRelayRoomChange がなければ PC連携の入口を出さず、何も送らない', async () => {
+  it('PC 連携のプロバイダがなければ入口を出さず、何も送らない', async () => {
     render(<PracticeSession command={command} onExit={vi.fn()} />);
-    expect(useRelaySender).toHaveBeenCalledWith(null);
     expect(screen.queryByTestId('relay-status')).toBeNull();
 
     const shot = screen.getByRole('button', { name: '射撃' });
@@ -63,9 +56,9 @@ describe('PracticeSession 入力リレー', () => {
     expect(sendRaw).not.toHaveBeenCalled();
   });
 
-  it('relayRoom があれば接続状態を出し、生入力と解釈済み入力を送る', async () => {
-    render(<PracticeSession command={command} onExit={vi.fn()} relayRoom="ABCD" onRelayRoomChange={vi.fn()} />);
-    expect(useRelaySender).toHaveBeenCalledWith('ABCD');
+  it('つないでいれば接続状態を出し、生入力と解釈済み入力を送る', async () => {
+    useRelay.mockReturnValue({ room: 'ABCD', connection: 'connected', error: null, setRoom: vi.fn(), sendRaw, sendButton });
+    render(<PracticeSession command={command} onExit={vi.fn()} />);
     expect(screen.getByTestId('relay-status').textContent).toBe('PC 接続済');
 
     const shot = screen.getByRole('button', { name: '射撃' });

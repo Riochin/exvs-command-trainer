@@ -89,7 +89,7 @@ export function RelayControl({ room, connection, error, onRoomChange }: RelayCon
               PC連携
             </h2>
             <p className={styles.help}>
-              PC で <code className={styles.path}>/tools/input-relay</code> を開き、表示されている {ROOM_CODE_LENGTH} 文字のコードを入力してください。
+              PC でメニューの「3Dビュー（PC）」を開き、表示されている {ROOM_CODE_LENGTH} 文字のコードを入力してください（QR コードを読み取ってもつながります）。つないだあとは画面を移ってもつながったままです。
             </p>
             <form
               className={styles.form}

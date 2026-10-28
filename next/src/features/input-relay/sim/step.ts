@@ -17,6 +17,7 @@ import {
   CHAIN_GRACE_S,
   JUMP_HOLD_S,
   BD_FROM_JUMP_WINDOW_S,
+  SHOT_AFTER_BD_GRAVITY_SCALE,
   INERTIA_MAX_SPEED,
   LANDING_LAG_MAX_S,
   LANDING_LAG_PER_USE_S,
@@ -1081,7 +1082,14 @@ function stepMechPhysics(world: SimWorld, dt: number): void {
   const move = moveModeOf(mech);
 
   if (move === 'free' || move === 'halt') {
-    const gravityScale = move === 'halt' && !mech.grounded ? 0.3 : 1;
+    const shotAfterBd = mech.action === 'shot' && mech.chain[mech.chain.length - 2] === 'bd';
+    const gravityScale = mech.grounded
+      ? 1
+      : move === 'halt'
+        ? 0.3
+        : shotAfterBd
+          ? SHOT_AFTER_BD_GRAVITY_SCALE
+          : 1;
     mech.vel.y -= GRAVITY * gravityScale * dt;
     // 滑り特射は足が止まる行動でも滑りを残す。慣性ジャンプは着地まで勢いが落ちにくい
     const damping = mech.sliding

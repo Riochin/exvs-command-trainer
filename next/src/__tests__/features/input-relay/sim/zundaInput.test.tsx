@@ -136,6 +136,21 @@ describe('キーボードで打つズンダ', () => {
     expect(labels()).not.toContain('振り向き撃ち');
   });
 
+  it('BR のあと少しゆっくり BD を入れても、着地硬直で途切れない', () => {
+    tap('j');
+    wait(330);
+    bd();
+    wait(60);
+    tap('j');
+    wait(330);
+    bd();
+    wait(60);
+    tap('j');
+    wait(400);
+    expect(labels()).not.toContain('着地硬直');
+    expect(labels()).toContain('ズンダ 3発');
+  });
+
   it('横に BD するジグザグのズンダでも、振り向き撃ちにならない', () => {
     tap('j');
     wait(250);

@@ -22,6 +22,11 @@ export const BD_TURN_RATE = 3.2;
  */
 export const BD_LIFT_HEIGHT = 2.5;
 export const BD_LIFT_SPEED = 8;
+/**
+ * BD からつないだ射撃を空中で撃っているあいだの落ち方（重力の倍率）。BD の勢いが残ってゆっくり落ちる。
+ * 普通に落ちると、地上 BD の高さからでは次の BD を入れる前に着地して、ズンダが途切れやすい
+ */
+export const SHOT_AFTER_BD_GRAVITY_SCALE = 0.5;
 /** 機体が向き直る速さ（rad/s） */
 export const FACE_TURN_RATE = 9;
 /**

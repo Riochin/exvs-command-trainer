@@ -258,8 +258,6 @@ export const STRIKE_ROUGE_OOTORI: UnitDef = {
   seedSpeedScale: 1.15,
   seedDuration: 20,
   seedCooldown: 15,
-  /** 基本情報の「盾コマンド あり」 */
-  shieldGuard: true,
   ammo: {
     main: { label: 'BR', max: 8, reload: 3, mode: 'each' },
     sub: { label: 'ランチャー', max: 2, reload: 7, mode: 'each', seedReload: 4, refillOnSeed: true },

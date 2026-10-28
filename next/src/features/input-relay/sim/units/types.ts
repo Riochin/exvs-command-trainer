@@ -121,11 +121,6 @@ export type UnitDef = {
    * 満タン前に離すと CS は出ない
    */
   chargeTime?: { shot?: number; melee?: number };
-  /**
-   * 盾（レバー後→前のシールドガード）を出せるか。wiki の基本情報の「盾コマンド あり / なし」を写す。
-   * 盾を持たない機体でも、盾コマンドがあれば腕で防ぐ
-   */
-  shieldGuard: boolean;
   /** 弾の定義。キーは ActionDef.ammo に書く名前 */
   ammo: Readonly<Record<string, AmmoDef>>;
   /** スロットと状況から技を決める。出せなければ理由を返す */

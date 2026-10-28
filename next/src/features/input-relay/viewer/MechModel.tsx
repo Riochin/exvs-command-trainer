@@ -35,10 +35,6 @@ function isSummoning(mech: MechState): boolean {
   return poseOf(mech.action, mech.move) === 'summon';
 }
 
-function isGuarding(mech: MechState): boolean {
-  return poseOf(mech.action, mech.move) === 'guard';
-}
-
 function isBoosting(mech: MechState): boolean {
   return mech.action === 'bd' || mech.action === 'jump' || mech.action === 'step' || mech.action === 'special-melee' || mech.action === 'melee-cs' || (mech.action === 'melee' && !mech.actionFired);
 }
@@ -125,28 +121,20 @@ export function MechModel({ worldRef, look }: { worldRef: RefObject<SimWorld>; l
       rightArm.current.rotation.x = ease(rightArm.current.rotation.x, aim, 0.35);
     }
 
-    // 格闘系は左腕（サーベル）を振りかぶってから振り下ろす。盾は左腕を前に上げて、胸の前に盾をかざす
-    const guarding = isGuarding(mech);
+    // 格闘系は左腕（サーベル）を振りかぶってから振り下ろす
     if (leftArm.current) {
       const slashing = isSlashing(mech);
       const stageFlip = mech.meleeStage === 2 ? -1 : 1;
-      const swing = guarding ? -1.25 : slashing ? (mech.actionFired ? 0.6 : -Math.PI * 0.85) : -0.12;
-      const across = guarding ? 0.7 : slashing ? 0.5 * stageFlip : 0;
-      // 盾は発生が速いので、構えるときは素早く腕を上げる
-      const speed = guarding ? 0.6 : mech.actionFired ? 0.6 : 0.3;
-      leftArm.current.rotation.x = ease(leftArm.current.rotation.x, swing, speed);
-      leftArm.current.rotation.z = ease(leftArm.current.rotation.z, across, speed);
+      const swing = slashing ? (mech.actionFired ? 0.6 : -Math.PI * 0.85) : -0.12;
+      leftArm.current.rotation.x = ease(leftArm.current.rotation.x, swing, mech.actionFired ? 0.6 : 0.3);
+      leftArm.current.rotation.z = ease(leftArm.current.rotation.z, slashing ? 0.5 * stageFlip : 0, 0.3);
     }
     const saberOn = isSlashing(mech) || mech.charging.melee;
     if (saber.current) {
       saber.current.visible = saberOn;
       saber.current.scale.setScalar(mech.charging.melee ? 1 + Math.sin(t * 22) * 0.1 : 1);
     }
-    if (shield.current) {
-      shield.current.visible = !saberOn;
-      // 構えると盾の面を正面（敵の方）へ向ける
-      shield.current.rotation.y = ease(shield.current.rotation.y, guarding ? Math.PI / 2 : 0, 0.6);
-    }
+    if (shield.current) shield.current.visible = !saberOn;
     if (saberTrail.current) {
       const fresh = isSlashing(mech) && mech.actionFired;
       saberTrail.current.visible = fresh;

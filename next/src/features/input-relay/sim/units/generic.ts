@@ -21,7 +21,6 @@ export const GENERIC_UNIT: UnitDef = {
   series: '練習用',
   description: 'BR・ミサイル・太いビーム・サーベルを持つ標準的な機体。',
   boostScale: 1,
-  shieldGuard: true,
   ammo: {
     main: { label: 'BR', max: 7, reload: 3, mode: 'each' },
     sub: { label: 'ミサイル', max: 4, reload: 5, mode: 'each' },

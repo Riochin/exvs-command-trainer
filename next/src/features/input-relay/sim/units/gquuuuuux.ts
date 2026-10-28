@@ -328,8 +328,6 @@ export const GQUUUUUUX: UnitDef = {
   seedDuration: 17,
   // wiki は「クールタイム 5 秒・リロード 14 秒」。終わってからまた使えるまでを 14 秒にしている
   seedCooldown: 14,
-  /** 基本情報の「盾コマンド あり」 */
-  shieldGuard: true,
   ammo: {
     main: { label: 'BR', max: 8, reload: 3, mode: 'each' },
     sub: { label: 'エスビット', max: 1, reload: 14, mode: 'each', waitsForAssists: ['esbit'] },

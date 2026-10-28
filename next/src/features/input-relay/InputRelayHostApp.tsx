@@ -18,6 +18,7 @@ import { AuthButton } from '@/components/AuthButton';
 import type { ButtonType } from '@/types';
 import { inputLabel, phaseLabel } from './inputLabels';
 import { summarize, type LatencySummary } from './latencyStats';
+import { useFullscreen } from './useFullscreen';
 import { useRelayHost, type RelayLogEntry } from './useRelayHost';
 import { applyInput, applyRawInput, createWorld, ENEMY_FIRE_INTERVAL_S, setLever, tapLever } from './sim/step';
 import { exposeSimForDebug } from './sim/debug';
@@ -184,6 +185,7 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
     else applyRawInput(worldRef.current, message);
   }, []);
   const host = useRelayHost({ onInput: handleInput });
+  const fullscreen = useFullscreen();
   // スマホなしでもキーボード（J/O/[）で動かせるようにする。判定はアケコンと同じものを使う
   const handleKeyboardInput = useCallback((button: ButtonType) => {
     applyInput(worldRef.current, button);
@@ -334,6 +336,25 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
                   </Link>
                 </div>
                 <AuthButton />
+                {fullscreen.mode !== 'installed' && (
+                  <>
+                    <h4 className={styles.subHeading}>全画面</h4>
+                    {fullscreen.mode === 'api' ? (
+                      <button
+                        type="button"
+                        className={styles.restart}
+                        onClick={fullscreen.toggle}
+                        aria-pressed={fullscreen.active}
+                      >
+                        {fullscreen.active ? '全画面をやめる' : '全画面にする'}
+                      </button>
+                    ) : (
+                      <p className={styles.note} data-testid="home-screen-guide">
+                        共有 → ホーム画面に追加 で開くと、アドレスバーやタブバーなしで使えます
+                      </p>
+                    )}
+                  </>
+                )}
               </nav>
 
               <section aria-label="スマホとの接続" className={styles.modalSection}>

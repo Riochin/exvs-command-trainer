@@ -1,7 +1,7 @@
 .wrapper {
   position: fixed;
-  top: 0.6rem;
-  right: 0.75rem;
+  top: calc(0.6rem + env(safe-area-inset-top));
+  right: calc(0.75rem + env(safe-area-inset-right));
   z-index: 200;
 }
 

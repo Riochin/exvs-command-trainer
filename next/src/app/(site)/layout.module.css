@@ -1,0 +1,11 @@
+/*
+ * 練習・コマンド・ツールの画面全体。body と同じ縦並びのまま、
+ * ホーム画面から開いたとき（viewport-fit=cover）に切り欠きとホームバーへ内容が潜らないよう内側に寄せる
+ */
+.frame {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}

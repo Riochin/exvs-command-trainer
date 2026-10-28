@@ -2,7 +2,7 @@
 .group {
   background: var(--surface-card);
   color: var(--ink);
-  border-radius: 0.5rem;
+  clip-path: polygon(var(--cut-md) 0, 100% 0, 100% calc(100% - var(--cut-md)), calc(100% - var(--cut-md)) 100%, 0 100%, 0 var(--cut-md));
   overflow: hidden;
   box-shadow: var(--shadow-drop-md);
   flex: 0 0 220px;
@@ -13,8 +13,9 @@
   font-size: 0.875rem;
   font-weight: 900;
   letter-spacing: var(--letter-spacing-body);
-  color: var(--surface-card);
-  background: var(--ink);
+  color: var(--cyan-hi);
+  background: var(--ink-1);
+  border-bottom: 1px solid var(--line);
   padding: 0.45rem 1rem;
   margin: 0;
 }
@@ -53,39 +54,40 @@
 }
 
 .itemButton:hover {
-  background: rgba(242, 194, 26, 0.3);
+  background: rgba(54, 200, 242, 0.12);
 }
 
 .itemName {
   color: var(--ink);
 }
 
-/* 小さな赤い物理ボタン */
+/* 取り消せない操作のボタン：赤い枠 */
 .deleteButton {
-  --c: var(--btn-red);
   font-family: var(--font-body);
   font-size: 0.75rem;
   font-weight: 700;
-  color: #fff;
-  background: linear-gradient(to bottom, color-mix(in oklab, var(--c), white 25%), var(--c));
-  border: 0;
-  border-radius: 9999px;
   padding: 0.2rem 0.75rem;
   margin-right: 0.75rem;
   flex-shrink: 0;
   cursor: pointer;
-  box-shadow: 0 2px 0 color-mix(in oklab, var(--c), black 55%), inset 0 1px 0 rgba(255, 255, 255, 0.4);
-  transform: translateY(-1px);
-  transition: transform var(--transition-press), box-shadow var(--transition-press);
+  border: 0;
+  background: transparent;
+  color: var(--danger);
+  box-shadow: inset 0 0 0 1px var(--danger);
+  clip-path: polygon(var(--cut-xs) 0, 100% 0, 100% calc(100% - var(--cut-xs)), calc(100% - var(--cut-xs)) 100%, 0 100%, 0 var(--cut-xs));
+  transition: background var(--transition-fast), transform var(--transition-press);
+}
+
+.deleteButton:hover {
+  background: rgba(255, 75, 75, 0.12);
 }
 
 .deleteButton:active {
   transform: translateY(1px);
-  box-shadow: 0 0 0 color-mix(in oklab, var(--c), black 55%), inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .deleteButton:focus-visible {
-  outline: 2px solid var(--ink);
+  outline: 2px solid var(--cyan-hi);
   outline-offset: 2px;
 }
 

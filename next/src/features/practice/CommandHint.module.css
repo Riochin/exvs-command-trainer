@@ -1,7 +1,7 @@
 /* インストカード（紙＋黒帯）にミニボタンを並べる */
 .hint {
   background: var(--surface-card);
-  border-radius: 0.5rem;
+  clip-path: polygon(var(--cut-md) 0, 100% 0, 100% calc(100% - var(--cut-md)), calc(100% - var(--cut-md)) 100%, 0 100%, 0 var(--cut-md));
   box-shadow: inset 0 -2px 0 var(--surface-card-rule), var(--shadow-drop-sm);
   padding: 0.6rem 1rem;
   display: flex;
@@ -26,7 +26,7 @@
 
 /* ミニ3Dボタン。--c がボタン色（既定は黒：同時押し・サブ等） */
 .step {
-  --c: #2b2b30;
+  --c: var(--ink-3);
   position: relative;
   flex-shrink: 0;
   display: flex;
@@ -43,7 +43,7 @@
   );
   box-shadow:
     0 2px 0 color-mix(in oklab, var(--c), black 55%),
-    0 0 0 2px var(--ink);
+    0 0 0 2px var(--line-strong);
   font-family: var(--font-body);
   font-size: 0.7rem;
   font-weight: 900;

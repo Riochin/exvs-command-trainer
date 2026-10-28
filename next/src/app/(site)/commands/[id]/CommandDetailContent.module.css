@@ -26,10 +26,10 @@
 
 .timeLimitRow {
   display: flex;
-  background: var(--surface-plate);
+  background: var(--ink-1);
   padding: 0.35rem 0.6rem;
-  border-radius: 0.5rem;
-  box-shadow: var(--plate-bevel), var(--shadow-drop-sm);
+  box-shadow: inset 0 0 0 1px var(--line);
+  clip-path: polygon(var(--cut-sm) 0, 100% 0, 100% calc(100% - var(--cut-sm)), calc(100% - var(--cut-sm)) 100%, 0 100%, 0 var(--cut-sm));
   flex-direction: row;
   align-items: center;
   gap: 0.75rem;
@@ -46,10 +46,9 @@
 .toggle {
   display: flex;
   flex-direction: row;
-  border-radius: 9999px;
-  overflow: hidden;
-  background: var(--cab-bezel-lo);
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.8);
+  background: var(--ink-0);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+  clip-path: polygon(var(--cut-xs) 0, 100% 0, 100% calc(100% - var(--cut-xs)), calc(100% - var(--cut-xs)) 100%, 0 100%, 0 var(--cut-xs));
   padding: 2px;
 }
 
@@ -59,7 +58,6 @@
   font-size: 0.75rem;
   font-weight: var(--font-weight-heading);
   letter-spacing: var(--letter-spacing-ui);
-  border-radius: 9999px;
   background: transparent;
   color: var(--color-text-muted);
   border: none;
@@ -72,9 +70,9 @@
 }
 
 .toggleOptionActive {
-  background: linear-gradient(to bottom, color-mix(in oklab, var(--btn-yellow), white 30%), var(--btn-yellow));
-  color: #1a1606;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  background: rgba(54, 200, 242, 0.18);
+  color: var(--cyan-hi);
+  box-shadow: inset 0 0 0 1px var(--cyan);
 }
 
 @media (orientation: landscape) {

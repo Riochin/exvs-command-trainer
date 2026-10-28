@@ -496,14 +496,14 @@
   }
 }
 
-/* HIT・ブースト・時限強化・武装のまとまり。ふだんは箱を作らず、中身はそれぞれの場所に置く */
+/* ブースト・時限強化・武装のまとまり。ふだんは箱を作らず、中身はそれぞれの場所に置く */
 .corner {
   display: contents;
 }
 
 /*
  * タッチ操作中の小さな HUD（data-compact）。指とボタンのために画面を空け、残弾とブーストだけ最低限見せる。
- * HIT・ブースト・時限強化・武装を 3D 画面の右上にまとめて縦に積む。機体名と押し方の表示は省く
+ * HIT・被弾は左上のまま。ブースト・時限強化・武装は 3D 画面の右に上から詰めて縦に積む。機体名と押し方の表示は省く
  */
 .hud[data-compact='true'] .corner {
   position: absolute;
@@ -519,8 +519,9 @@
   position: static;
 }
 
-/* 縦向きは上の帯（接続状態・機体・設定）が右上まで届くので、その下から積む */
+/* 縦向きは上の帯（接続状態・機体・設定）が左右の端まで届くので、その下から置く */
 @media (orientation: portrait) {
+  .hud[data-compact='true'] .topLeft,
   .hud[data-compact='true'] .corner {
     top: 3.2rem;
   }

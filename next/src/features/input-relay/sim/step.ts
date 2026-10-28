@@ -24,6 +24,7 @@ import {
   SLIDE_SPEED,
   SLIDE_WINDOW_S,
   STEP_TAP_WINDOW_S,
+  TURN_SHOT_ANGLE,
   TURN_SHOT_DELAY_S,
   WALK_SPEED,
   type ActionDef,
@@ -467,7 +468,7 @@ function startAction(world: SimWorld, kind: MechAction, def: ActionDef, canceled
     }
     case 'shot': {
       // 敵が機体の後ろ側にいると振り向き撃ちになり、足が止まって発射も遅れる
-      mech.turnShot = Math.abs(angleDiff(mech.yaw, mech.lockYaw)) > Math.PI / 2;
+      mech.turnShot = Math.abs(angleDiff(mech.yaw, mech.lockYaw)) > TURN_SHOT_ANGLE;
       if (mech.turnShot) {
         mech.actionTime = -TURN_SHOT_DELAY_S;
         technique = '振り向き撃ち';

@@ -44,6 +44,11 @@ export const INERTIA_LEVER_ACCEL = 14;
 export const INERTIA_MAX_SPEED = 34;
 /** 振り向き撃ちで向き直るのにかかる時間。この分だけ発射と硬直が遅れる */
 export const TURN_SHOT_DELAY_S = 0.22;
+/**
+ * 機体の向きと敵の方向がこの角度より開いていると振り向き撃ちになる（敵が後ろ側にいる）。
+ * 90 度ちょうどだと、横 BD からの BR（ジグザグのズンダ）が少しのずれで振り向き撃ちになってしまう
+ */
+export const TURN_SHOT_ANGLE = (Math.PI * 2) / 3;
 /** 滑り特射: ジャンプを押してからこの時間内に特射を出し、レバーを入れていれば滑る */
 export const SLIDE_WINDOW_S = 0.15;
 export const SLIDE_SPEED = 24;

@@ -96,6 +96,25 @@ describe('キーボードで打つズンダ', () => {
     expect(labels()).not.toContain('振り向き撃ち');
   });
 
+  it('横に BD するジグザグのズンダでも、振り向き撃ちにならない', () => {
+    tap('j');
+    wait(250);
+    lever('right', true);
+    bd();
+    lever('right', false);
+    wait(60);
+    tap('j');
+    wait(250);
+    lever('left', true);
+    bd();
+    lever('left', false);
+    wait(60);
+    tap('j');
+    wait(400);
+    expect(labels()).not.toContain('振り向き撃ち');
+    expect(labels()).toContain('ズンダ 3発');
+  });
+
   it('レバーを入れたまま BD をつないでも、BD のつもりのジャンプ押下は慣性ジャンプにならない', () => {
     lever('right', true);
     tap('j');

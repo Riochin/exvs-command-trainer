@@ -44,18 +44,19 @@ function isEditableKeyboardTarget(target: EventTarget | null): boolean {
   return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
 }
 
-function debugKeyToPhysicalButton(key: string): ArcadePhysicalButton | null {
+/** PC デバッグ用キーの標準の割り当て（f / y / i） */
+export const DEFAULT_KEYBOARD_KEYS: Readonly<Record<string, ArcadePhysicalButton>> = {
+  f: 'shot',
+  y: 'melee',
+  i: 'jump',
+};
+
+function debugKeyToPhysicalButton(
+  key: string,
+  keys: Readonly<Record<string, ArcadePhysicalButton>>,
+): ArcadePhysicalButton | null {
   if (key.length !== 1) return null;
-  switch (key.toLowerCase()) {
-    case 'f':
-      return 'shot';
-    case 'y':
-      return 'melee';
-    case 'i':
-      return 'jump';
-    default:
-      return null;
-  }
+  return keys[key.toLowerCase()] ?? null;
 }
 
 function isChargeable(button: ButtonType): button is ChargeableButton {
@@ -86,6 +87,8 @@ export interface ArcadeControllerProps {
   buttonStateOverride?: import('./ControllerButton').ControllerButtonState;
   /** 物理ボタンの押下・解放を解釈前にそのまま通知する（入力リレー等の外部送信用） */
   onRawInput?: (input: ArcadeRawInput) => void;
+  /** キーボードで押せるキーの割り当て（小文字のキー → 物理ボタン）。省略時は f / y / i */
+  keyboardKeys?: Readonly<Record<string, ArcadePhysicalButton>>;
 }
 
 export function ArcadeController({
@@ -95,6 +98,7 @@ export function ArcadeController({
   highlightedPhysicalButtons,
   buttonStateOverride,
   onRawInput,
+  keyboardKeys = DEFAULT_KEYBOARD_KEYS,
 }: ArcadeControllerProps) {
   const { activeButtons, getButtonHandlers, setOnButtonPress, getHeldButtonsSync } = useControllerInput();
   const {
@@ -328,6 +332,10 @@ export function ArcadeController({
 
   const getHandlersRef = useRef(getHandlers);
   getHandlersRef.current = getHandlers;
+  const keyboardKeysRef = useRef(keyboardKeys);
+  useLayoutEffect(() => {
+    keyboardKeysRef.current = keyboardKeys;
+  }, [keyboardKeys]);
 
   useEffect(() => {
     const pointerFor = (physical: ArcadePhysicalButton) =>
@@ -335,7 +343,7 @@ export function ArcadeController({
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (isEditableKeyboardTarget(e.target)) return;
-      const physical = debugKeyToPhysicalButton(e.key);
+      const physical = debugKeyToPhysicalButton(e.key, keyboardKeysRef.current);
       if (physical === null) return;
       if (e.repeat) return;
       e.preventDefault();
@@ -344,7 +352,7 @@ export function ArcadeController({
 
     const onKeyUp = (e: KeyboardEvent) => {
       if (isEditableKeyboardTarget(e.target)) return;
-      const physical = debugKeyToPhysicalButton(e.key);
+      const physical = debugKeyToPhysicalButton(e.key, keyboardKeysRef.current);
       if (physical === null) return;
       e.preventDefault();
       getHandlersRef.current(physical).onPointerUp(pointerFor(physical));

@@ -16,7 +16,8 @@
 
 .unit {
   position: absolute;
-  top: 0.75rem;
+  /* 右上の固定メニューボタンを避ける */
+  top: 3.2rem;
   right: 1rem;
   display: grid;
   gap: 0.3rem;
@@ -95,7 +96,8 @@
 
 .topLeft {
   position: absolute;
-  top: 0.75rem;
+  /* 左上の「戻る」リンクを避ける */
+  top: 2.6rem;
   left: 0.75rem;
   display: flex;
   align-items: baseline;

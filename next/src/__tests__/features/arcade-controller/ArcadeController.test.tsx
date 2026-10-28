@@ -572,4 +572,16 @@ describe('ArcadeController', () => {
       vi.useRealTimers();
     });
   });
+
+  it('keyboardKeys でキーの割り当てを差し替えられる（標準の f は効かなくなる）', () => {
+    const onRawInput = vi.fn();
+    render(<ArcadeController onRawInput={onRawInput} keyboardKeys={{ j: 'shot', o: 'melee', '[': 'jump' }} />);
+    fireEvent.keyDown(window, { key: 'f' });
+    fireEvent.keyDown(window, { key: '[' });
+    fireEvent.keyUp(window, { key: '[' });
+    expect(onRawInput.mock.calls.map(([input]) => input)).toEqual([
+      { button: 'jump', phase: 'down' },
+      { button: 'jump', phase: 'up' },
+    ]);
+  });
 });

@@ -1,13 +1,18 @@
 'use client';
 
 /**
- * 入力リレー試作の PC 側画面。
+ * 3D ビュー（PC 側画面）。
  *
- * スマホの練習画面から届いた入力で 3D の機体を動かす。脇には遅延の集計と入力ログを出す。
+ * スマホの練習画面から届いた入力（またはキーボード）で 3D の機体を動かす。画面は 3D と HUD だけにし、
+ * 接続・機体・遅延・ログ・技表は小さな帯から開く設定画面にまとめる。
  */
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { ArcadeController, type ArcadeRawInput } from '@/features/arcade-controller/ArcadeController';
+import {
+  ArcadeController,
+  type ArcadePhysicalButton,
+  type ArcadeRawInput,
+} from '@/features/arcade-controller/ArcadeController';
 import type { ButtonType } from '@/types';
 import { inputLabel, phaseLabel } from './inputLabels';
 import { summarize, type LatencySummary } from './latencyStats';
@@ -73,12 +78,23 @@ const noopSubscribe = () => () => {};
 const readOrigin = () => window.location.origin;
 const readServerOrigin = () => null;
 
-/** PC の十字キーをレバー代わりにする */
-const ARROW_TO_LEVER: Readonly<Record<string, LeverDirection>> = {
+/** PC の WASD と十字キーをレバー代わりにする */
+const KEY_TO_LEVER: Readonly<Record<string, LeverDirection>> = {
   ArrowUp: 'forward',
   ArrowDown: 'back',
   ArrowLeft: 'left',
   ArrowRight: 'right',
+  w: 'forward',
+  s: 'back',
+  a: 'left',
+  d: 'right',
+};
+
+/** スマホなしで操作するときのボタン（右手）。左手の WASD と同時に押しやすい配置 */
+const KEYBOARD_KEYS: Readonly<Record<string, ArcadePhysicalButton>> = {
+  j: 'shot',
+  o: 'melee',
+  '[': 'jump',
 };
 
 export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
@@ -98,6 +114,16 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
   const closeSelect = useCallback(() => setSelecting(false), []);
   // キーボードだけで練習するときは接続案内を閉じられる
   const [guideHidden, setGuideHidden] = useState(false);
+  // 3D と HUD 以外（接続・機体・遅延・ログ・技表など）は設定画面にまとめる
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  useEffect(() => {
+    if (!settingsOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSettingsOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [settingsOpen]);
   // スマホから開く URL。開発中は LAN の IP、本番はこのサイトそのもの（サーバー描画では分からないので null）
   const browserOrigin = useSyncExternalStore(noopSubscribe, readOrigin, readServerOrigin);
   const siteOrigin = lanOrigins[0] ?? browserOrigin;
@@ -111,7 +137,7 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
     else applyRawInput(worldRef.current, message);
   }, []);
   const host = useRelayHost({ onInput: handleInput });
-  // PC のキーボード（F/Y/I）でも動かせるようにする。判定はアケコンと同じものを使う
+  // スマホなしでもキーボード（J/O/[）で動かせるようにする。判定はアケコンと同じものを使う
   const handleKeyboardInput = useCallback((button: ButtonType) => {
     applyInput(worldRef.current, button);
   }, []);
@@ -121,8 +147,9 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
 
   useEffect(() => {
     const onKey = (pressed: boolean) => (e: KeyboardEvent) => {
-      const direction = ARROW_TO_LEVER[e.key];
+      const direction = KEY_TO_LEVER[e.key.length === 1 ? e.key.toLowerCase() : e.key];
       if (direction === undefined) return;
+      if (e.target instanceof HTMLElement && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
       e.preventDefault();
       if (pressed && e.repeat) return;
       setLever(worldRef.current, direction, pressed);
@@ -138,125 +165,192 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
   }, []);
   const rtt = summarize(host.rttMs);
   const latency = summarize(host.latencyMs);
+  const unit = unitById(unitId);
+
+  const connectSteps = (
+    <ol className={styles.steps}>
+      <li>スマホのカメラで QR コードを読み取る。フリー練習が開いて、そのままつながる</li>
+      <li>
+        または、スマホで{' '}
+        {lanOrigins.length > 0 ? (
+          lanOrigins.map((origin) => (
+            <code key={origin} className={styles.code}>
+              {origin}
+            </code>
+          ))
+        ) : (
+          <span>このサイト</span>
+        )}{' '}
+        を開き、練習画面上部の <span className={styles.chip}>PC連携</span> でコード{' '}
+        <code className={styles.code}>{host.room ?? '----'}</code> を入力
+      </li>
+      <li>つないだあとは、フリー練習とコマンド練習を行き来しても、再読み込みしてもつながったまま</li>
+    </ol>
+  );
 
   return (
     <div className={styles.app}>
-      <header className={styles.header}>
-        <h1 className={styles.title}>3D VIEW</h1>
-        <div className={styles.roomInline}>
-          <span className={styles.caption}>ROOM</span>
-          <span className={styles.roomSmall} data-testid="relay-room">
-            {host.room ?? '----'}
-          </span>
-        </div>
-        <p className={styles.status} data-state={host.connection}>
-          {CONNECTION_LABELS[host.connection]}
-        </p>
-        <button type="button" className={styles.restart} onClick={host.restart}>
-          ルームを作り直す
-        </button>
-        <button type="button" className={styles.unitButton} onClick={() => setSelecting(true)}>
-          機体: {unitById(unitId).name}
-        </button>
-        <button type="button" className={styles.restart} onClick={toggleEnemyFire} aria-pressed={enemyFires}>
-          敵の射撃: {enemyFires ? 'ON' : 'OFF'}
-        </button>
-        <p className={styles.keys}>PC のキーボードでも操作できます: F 射撃 / Y 格闘 / I ジャンプ（長押しで上昇） / 十字キー 移動（2 回倒してステップ）</p>
-      </header>
       {/* キーボード操作の判定だけを借りる。ボタン自体は表示しない */}
       <div className={styles.hiddenController} aria-hidden="true">
-        <ArcadeController onButtonPress={handleKeyboardInput} onRawInput={handleKeyboardRaw} />
+        <ArcadeController onButtonPress={handleKeyboardInput} onRawInput={handleKeyboardRaw} keyboardKeys={KEYBOARD_KEYS} />
       </div>
 
-      <div className={styles.main}>
-        <div className={styles.stage}>
-          <MechViewer worldRef={worldRef} unitId={unitId} />
-          <MechHud worldRef={worldRef} />
-          {host.connection !== 'connected' && !guideHidden && (
-            <section className={styles.connect} aria-label="接続">
-              <button type="button" className={styles.guideClose} onClick={() => setGuideHidden(true)} aria-label="接続案内を閉じる">
-                ×
-              </button>
-              <JoinQrCode origin={siteOrigin} room={host.room} />
-              <div className={styles.roomBlock}>
-                <span className={styles.caption}>ROOM</span>
-                <span className={styles.room}>{host.room ?? '----'}</span>
-              </div>
-              <div className={styles.connectBody}>
-                <p className={styles.status} data-state={host.connection}>
-                  {CONNECTION_LABELS[host.connection]}
-                  {host.error && <span className={styles.error}>：{host.error}</span>}
-                </p>
-                <ol className={styles.steps}>
-                  <li>スマホのカメラで QR コードを読み取る。フリー練習が開いて、そのままつながる</li>
-                  <li>
-                    または、スマホで{' '}
-                    {lanOrigins.length > 0 ? (
-                      lanOrigins.map((origin) => (
-                        <code key={origin} className={styles.code}>
-                          {origin}
-                        </code>
-                      ))
-                    ) : (
-                      <span>このサイト</span>
-                    )}{' '}
-                    を開き、練習画面上部の <span className={styles.chip}>PC連携</span> でコード{' '}
-                    <code className={styles.code}>{host.room ?? '----'}</code> を入力
-                  </li>
-                  <li>つないだあとは、フリー練習とコマンド練習を行き来しても、再読み込みしてもつながったまま</li>
-                </ol>
-              </div>
-            </section>
-          )}
+      <div className={styles.stage}>
+        <MechViewer worldRef={worldRef} unitId={unitId} />
+        <MechHud worldRef={worldRef} />
+
+        {/* 3D と HUD 以外は、この小さな帯と設定画面にまとめる */}
+        <div className={styles.toolbar}>
+          <span className={styles.connDot} data-state={host.connection} aria-hidden="true" />
+          <span className={styles.toolbarRoom} data-testid="relay-room">
+            {host.room ?? '----'}
+          </span>
+          <span className={styles.toolbarStatus}>{CONNECTION_LABELS[host.connection]}</span>
+          <button type="button" className={styles.toolbarButton} onClick={() => setSelecting(true)}>
+            機体
+          </button>
+          <button type="button" className={styles.toolbarButton} onClick={() => setSettingsOpen(true)}>
+            設定
+          </button>
         </div>
 
-        <aside className={styles.side}>
-          <details className={styles.commandsSection} open>
-            <summary className={styles.heading}>技表</summary>
-            <CommandList unit={unitById(unitId)} />
-          </details>
-          <section aria-label="遅延">
-            <h2 className={styles.heading}>遅延（ms）</h2>
-            <table className={styles.stats}>
-              <thead>
-                <tr>
-                  <th scope="col"></th>
-                  <th scope="col">直近</th>
-                  <th scope="col">平均</th>
-                  <th scope="col">p95</th>
-                  <th scope="col">最大</th>
-                  <th scope="col">件数</th>
-                </tr>
-              </thead>
-              <tbody>
-                <StatRow label="往復" summary={rtt} />
-                <StatRow label="片道" summary={latency} />
-              </tbody>
-            </table>
-            <p className={styles.note}>取りこぼし: {host.lostCount} 件</p>
+        {host.connection !== 'connected' && !guideHidden && !settingsOpen && !selecting && (
+          <section className={styles.connect} aria-label="接続">
+            <button type="button" className={styles.guideClose} onClick={() => setGuideHidden(true)} aria-label="接続案内を閉じる">
+              ×
+            </button>
+            <JoinQrCode origin={siteOrigin} room={host.room} />
+            <div className={styles.roomBlock}>
+              <span className={styles.caption}>ROOM</span>
+              <span className={styles.room}>{host.room ?? '----'}</span>
+            </div>
+            <div className={styles.connectBody}>
+              <p className={styles.status} data-state={host.connection}>
+                {CONNECTION_LABELS[host.connection]}
+                {host.error && <span className={styles.error}>：{host.error}</span>}
+              </p>
+              {connectSteps}
+              <p className={styles.note}>スマホなしでも、キーボード（WASD／十字キーと J・O・[）で操作できます</p>
+            </div>
           </section>
-
-          <section aria-label="入力ログ" className={styles.logSection}>
-            <h2 className={styles.heading}>入力ログ</h2>
-            {host.log.length === 0 ? (
-              <p className={styles.empty}>入力が届くとここに出ます</p>
-            ) : (
-              <ol className={styles.log} data-testid="relay-log">
-                {[...host.log].reverse().map((entry) => (
-                  <li key={entry.message.seq} className={styles.logItem} data-kind={entry.message.type}>
-                    <span className={styles.seq}>#{entry.message.seq}</span>
-                    <span className={styles.kind}>{entry.message.type === 'raw' ? 'RAW' : 'CMD'}</span>
-                    <span className={styles.input}>{describeEntry(entry)}</span>
-                    <span className={styles.latency}>
-                      {entry.latencyMs === null ? '—' : `${formatMs(entry.latencyMs)}`}
-                    </span>
-                  </li>
-                ))}
-              </ol>
-            )}
-          </section>
-        </aside>
+        )}
       </div>
+
+      {settingsOpen && (
+        <div className={styles.modalOverlay} onClick={() => setSettingsOpen(false)}>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="relay-settings-title"
+            className={styles.modal}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles.modalHead}>
+              <h2 id="relay-settings-title" className={styles.modalTitle}>
+                設定
+              </h2>
+              <button type="button" className={styles.restart} onClick={() => setSettingsOpen(false)}>
+                閉じる（Esc）
+              </button>
+            </div>
+
+            <div className={styles.modalGrid}>
+              <section aria-label="スマホとの接続" className={styles.modalSection}>
+                <h3 className={styles.heading}>スマホとの接続</h3>
+                <div className={styles.connectRow}>
+                  <JoinQrCode origin={siteOrigin} room={host.room} />
+                  <div className={styles.connectBody}>
+                    <div className={styles.roomInline}>
+                      <span className={styles.caption}>ROOM</span>
+                      <span className={styles.roomSmall}>{host.room ?? '----'}</span>
+                    </div>
+                    <p className={styles.status} data-state={host.connection}>
+                      {CONNECTION_LABELS[host.connection]}
+                      {host.error && <span className={styles.error}>：{host.error}</span>}
+                    </p>
+                    <div className={styles.buttonRow}>
+                      <button type="button" className={styles.restart} onClick={host.restart}>
+                        ルームを作り直す
+                      </button>
+                      {guideHidden && (
+                        <button type="button" className={styles.restart} onClick={() => setGuideHidden(false)}>
+                          接続案内を表示する
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                {connectSteps}
+              </section>
+
+              <section aria-label="機体と練習" className={styles.modalSection}>
+                <h3 className={styles.heading}>機体と練習</h3>
+                <div className={styles.buttonRow}>
+                  <button type="button" className={styles.unitButton} onClick={() => setSelecting(true)}>
+                    機体: {unit.name}
+                  </button>
+                  <button type="button" className={styles.restart} onClick={toggleEnemyFire} aria-pressed={enemyFires}>
+                    敵の射撃: {enemyFires ? 'ON' : 'OFF'}
+                  </button>
+                </div>
+                <h4 className={styles.subHeading}>キーボード操作</h4>
+                <dl className={styles.keyList}>
+                  <dt>W A S D ／ 十字キー</dt>
+                  <dd>移動（同じ方向に 2 回でステップ）</dd>
+                  <dt>J</dt>
+                  <dd>射撃（長押しで射CS）</dd>
+                  <dt>O</dt>
+                  <dd>格闘（長押しで格CS）</dd>
+                  <dt>[</dt>
+                  <dd>ジャンプ（長押しで上昇、2 回で BD）</dd>
+                  <dt>J＋O ／ J＋[ ／ O＋[</dt>
+                  <dd>サブ ／ 特射 ／ 特格</dd>
+                </dl>
+                <h4 className={styles.subHeading}>技表</h4>
+                <CommandList unit={unit} />
+              </section>
+
+              <section aria-label="遅延と入力ログ" className={styles.modalSection}>
+                <h3 className={styles.heading}>遅延（ms）</h3>
+                <table className={styles.stats}>
+                  <thead>
+                    <tr>
+                      <th scope="col"></th>
+                      <th scope="col">直近</th>
+                      <th scope="col">平均</th>
+                      <th scope="col">p95</th>
+                      <th scope="col">最大</th>
+                      <th scope="col">件数</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <StatRow label="往復" summary={rtt} />
+                    <StatRow label="片道" summary={latency} />
+                  </tbody>
+                </table>
+                <p className={styles.note}>取りこぼし: {host.lostCount} 件</p>
+                <h4 className={styles.subHeading}>入力ログ</h4>
+                {host.log.length === 0 ? (
+                  <p className={styles.empty}>スマホから入力が届くとここに出ます</p>
+                ) : (
+                  <ol className={styles.log} data-testid="relay-log">
+                    {[...host.log].reverse().map((entry) => (
+                      <li key={entry.message.seq} className={styles.logItem} data-kind={entry.message.type}>
+                        <span className={styles.seq}>#{entry.message.seq}</span>
+                        <span className={styles.kind}>{entry.message.type === 'raw' ? 'RAW' : 'CMD'}</span>
+                        <span className={styles.input}>{describeEntry(entry)}</span>
+                        <span className={styles.latency}>
+                          {entry.latencyMs === null ? '—' : `${formatMs(entry.latencyMs)}`}
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </section>
+            </div>
+          </div>
+        </div>
+      )}
       {selecting && <UnitSelect currentId={unitId} onSelect={selectUnit} onClose={closeSelect} />}
     </div>
   );

@@ -1,7 +1,6 @@
-/* 高さいっぱいのグリッド。上の細い帯と、3D ビュー＋脇の情報パネル */
+/* 画面いっぱいの 3D ビュー。ほかの情報は小さな帯と設定画面に逃がす */
 .app {
-  display: grid;
-  grid-template-rows: auto 1fr;
+  position: relative;
   height: 100%;
   min-height: 0;
   overflow: hidden;
@@ -67,9 +66,154 @@
 }
 
 .stage {
-  position: relative;
-  min-height: 0;
+  position: absolute;
+  inset: 0;
   background: #000;
+}
+
+/* 上端中央の小さな帯。接続状態と、機体選択・設定の入口 */
+.toolbar {
+  position: absolute;
+  top: 0.5rem;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.4rem 0.25rem 0.7rem;
+  background: rgba(17, 17, 19, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  transform: translateX(-50%);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.connDot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--led-on);
+}
+
+.connDot[data-state='connected'] {
+  background: var(--color-success);
+  box-shadow: var(--glow-success);
+}
+
+.connDot[data-state='disconnected'],
+.connDot[data-state='error'] {
+  background: var(--color-error);
+}
+
+.toolbarRoom {
+  color: var(--led-on);
+  font-family: var(--font-led);
+  letter-spacing: 0.12em;
+}
+
+.toolbarStatus {
+  color: var(--color-text-muted);
+}
+
+.toolbarButton {
+  padding: 0.2rem 0.7rem;
+  background: var(--surface-plate-hi);
+  color: var(--color-text);
+  border: var(--border-plate);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.toolbarButton:hover {
+  border-color: var(--color-accent-primary);
+}
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.modal {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 0.75rem;
+  width: min(68rem, 100%);
+  max-height: 100%;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(to bottom, #1f1f23, #121214);
+  border: var(--border-plate);
+  border-top: 3px solid var(--color-accent-primary);
+  border-radius: 6px;
+  box-shadow: var(--shadow-drop-lg);
+  overflow: hidden;
+}
+
+.modalHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  /* 右上の固定メニューボタンと重ならないよう余白を取る */
+  padding-right: 2.5rem;
+}
+
+.modalTitle {
+  font-family: var(--font-label);
+  font-size: 1.1rem;
+  letter-spacing: 0.12em;
+  color: var(--color-accent-primary);
+}
+
+.modalGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+  gap: 1rem;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.modalSection {
+  display: grid;
+  align-content: start;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.subHeading {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.connectRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.buttonRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.keyList {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.25rem 0.75rem;
+  font-size: 0.8rem;
+}
+
+.keyList dt {
+  color: var(--led-on);
+  font-family: var(--font-led);
 }
 
 .side {
@@ -111,8 +255,8 @@
 /* 未接続のあいだ 3D ビューの上に出す接続案内 */
 .connect {
   position: absolute;
-  /* 機体に被らないよう上に寄せる */
-  top: 1rem;
+  /* 機体に被らないよう上に寄せる（上端の帯の下） */
+  top: 3rem;
   left: 50%;
   display: flex;
   flex-wrap: wrap;
@@ -299,6 +443,7 @@
   display: grid;
   align-content: start;
   gap: 2px;
+  max-height: 16rem;
   min-height: 0;
   overflow-y: auto;
   list-style: none;

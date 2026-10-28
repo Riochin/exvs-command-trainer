@@ -11,17 +11,18 @@
   align-items: center;
   justify-content: space-between;
   padding: 16px 24px;
-  border-bottom: var(--border-cyan);
-  background-color: var(--color-bg-mid);
+  background: linear-gradient(to bottom, #1f1f23, #121214);
+  border-top: 1px solid #333338;
+  border-bottom: 3px solid #000;
+  box-shadow: var(--shadow-drop-md);
 }
 
 .header h1 {
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
   font-size: 1.25rem;
-  font-weight: 700;
-  letter-spacing: var(--letter-spacing-ui);
-  color: var(--color-accent-primary);
-  text-shadow: var(--glow-cyan-sm);
+  font-weight: 900;
+  letter-spacing: var(--letter-spacing-body);
+  color: var(--color-text);
   margin: 0;
 }
 
@@ -37,9 +38,14 @@
 }
 
 .emptyState p {
-  color: var(--color-text-muted);
+  color: var(--color-text);
   font-size: 1rem;
+  font-weight: 700;
   letter-spacing: 0.06em;
+  background: var(--surface-plate);
+  padding: 0.35rem 1rem;
+  border-radius: 0.4rem;
+  box-shadow: var(--plate-bevel), var(--shadow-drop-sm);
 }
 
 .listArea {

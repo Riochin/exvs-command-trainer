@@ -1,19 +1,28 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Oswald, Share_Tech_Mono, Zen_Kaku_Gothic_New } from "next/font/google";
 import { BackToHomeNav } from "@/components/BackToHomeNav";
 import { HamburgerMenu } from "@/components/HamburgerMenu";
 import { Providers } from "@/components/Providers";
 import { AnalyticsPageViewTracker } from "@/features/analytics/AnalyticsPageViewTracker";
+import { GoogleAnalyticsScripts } from "@/features/analytics/GoogleAnalyticsScripts";
 import "./globals.css";
-import Script from "next/script";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// 日本語フォントはサブセット指定ができないため preload しない
+const zenKaku = Zen_Kaku_Gothic_New({
+  variable: "--font-zen-kaku",
+  weight: ["500", "700", "900"],
+  preload: false,
+  display: "swap",
+});
+
+const oswald = Oswald({
+  variable: "--font-oswald",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const shareTechMono = Share_Tech_Mono({
+  variable: "--font-share-tech-mono",
+  weight: "400",
   subsets: ["latin"],
 });
 
@@ -49,21 +58,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ja" className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html lang="ja" className={`${zenKaku.variable} ${oswald.variable} ${shareTechMono.variable}`}>
       <body>
         {/* Google Analytics */}
-        <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-3YHP7ZY4XV"
-          strategy="afterInteractive"
-        />
-        <Script id="ga-gtag" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', 'G-3YHP7ZY4XV');
-          `}
-        </Script>
+        <GoogleAnalyticsScripts />
 
         <Providers>
           <AnalyticsPageViewTracker />

@@ -1,0 +1,109 @@
+/* 高さいっぱいのグリッド。ヘッダは固定高、本文だけが余りを受け取る */
+.app {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.header {
+  padding: 0.75rem 1rem;
+  background: linear-gradient(to bottom, #1f1f23, #121214);
+  border-top: 1px solid #333338;
+  border-bottom: 3px solid #000;
+  box-shadow: var(--shadow-drop-md);
+}
+
+.title {
+  color: var(--color-accent-primary);
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  font-weight: var(--font-weight-heading);
+  letter-spacing: 0.08em;
+}
+
+.note {
+  margin-top: 0.25rem;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+/* 縦に長くなりうるのはここだけ。本文スクロールの代わりに内部でスクロールする */
+.scrollRegion {
+  min-height: 0;
+  padding: 1rem;
+  /* 文字量の多い開発ツールなので、天板の上に半透明の黒プレートを敷いて可読性を確保する */
+  background: rgba(17, 17, 19, 0.85);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.file {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+.failure {
+  margin-top: 0.375rem;
+  color: var(--color-error);
+  font-size: 0.8rem;
+}
+
+/* 広い画面では動画と操作を左右に、狭い画面では上下に積む */
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 0.75rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.stage,
+.side {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* コントローラは自前の寸法を持つ。土台は余白だけを与える */
+.controller {
+  min-width: 0;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.button {
+  padding: 0.3rem 0.75rem;
+  border: var(--border-plate);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--color-accent-primary);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.button:hover:not(:disabled) {
+  background: var(--color-accent-deep);
+}
+
+.button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

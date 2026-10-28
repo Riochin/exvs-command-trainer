@@ -9,7 +9,7 @@
 - **言語**: TypeScript（strict モード）
 - **フレームワーク**: Next.js（App Router）
 - **UIライブラリ**: React
-- **スタイリング**: TBD（プロトタイプはp5.jsキャンバス）
+- **スタイリング**: CSS Modules ＋ `src/styles/theme.css` のデザイントークン（アーケード筐体テーマ）。立体感はグラデーションと多層シャドウによる CSS 疑似3Dで表現し、3Dライブラリは使わない。参照モック: `design/arcade-ui-mock.html`
 - **データ永続化**: ローカルストレージ（MVP）→ Firebase（Firestore + Auth）
 
 ## 開発標準

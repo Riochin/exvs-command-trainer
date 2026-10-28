@@ -2,21 +2,26 @@
   padding: 0.5rem 1rem;
 }
 
+/* 黒プレートの小札 */
 .link {
   display: inline-block;
-  font-family: var(--font-mono);
+  padding: 0 0.6rem;
+  font-family: var(--font-label);
   font-size: 0.875rem;
   font-weight: var(--font-weight-heading);
+  line-height: 1.3;
   letter-spacing: var(--letter-spacing-ui);
-  color: var(--color-accent-primary, #4fc8e8);
+  color: var(--color-text);
   text-decoration: none;
-  text-shadow: var(--glow-cyan-sm);
-  transition: color var(--transition-fast), text-shadow var(--transition-fast);
+  background: linear-gradient(to bottom, var(--surface-plate-hi), var(--surface-plate));
+  border: var(--border-plate);
+  border-radius: 6px;
+  box-shadow: var(--plate-bevel), var(--shadow-drop-sm);
+  transition: color var(--transition-fast);
 }
 
 .link:hover,
 .link:focus-visible {
-  color: var(--color-text, #e8f4f8);
-  text-shadow: var(--glow-cyan-md);
+  color: var(--color-accent-primary);
   outline: none;
 }

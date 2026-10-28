@@ -1,58 +1,57 @@
+/* 筐体の物理ボタン風カプセル。--c がボタン本体色、--c-ink が文字色 */
 .button {
+  --c: var(--btn-yellow);
+  --c-ink: #1a1606;
+  --c-side: color-mix(in oklab, var(--c), black 55%);
+  --depth: 4px;
+
   position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  border: 0;
   border-radius: 9999px;
-  border: var(--border-cyan);
-  background: linear-gradient(to bottom, #0e2040, var(--color-bg-mid));
-  color: var(--color-text);
-  font-family: var(--font-mono);
-  font-weight: var(--font-weight-heading);
-  letter-spacing: var(--letter-spacing-ui);
+  background: linear-gradient(
+    to bottom,
+    color-mix(in oklab, var(--c), white 30%),
+    var(--c) 55%,
+    color-mix(in oklab, var(--c), black 12%)
+  );
+  color: var(--c-ink);
+  font-family: var(--font-body);
+  font-weight: 900;
+  letter-spacing: var(--letter-spacing-body);
   cursor: pointer;
-  overflow: hidden;
-  transition: box-shadow var(--transition-base), filter var(--transition-fast);
   text-decoration: none;
   white-space: nowrap;
+  box-shadow:
+    0 var(--depth) 0 var(--c-side),
+    0 calc(var(--depth) + 2px) 6px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  transform: translateY(calc(var(--depth) * -0.5));
+  transition: transform var(--transition-press), box-shadow var(--transition-press), filter var(--transition-fast);
 }
 
-/* 左端シアンキャップ */
-.button::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 8px;
-  background: linear-gradient(to bottom, var(--color-accent-primary), var(--color-accent-deep));
-  border-radius: 9999px 0 0 9999px;
+.button:hover {
+  filter: brightness(1.06);
 }
 
-/* 右端シアンキャップ */
-.button::after {
-  content: '';
-  position: absolute;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  width: 8px;
-  background: linear-gradient(to bottom, var(--color-accent-primary), var(--color-accent-deep));
-  border-radius: 0 9999px 9999px 0;
-}
-
-.button:hover,
 .button:focus-visible {
-  box-shadow: var(--glow-cyan-md);
-  outline: none;
+  outline: 2px solid var(--color-text);
+  outline-offset: 3px;
 }
 
 .button:active {
-  filter: brightness(0.85);
+  transform: translateY(calc(var(--depth) * 0.5));
+  box-shadow:
+    0 0 0 var(--c-side),
+    0 1px 3px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
 /* サイズ */
 .sm {
+  --depth: 3px;
   padding: 0.25rem 1.25rem;
   font-size: 0.75rem;
 }
@@ -63,28 +62,20 @@
 }
 
 .lg {
+  --depth: 5px;
   padding: 0.75rem 2.25rem;
   font-size: 1rem;
 }
 
 /* variant */
-.primary::before,
-.primary::after {
-  background: linear-gradient(to bottom, var(--color-accent-primary), var(--color-accent-deep));
+.primary {
+  --c: var(--btn-yellow);
+  --c-ink: #1a1606;
 }
 
 .danger {
-  border-color: rgba(255, 69, 96, 0.5);
-}
-
-.danger::before,
-.danger::after {
-  background: linear-gradient(to bottom, var(--color-error), #8b0000);
-}
-
-.danger:hover,
-.danger:focus-visible {
-  box-shadow: var(--glow-error);
+  --c: var(--btn-red);
+  --c-ink: #fff;
 }
 
 /* disabled */

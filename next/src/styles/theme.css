@@ -1,44 +1,80 @@
 :root {
+  /* ===== アーケード筐体テーマ ===== */
+
+  /* 天板ストライプ */
+  --cab-stripe-a: #8d9096;
+  --cab-stripe-b: #6c6f75;
+  --cab-stripe-line: #55585d;
+  --cab-panel: #111113;
+  --cab-bezel-hi: #2a2a2e;
+  --cab-bezel-lo: #050506;
+
+  /* 面：黒プレート（明るい文字）／インストカード（濃い文字） */
+  --surface-plate: #18181b;
+  --surface-plate-hi: #232327;
+  --surface-plate-edge: #34343a;
+  --surface-card: #efe9d8;
+  --surface-card-rule: #cfc6ad;
+  --ink: #17171a;
+  --ink-muted: #5c574a;
+
+  /* ボタン色 */
+  --btn-red: #d8352c;
+  --btn-blue: #4d5fe0;
+  --btn-green: #27a85a;
+  --btn-yellow: #f2c21a;
+
+  /* 状態リング */
+  --ring-guide: #f5c33b;
+  --ring-success: #3ee08f;
+  --ring-fail: #ff4b4b;
+
+  /* LED 表示 */
+  --led-bg: #0c0a06;
+  --led-on: #ffb020;
+
+  /* 影 */
+  --shadow-drop-sm: 0 2px 4px rgba(0, 0, 0, 0.45);
+  --shadow-drop-md: 0 4px 8px rgba(0, 0, 0, 0.5);
+  --shadow-drop-lg: 0 8px 20px rgba(0, 0, 0, 0.55);
+  --plate-bevel: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --border-plate: 1px solid var(--surface-plate-edge);
+
   /* カラートークン */
-  --color-bg-base: #050a14;
-  --color-bg-mid: #0a1628;
-  --color-bg-card: rgba(10, 22, 40, 0.85);
-  --color-accent-primary: #4fc8e8;
-  --color-accent-deep: #1a6080;
-  --color-accent-glow: rgba(79, 200, 232, 0.6);
-  --color-text: #e8f4f8;
-  --color-text-muted: #7ab8cc;
-  --color-success: #39d98a;
-  --color-error: #ff4560;
+  --color-bg-base: #1b1c1f;
+  --color-bg-mid: var(--surface-plate-hi);
+  --color-bg-card: var(--surface-plate);
+  --color-accent-primary: var(--btn-yellow);
+  --color-accent-deep: #8a6d0a;
+  --color-text: #f1f1ee;
+  --color-text-muted: #b9b7ae;
+  --color-success: var(--ring-success);
+  --color-error: var(--ring-fail);
   --color-warning: #f59e0b;
 
   /* タイポグラフィトークン */
-  --font-mono: var(--font-geist-mono), 'Courier New', monospace;
-  --font-body: var(--font-geist-sans), system-ui, sans-serif;
+  --font-body: var(--font-zen-kaku), 'Hiragino Sans', 'Noto Sans JP', system-ui, sans-serif;
+  --font-label: var(--font-oswald), var(--font-zen-kaku), 'Arial Narrow', sans-serif;
+  --font-led: var(--font-share-tech-mono), ui-monospace, monospace;
+  --font-mono: var(--font-label);
   --font-weight-heading: 700;
-  --letter-spacing-ui: 0.12em;
+  --letter-spacing-ui: 0.08em;
   --letter-spacing-body: 0.02em;
 
-  /* グロー / シャドウトークン */
-  --glow-cyan-sm: 0 0 8px var(--color-accent-glow);
-  --glow-cyan-md: 0 0 16px var(--color-accent-glow), 0 0 32px rgba(79, 200, 232, 0.3);
-  --glow-cyan-lg: 0 0 24px var(--color-accent-glow), 0 0 48px rgba(79, 200, 232, 0.4);
-  --glow-success: 0 0 12px rgba(57, 217, 138, 0.7);
-  --glow-error: 0 0 12px rgba(255, 69, 96, 0.7);
-  --border-cyan: 1px solid rgba(79, 200, 232, 0.5);
-
   /* トランジショントークン */
+  --transition-press: 45ms ease-out;
   --transition-fast: 150ms ease-out;
   --transition-base: 200ms ease-out;
   --transition-slow: 300ms ease-out;
 
-  /* スキャンライントークン */
-  --scanline-opacity: 0.08;
-  --scanline-size: 4px;
+  /* 発光（成功／失敗表示用） */
+  --glow-success: 0 0 10px rgba(62, 224, 143, 0.6);
+  --glow-error: 0 0 10px rgba(255, 75, 75, 0.6);
 }
 
 @media (prefers-reduced-motion: reduce) {
   :root {
+    --transition-press: 0ms;
     --transition-fast: 0ms;
     --transition-base: 0ms;
     --transition-slow: 0ms;

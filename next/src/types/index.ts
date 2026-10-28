@@ -55,3 +55,5 @@ export type StorageError = {
 export type StorageResult<T> =
   | { ok: true; value: T }
   | { ok: false; error: StorageError };
+
+export * from './chart';

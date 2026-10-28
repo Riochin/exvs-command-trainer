@@ -80,6 +80,8 @@ export function CommandHint({ sequence, currentIndex }: CommandHintProps) {
               ref={(el) => { stepRefs.current[item.index] = el; }}
               data-testid="hint-step"
               data-highlighted={highlighted ? 'true' : 'false'}
+              data-done={item.index < currentIndex ? 'true' : 'false'}
+              data-button={step.buttons.length === 1 ? step.buttons[0] : 'chord'}
               className={styles.step}
             >
               {step.buttons.map((b) => BUTTON_LABELS[b]).join('+')}
@@ -94,6 +96,8 @@ export function CommandHint({ sequence, currentIndex }: CommandHintProps) {
               ref={(el) => { stepRefs.current[item.startIndex] = el; }}
               data-testid="hint-step"
               data-highlighted={highlighted ? 'true' : 'false'}
+              data-done={item.endIndex < currentIndex ? 'true' : 'false'}
+              data-button={item.chargeType}
               className={styles.step}
             >
               {label}

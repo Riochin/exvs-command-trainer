@@ -1,0 +1,64 @@
+.bar {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  grid-template-areas:
+    'controls timecode seek'
+    'hint hint hint';
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border: var(--border-plate);
+  border-radius: 4px;
+  background: var(--color-bg-card);
+}
+
+.controls {
+  display: flex;
+  grid-area: controls;
+  gap: 0.25rem;
+}
+
+.button {
+  min-width: 2.5rem;
+  padding: 0.25rem 0.5rem;
+  border: var(--border-plate);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--color-accent-primary);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.button:hover:not(:disabled) {
+  background: var(--color-accent-deep);
+}
+
+.button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* 桁ごとに幅が揺れると 1 コマ送るたびに表示が跳ねる */
+.timecode {
+  grid-area: timecode;
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--letter-spacing-ui);
+}
+
+.seek {
+  grid-area: seek;
+  width: 100%;
+  min-width: 0;
+  accent-color: var(--color-accent-primary);
+}
+
+.hint {
+  grid-area: hint;
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+}

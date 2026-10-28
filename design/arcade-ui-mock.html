@@ -1,0 +1,625 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arcade UI Mock</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Oswald:wght@500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+/* ================= デザイントークン案（theme.css へ移植する想定） ================= */
+:root {
+  /* 天板・筐体 */
+  --cab-stripe-a: #8d9096;
+  --cab-stripe-b: #6c6f75;
+  --cab-stripe-line: #55585d;
+  --cab-panel: #111113;
+  --cab-bezel-hi: #2a2a2e;
+  --cab-bezel-lo: #050506;
+  --cab-plate: #18181b;
+  --cab-plate-text: #f1f1ee;
+  --cab-card: #efe9d8;
+  --cab-card-ink: #17171a;
+  --cab-card-rule: #cfc6ad;
+
+  /* ボタン色 */
+  --btn-yellow: #f2c21a;
+  --btn-blue: #4d5fe0;
+  --btn-white: #e6e3da;
+  --btn-red: #d8352c;
+  --btn-green: #27a85a;
+
+  /* 状態リング */
+  --ring-guide: #f5c33b;
+  --ring-success: #3ee08f;
+  --ring-fail: #ff4b4b;
+
+  /* LED */
+  --led-bg: #0c0a06;
+  --led-on: #ffb020;
+
+  --font-jp: "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+  --font-label: "Oswald", "Zen Kaku Gothic New", "Arial Narrow", sans-serif;
+  --font-led: "Share Tech Mono", ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: #1b1c1f;
+  color: #e9e9e6;
+  font-family: var(--font-jp);
+  padding: 24px 16px 64px;
+}
+.page { max-width: 880px; margin: 0 auto; }
+h1 { font-family: var(--font-label); letter-spacing: .06em; font-size: 26px; margin: 0 0 4px; }
+h2 { font-size: 17px; margin: 40px 0 6px; font-weight: 900; }
+p.note { color: #a8a9a4; font-size: 13px; line-height: 1.7; margin: 0 0 12px; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0 14px; font-size: 13px; color: #bdbdb8; }
+.toolbar .seg { display: inline-flex; border: 1px solid #3a3b40; border-radius: 8px; overflow: hidden; }
+.toolbar .seg button { font: inherit; background: #26272b; color: #d8d8d4; border: 0; padding: 6px 12px; cursor: pointer; }
+.toolbar .seg button + button { border-left: 1px solid #3a3b40; }
+.toolbar .seg button[aria-pressed="true"] { background: var(--btn-yellow); color: #1a1a1a; font-weight: 700; }
+
+/* ================= 実寸フレーム =================
+   スマホ横持ちの実寸（844×390 CSS px）で描画し、
+   ページ幅が足りないときだけ全体を縮小表示する。 */
+.fit { position: relative; margin-bottom: 14px; }
+.fit > .frame { transform-origin: top left; position: absolute; top: 0; left: 0; }
+.phone {
+  width: 864px; height: 410px;
+  border-radius: 24px;
+  padding: 10px;
+  background: #050506;
+  box-shadow: 0 0 0 2px #2c2d31, 0 20px 40px rgba(0,0,0,.5);
+}
+.strip {
+  width: 844px; height: 300px;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px #2c2d31, 0 10px 24px rgba(0,0,0,.4);
+}
+.screen {
+  /* 端末の 1vh 相当（390px / 100） */
+  --vh: 3.9px;
+  width: 844px; height: 100%;
+  border-radius: 14px;
+  overflow: hidden;
+  position: relative;
+}
+.strip .screen { border-radius: 0; }
+
+.cabinet {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.10), rgba(0,0,0,.18)),
+    repeating-linear-gradient(180deg,
+      var(--cab-stripe-a) 0 8px,
+      var(--cab-stripe-b) 8px 13px,
+      var(--cab-stripe-line) 13px 14px);
+}
+
+/* ================= コントローラー（CSS疑似3D） =================
+   サイズは現行 ArcadeController と同じ：
+   --btn-size: min(42vh, 165px)、ボタン間隔 = --btn-size × 0.1 */
+.deck {
+  --btn: min(calc(var(--vh) * 42), 165px);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 0;
+  isolation: isolate;
+  filter: drop-shadow(0 5px 7px rgba(0,0,0,.55));
+}
+
+/* 台座幅 = ボタン + 間隔（ボタンの中心間距離は現行と同じ） */
+.seat {
+  position: relative;
+  width: calc(var(--btn) * 1.1);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  transform: translateY(var(--btn-y, 0px));
+  background:
+    radial-gradient(circle, var(--cab-bezel-lo) 0 90%, var(--cab-bezel-hi) 95%, #0c0c0e 100%);
+  box-shadow:
+    inset 0 2px 2px rgba(255,255,255,.09),
+    inset 0 -3px 5px rgba(0,0,0,.8);
+}
+.seat::before {
+  content: "";
+  position: absolute;
+  inset: -13%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, #1d1d21, var(--cab-panel) 70%);
+  z-index: -1;
+}
+/* 人差し指: 最低 / 親指: 最高 / 薬指: 中間（現行の値そのまま） */
+.seat[data-button="shot"]  { --btn-y: calc(var(--btn) * 0.30); }
+.seat[data-button="melee"] { --btn-y: 0px; }
+.seat[data-button="jump"]  { --btn-y: calc(var(--btn) * 0.15); }
+
+.btn {
+  --c: var(--btn-yellow);
+  --c-hi: color-mix(in oklab, var(--c), white 38%);
+  --c-lo: color-mix(in oklab, var(--c), black 22%);
+  --c-side: color-mix(in oklab, var(--c), black 58%);
+  --depth: calc(var(--btn) * 0.07);
+
+  position: relative;
+  z-index: 1;
+  width: var(--btn);
+  aspect-ratio: 1;
+  border: 0;
+  padding: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  background: linear-gradient(180deg, var(--c-hi) 0%, var(--c) 40%, var(--c-lo) 100%);
+  box-shadow:
+    0 var(--depth) 0 var(--c-side),
+    0 calc(var(--depth) + 2px) 8px rgba(0,0,0,.75),
+    inset 0 1px 1px rgba(255,255,255,.55),
+    inset 0 -2px 3px rgba(0,0,0,.25);
+  transform: translateY(calc(var(--depth) * -0.6));
+  transition: transform 45ms ease-out, box-shadow 45ms ease-out;
+  color: transparent;
+  font-family: var(--font-jp);
+}
+.btn::before {
+  content: "";
+  position: absolute;
+  inset: 14%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse 80% 70% at 50% 78%, var(--c-hi) 0%, var(--c) 52%, var(--c-lo) 100%);
+  box-shadow:
+    inset 0 calc(var(--btn) * 0.05) calc(var(--btn) * 0.06) rgba(0,0,0,.32),
+    inset 0 -1px 1px rgba(255,255,255,.4),
+    0 1px 1px rgba(255,255,255,.35);
+}
+.btn::after {
+  content: "";
+  position: absolute;
+  top: 3%; left: 16%;
+  width: 34%; height: 11%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(255,255,255,.85), rgba(255,255,255,0) 70%);
+  transform: rotate(-24deg);
+  pointer-events: none;
+}
+.btn[aria-pressed="true"] {
+  transform: translateY(calc(var(--depth) * 0.3));
+  box-shadow:
+    0 calc(var(--depth) * 0.1) 0 var(--c-side),
+    0 1px 3px rgba(0,0,0,.85),
+    inset 0 1px 1px rgba(255,255,255,.35),
+    inset 0 -2px 3px rgba(0,0,0,.35);
+}
+.btn[aria-pressed="true"]::before { filter: brightness(.9); }
+.btn:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
+
+.btn .cap {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  z-index: 2; font-weight: 900; font-size: calc(var(--btn) * 0.15);
+  color: transparent; pointer-events: none;
+}
+
+/* 状態リング（ボタン本体の色は変えない） */
+.ring {
+  position: absolute;
+  inset: -3%;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 120ms;
+  z-index: 2;
+}
+.seat[data-highlighted="true"] .ring {
+  opacity: 1;
+  background:
+    conic-gradient(from 200deg, var(--ring-guide) 0 62%, transparent 62% 70%, var(--ring-guide) 70% 76%, transparent 76%);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 4px));
+          mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 4px));
+  filter: drop-shadow(0 0 5px var(--ring-guide));
+  animation: spin 3.2s linear infinite;
+}
+.seat[data-state="success"] .ring,
+.seat[data-state="fail"] .ring {
+  opacity: 1;
+  animation: none;
+  -webkit-mask: none; mask: none;
+  background: none;
+  border: 4px solid var(--rc);
+  box-shadow: 0 0 12px var(--rc), inset 0 0 10px var(--rc);
+}
+.seat[data-state="success"] { --rc: var(--ring-success); }
+.seat[data-state="fail"]    { --rc: var(--ring-fail); }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.tag {
+  position: absolute;
+  top: -2%; left: -6%;
+  z-index: 3;
+  padding: 2px 7px;
+  background: var(--cab-plate);
+  color: var(--cab-plate-text);
+  border: 1px solid #3a3a40;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 1.3;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(0,0,0,.5);
+}
+
+/* ---- 配色バリエーション ---- */
+.v-a .seat[data-button="shot"]  .btn, .v-a .mini.shot  { --c: var(--btn-blue);   --ink: #fff; }
+.v-a .seat[data-button="melee"] .btn, .v-a .mini.melee { --c: var(--btn-yellow); --ink: #1d1604; }
+.v-a .seat[data-button="jump"]  .btn, .v-a .mini.jump  { --c: var(--btn-white);  --ink: #1d1d1d; }
+
+.v-b .seat[data-button="shot"]  .btn, .v-b .mini.shot  { --c: var(--btn-red);   --ink: #fff; }
+.v-b .seat[data-button="melee"] .btn, .v-b .mini.melee { --c: var(--btn-blue);  --ink: #fff; }
+.v-b .seat[data-button="jump"]  .btn, .v-b .mini.jump  { --c: var(--btn-green); --ink: #fff; }
+
+.v-c .btn, .v-c .mini { --c: var(--btn-yellow); --ink: #1d1604; }
+.v-c .btn .cap { color: rgba(40,28,0,.78); text-shadow: 0 1px 0 rgba(255,255,255,.45); }
+.v-c .tag { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .seat[data-highlighted="true"] .ring { animation: none; }
+  .btn { transition: none; }
+}
+
+/* ================= 比較ストリップ ================= */
+.strip .screen { display: grid; place-items: center; }
+.strip .deck { transform: translateY(-22px); }
+.strip .caption {
+  position: absolute; left: 14px; top: 12px; z-index: 5;
+  background: var(--cab-plate); color: var(--cab-plate-text);
+  font-family: var(--font-label); font-size: 15px; letter-spacing: .08em;
+  padding: 3px 10px; border-radius: 5px;
+}
+.strip .caption small { font-family: var(--font-jp); font-size: 12px; margin-left: 6px; color: #bdbdb6; letter-spacing: 0; }
+
+/* ================= 共通パーツ ================= */
+.plate {
+  background: linear-gradient(180deg, #232327, var(--cab-plate));
+  color: var(--cab-plate-text);
+  border: 1px solid #34343a;
+  border-radius: 6px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 3px 5px rgba(0,0,0,.45);
+}
+/* BackToHomeNav 相当：padding .5rem 1rem / .875rem */
+.nav { padding: .5rem 1rem; flex-shrink: 0; }
+.nav .plate { display: inline-block; font-size: .875rem; font-weight: 700; line-height: 1.3; padding: 0 .6rem; }
+/* HamburgerMenu 相当：2.2rem 角 */
+.burger {
+  position: absolute; top: .6rem; right: .75rem; z-index: 10;
+  width: 2.2rem; height: 2.2rem; padding: .45rem;
+  display: flex; flex-direction: column; justify-content: center; gap: 5px;
+}
+.burger i { display: block; height: 2px; background: var(--cab-plate-text); border-radius: 2px; }
+
+/* CapsuleButton 相当（sm: .25rem 1.25rem / .75rem、md: .5rem 1.75rem / .875rem） */
+.capsule {
+  --c: var(--btn-yellow);
+  --c-side: color-mix(in oklab, var(--c), black 55%);
+  font-family: var(--font-jp); font-weight: 900;
+  font-size: .875rem; padding: .5rem 1.75rem;
+  border: 0; cursor: pointer; white-space: nowrap;
+  border-radius: 9999px;
+  color: #1a1606;
+  background: linear-gradient(180deg, color-mix(in oklab, var(--c), white 30%), var(--c) 55%, color-mix(in oklab, var(--c), black 12%));
+  box-shadow: 0 4px 0 var(--c-side), 0 6px 7px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.6);
+  transform: translateY(-2px);
+  transition: transform 45ms, box-shadow 45ms;
+}
+.capsule.sm { font-size: .75rem; padding: .25rem 1.25rem; box-shadow: 0 3px 0 var(--c-side), 0 4px 5px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.6); }
+.capsule:active { transform: translateY(2px); box-shadow: 0 0 0 var(--c-side), 0 1px 3px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.4); }
+.capsule.dark   { --c: #2b2b30; color: #f1f1ee; }
+.capsule.danger { --c: var(--btn-red); color: #fff; }
+
+/* ミニボタン（コマンド表記用・ヒントのステップ） */
+.mini {
+  --c: var(--btn-yellow);
+  display: inline-grid; place-items: center;
+  width: 1.5rem; aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(circle at 50% 70%, color-mix(in oklab, var(--c), white 30%), var(--c) 55%, color-mix(in oklab, var(--c), black 25%));
+  box-shadow: 0 2px 0 color-mix(in oklab, var(--c), black 55%), 0 0 0 2px #111;
+  vertical-align: middle;
+  color: var(--ink, #111);
+}
+
+/* ================= 練習画面（PracticeSession と同じ構造） ================= */
+.practice { display: flex; flex-direction: column; }
+.session { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+/* .header：padding .5rem 1rem / gap .75rem */
+.p-header {
+  flex-shrink: 0;
+  padding: .5rem 1rem;
+  display: flex; align-items: center; gap: .75rem;
+  background: linear-gradient(180deg, #1f1f23, #121214);
+  border-top: 1px solid #333338;
+  border-bottom: 3px solid #000;
+  box-shadow: 0 4px 8px rgba(0,0,0,.4);
+}
+.headerMain { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .4rem; }
+/* .hint：padding .6rem 1rem / gap .5rem / radius .5rem */
+.hint {
+  background: var(--cab-card);
+  border-radius: .5rem;
+  padding: .6rem 1rem;
+  display: flex; align-items: center; gap: .5rem;
+  overflow-x: auto;
+  box-shadow: inset 0 -2px 0 var(--cab-card-rule);
+}
+.hint .label {
+  font-family: var(--font-label); font-size: .75rem; letter-spacing: .12em;
+  color: var(--cab-card); background: var(--cab-card-ink);
+  padding: .15rem .45rem; border-radius: 3px; margin-right: .25rem;
+}
+/* .step：3rem 円 / .7rem */
+.hint .step {
+  width: 3rem; font-size: .7rem; font-weight: 900; line-height: 1.2; text-align: center;
+  position: relative; transition: opacity 120ms;
+}
+.hint .step.done { opacity: .4; }
+.hint .step.current::after {
+  content: ""; position: absolute; inset: -5px; border-radius: 50%;
+  border: 3px solid var(--ring-guide); box-shadow: 0 0 8px var(--ring-guide);
+}
+.hint .arrow { color: #8a8270; font-size: .75rem; }
+/* .statsRow：.75rem / gap .75rem */
+.statsRow {
+  display: flex; align-items: center; gap: .75rem;
+  font-family: var(--font-led); font-size: .75rem; letter-spacing: .1em;
+}
+.statsRow .counter { color: var(--led-on); background: var(--led-bg); padding: .1rem .5rem; border-radius: 3px; box-shadow: inset 0 0 6px #000; }
+.statsRow .result { font-weight: 700; }
+.statsRow .result.success { color: var(--ring-success); text-shadow: 0 0 8px rgba(62,224,143,.7); }
+.statsRow .result.fail    { color: var(--ring-fail);    text-shadow: 0 0 8px rgba(255,75,75,.7); }
+/* .controllerArea：残りいっぱい・中央寄せ */
+.controllerArea { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
+.controllerArea .deck { transform: translateY(-26px); }
+
+/* ================= コマンド一覧 ================= */
+.list { display: flex; flex-direction: column; }
+.list .titleRow { display: flex; align-items: center; gap: .75rem; padding: 0 1rem .5rem; }
+.list .titleRow .plate { flex: 1; text-align: center; font-weight: 900; font-size: .95rem; padding: .3rem; }
+.list .scroll { flex: 1; min-height: 0; overflow-y: auto; padding: .25rem 1rem 1rem; }
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem; }
+.card { background: var(--cab-card); color: var(--cab-card-ink); border-radius: .5rem; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,.4); }
+.card header {
+  background: var(--cab-card-ink); color: var(--cab-card);
+  font-family: var(--font-label); letter-spacing: .12em; font-size: .7rem;
+  padding: .25rem .75rem; display: flex; justify-content: space-between;
+}
+.card .body { padding: .6rem .75rem .75rem; display: flex; flex-direction: column; gap: .5rem; }
+.card h3 { margin: 0; font-size: .95rem; font-weight: 900; }
+.card .seq { display: flex; align-items: center; gap: .3rem; font-size: .7rem; }
+.card .seq .arrow { color: #8a8270; }
+.card .chord { display: inline-flex; gap: 2px; align-items: center; }
+.card .stats { font-size: .75rem; color: #5c574a; }
+.card .stats b { font-family: var(--font-label); font-size: 1rem; color: var(--cab-card-ink); }
+.bar { height: 6px; background: #d8d0b9; border-radius: 99px; overflow: hidden; }
+.bar i { display: block; height: 100%; background: linear-gradient(90deg, #1a7a45, #3ee08f); }
+.card .actions { display: flex; gap: .5rem; }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>ARCADE CABINET UI — MOCK</h1>
+  <p class="note">スマホ横持ちの実寸（844×390）で描画しています。ボタン寸法・間隔・指の高さずらしは現行アプリと同じ値（<code>min(42vh,165px)</code>）です。ページ幅が足りない場合のみ全体を縮小表示します。クリック／タップで押し込み、キーボード <b>F / Y / I</b> でも押せます。</p>
+
+  <h2>1. コントローラー配色の比較</h2>
+  <p class="note">形状・沈み込みは共通。状態表示はボタン色を変えず「リング」で出します（ガイド＝画像のL1のような黄色い欠けリング）。</p>
+  <div class="toolbar">
+    格闘ボタンの状態:
+    <div class="seg" id="stateSeg">
+      <button data-v="none" aria-pressed="false">なし</button>
+      <button data-v="hl" aria-pressed="true">ガイド</button>
+      <button data-v="success" aria-pressed="false">成功</button>
+      <button data-v="fail" aria-pressed="false">失敗</button>
+    </div>
+  </div>
+
+  <div class="fit"><div class="frame strip v-a"><div class="screen cabinet">
+    <div class="caption">A <small>青／黄／白（画像寄り）</small></div>
+    <div class="deck compare"></div>
+  </div></div></div>
+  <div class="fit"><div class="frame strip v-b"><div class="screen cabinet">
+    <div class="caption">B <small>赤／青／緑（現行の色分けを継承）</small></div>
+    <div class="deck compare"></div>
+  </div></div></div>
+  <div class="fit"><div class="frame strip v-c"><div class="screen cabinet">
+    <div class="caption">C <small>同色＋ボタン刻印</small></div>
+    <div class="deck compare"></div>
+  </div></div></div>
+
+  <div id="screens" class="v-a">
+  <h2>2. 練習画面（/practice/[id]）</h2>
+  <p class="note">現行と同じ「上：ヒント＋試行数／右：練習終了、下：コンパネ」の配置と寸法のまま、見た目だけ差し替えています。「射撃 → 格闘 → ジャンプ」と押してみてください。</p>
+  <div class="toolbar">
+    画面の配色:
+    <div class="seg" id="variantSeg">
+      <button data-v="v-a" aria-pressed="true">A</button>
+      <button data-v="v-b" aria-pressed="false">B</button>
+      <button data-v="v-c" aria-pressed="false">C</button>
+    </div>
+  </div>
+  <div class="fit"><div class="frame phone"><div class="screen cabinet practice">
+    <div class="burger plate"><i></i><i></i><i></i></div>
+    <nav class="nav"><span class="plate">◀ HOME</span></nav>
+    <div class="session">
+      <div class="p-header">
+        <div class="headerMain">
+          <div class="hint" id="seq">
+            <span class="label">CMD</span>
+            <span class="step mini shot" data-i="0">射撃</span>
+            <span class="arrow">▶</span>
+            <span class="step mini melee" data-i="1">格闘</span>
+            <span class="arrow">▶</span>
+            <span class="step mini jump" data-i="2">ジャン<br>プ</span>
+          </div>
+          <div class="statsRow">
+            <span class="counter" id="counter">試行: 0 / 成功: 0</span>
+            <span class="result" id="result"></span>
+          </div>
+        </div>
+        <button class="capsule danger">練習終了</button>
+      </div>
+      <div class="controllerArea">
+        <div class="deck" id="practiceDeck"></div>
+      </div>
+    </div>
+  </div></div></div>
+
+  <h2>3. コマンド一覧（/commands）</h2>
+  <p class="note">カードは筐体のインストカード（紙＋黒帯）モチーフ。文字サイズは現行と同じ rem 基準。</p>
+  <div class="fit"><div class="frame phone"><div class="screen cabinet list">
+    <div class="burger plate"><i></i><i></i><i></i></div>
+    <nav class="nav"><span class="plate">◀ HOME</span></nav>
+    <div class="titleRow">
+      <div class="plate">コマンド一覧</div>
+      <button class="capsule sm" style="margin-right:2.6rem">＋ 新規登録</button>
+    </div>
+    <div class="scroll"><div class="grid" id="cards"></div></div>
+  </div></div></div>
+  </div>
+</div>
+
+<script>
+const LABELS = { shot: "射撃", melee: "格闘", jump: "ジャンプ" };
+const KEYS = { f: "shot", y: "melee", i: "jump" };
+
+// 実寸フレームを親幅に合わせて縮小（拡大はしない）
+function fitAll() {
+  document.querySelectorAll(".fit").forEach(fit => {
+    const frame = fit.firstElementChild;
+    const s = Math.min(1, fit.clientWidth / frame.offsetWidth);
+    frame.style.transform = `scale(${s})`;
+    fit.style.height = frame.offsetHeight * s + "px";
+  });
+}
+window.addEventListener("resize", fitAll);
+
+function makeDeck(el) {
+  el.innerHTML = ["shot", "melee", "jump"].map(b => `
+    <div class="seat" data-button="${b}">
+      <span class="tag">${LABELS[b]}</span>
+      <button class="btn" type="button" aria-pressed="false" aria-label="${LABELS[b]}"><span class="cap">${LABELS[b]}</span></button>
+      <span class="ring"></span>
+    </div>`).join("");
+}
+document.querySelectorAll(".deck").forEach(makeDeck);
+
+function press(btn, on) { btn.setAttribute("aria-pressed", on ? "true" : "false"); }
+document.addEventListener("pointerdown", e => {
+  const btn = e.target.closest(".btn"); if (!btn) return;
+  btn.setPointerCapture(e.pointerId); press(btn, true);
+  btn.dispatchEvent(new CustomEvent("arcade-press", { bubbles: true, detail: btn.closest(".seat").dataset.button }));
+});
+["pointerup", "pointercancel"].forEach(t => document.addEventListener(t, e => {
+  const btn = e.target.closest && e.target.closest(".btn"); if (btn) press(btn, false);
+}));
+window.addEventListener("keydown", e => {
+  const b = KEYS[e.key.toLowerCase()]; if (!b || e.repeat) return;
+  const btn = document.querySelector(`#practiceDeck .seat[data-button="${b}"] .btn`);
+  press(btn, true);
+  btn.dispatchEvent(new CustomEvent("arcade-press", { bubbles: true, detail: b }));
+});
+window.addEventListener("keyup", e => {
+  const b = KEYS[e.key.toLowerCase()]; if (!b) return;
+  press(document.querySelector(`#practiceDeck .seat[data-button="${b}"] .btn`), false);
+});
+
+function setCompareState(v) {
+  document.querySelectorAll(".compare .seat[data-button='melee']").forEach(s => {
+    s.dataset.highlighted = v === "hl" ? "true" : "false";
+    s.dataset.state = v === "success" || v === "fail" ? v : "neutral";
+  });
+}
+function wireSeg(id, fn) {
+  const seg = document.getElementById(id);
+  seg.addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    seg.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b ? "true" : "false"));
+    fn(b.dataset.v);
+  });
+}
+wireSeg("stateSeg", setCompareState);
+setCompareState("hl");
+wireSeg("variantSeg", v => { document.getElementById("screens").className = v; });
+
+// 練習画面のデモ判定
+const SEQ = ["shot", "melee", "jump"];
+let idx = 0, success = 0, tries = 0, resetTimer = null;
+const deck = document.getElementById("practiceDeck");
+const result = document.getElementById("result");
+function seat(b) { return deck.querySelector(`.seat[data-button="${b}"]`); }
+function render() {
+  deck.querySelectorAll(".seat").forEach(s => {
+    s.dataset.highlighted = !resetTimer && s.dataset.button === SEQ[idx] ? "true" : "false";
+  });
+  document.querySelectorAll("#seq .step").forEach(s => {
+    const i = +s.dataset.i;
+    s.classList.toggle("current", !resetTimer && i === idx);
+    s.classList.toggle("done", i < idx);
+  });
+  document.getElementById("counter").textContent = `試行: ${tries} / 成功: ${success}`;
+}
+function flash(s, state) {
+  s.dataset.state = state;
+  clearTimeout(s._t);
+  s._t = setTimeout(() => { s.dataset.state = "neutral"; }, 380);
+}
+function setResult(text, cls) { result.textContent = text; result.className = "result " + (cls || ""); }
+deck.addEventListener("arcade-press", e => {
+  if (resetTimer) return;
+  const b = e.detail;
+  if (b === SEQ[idx]) {
+    flash(seat(b), "success");
+    idx++;
+    if (idx === SEQ.length) {
+      success++; tries++;
+      setResult("SUCCESS", "success");
+      resetTimer = setTimeout(() => { idx = 0; resetTimer = null; render(); }, 900);
+    }
+  } else {
+    flash(seat(b), "fail");
+    tries++; idx = 0;
+    setResult("MISS", "fail");
+  }
+  render();
+});
+render();
+
+const CMDS = [
+  { name: "ゼロ 前格派生", seq: [["shot"], ["melee"], ["jump"]], rate: 82, n: 146 },
+  { name: "ズンダ（BR×3）", seq: [["shot"], ["shot"], ["shot"]], rate: 64, n: 320 },
+  { name: "サブ射→BDC", seq: [["shot", "melee"], ["jump"], ["jump"]], rate: 47, n: 58 },
+  { name: "特格派生", seq: [["melee"], ["melee", "jump"]], rate: 91, n: 211 },
+  { name: "特射キャンセル", seq: [["shot"], ["shot", "jump"]], rate: 73, n: 95 },
+  { name: "格闘→特格→射撃", seq: [["melee"], ["melee", "jump"], ["shot"]], rate: 38, n: 22 },
+];
+document.getElementById("cards").innerHTML = CMDS.map(c => `
+  <article class="card">
+    <header><span>CMD</span><span>${c.n} TRIES</span></header>
+    <div class="body">
+      <h3>${c.name}</h3>
+      <div class="seq">${c.seq.map(ch =>
+        `<span class="chord">${ch.map(b => `<span class="mini ${b}"></span>`).join("+")}</span>`
+      ).join('<span class="arrow">▶</span>')}</div>
+      <div class="stats">成功率 <b>${c.rate}%</b></div>
+      <div class="bar"><i style="width:${c.rate}%"></i></div>
+      <div class="actions"><button class="capsule sm">練習</button><button class="capsule sm dark">詳細</button></div>
+    </div>
+  </article>`).join("");
+
+fitAll();
+document.fonts && document.fonts.ready.then(fitAll);
+</script>
+</body>
+</html>

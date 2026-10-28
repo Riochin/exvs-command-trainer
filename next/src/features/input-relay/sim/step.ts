@@ -3,6 +3,8 @@ import type { ButtonType } from '@/types';
 import {
   AIR_BOOST_FREE_USES,
   AIR_DRIFT_SPEED,
+  BD_LIFT_HEIGHT,
+  BD_LIFT_SPEED,
   BD_TURN_RATE,
   BOOST_MAX,
   FACE_TURN_RATE,
@@ -12,6 +14,7 @@ import {
   INERTIA_JUMP_SPEED,
   INERTIA_LEVER_ACCEL,
   INERTIA_LEVER_WINDOW_S,
+  CHAIN_GRACE_S,
   INERTIA_MAX_SPEED,
   LANDING_LAG_MAX_S,
   LANDING_LAG_PER_USE_S,
@@ -141,6 +144,7 @@ export function createWorld({
       lastLeverPress: null,
       inertiaPending: null,
       inertiaFlight: false,
+      chainGraceUntil: null,
     },
     enemy: {
       pos: { ...ENEMY_BASE },
@@ -292,6 +296,16 @@ function resolveMove(world: SimWorld, slot: MechAction): ActionDef | { reject: s
 }
 
 /** 行動を終えて止まる。BD・ステップの終わりは、次のジャンプに慣性を乗せられる */
+/**
+ * 行動が最後まで出て終わった。BD・ステップのあとは少しのあいだ、次の行動を連携（ズンダなど）としてつなぐ。
+ * 射撃ボタンは離してから届くので、BD を離した直後に押した射撃は BD が終わってから始まることがある
+ */
+function finishAction(world: SimWorld): void {
+  const mech = world.mech;
+  if (mech.action === 'bd' || mech.action === 'step') mech.chainGraceUntil = world.time + CHAIN_GRACE_S;
+  endAction(mech);
+}
+
 function endAction(mech: MechState): void {
   if (mech.action === 'bd' || mech.action === 'step') {
     mech.inertiaAvailable = true;
@@ -341,6 +355,10 @@ function startAction(world: SimWorld, kind: MechAction, def: ActionDef, canceled
   const previousTime = mech.actionTime;
   const previousFired = mech.actionFired;
   const previousTurnShot = mech.turnShot;
+  // BD・ステップが終わってすぐなら、終わる前に出したのと同じく連携としてつなぐ
+  const linked =
+    canceled || (previous === 'idle' && mech.chainGraceUntil !== null && world.time <= mech.chainGraceUntil);
+  mech.chainGraceUntil = null;
   const lever = leverToWorld(world, mech.leverHeld);
   let technique: string | null = null;
 
@@ -359,7 +377,7 @@ function startAction(world: SimWorld, kind: MechAction, def: ActionDef, canceled
   mech.meleeStage = kind === 'melee' || kind === 'special-melee' ? (comboMelee ? mech.meleeStage + 1 : 1) : 0;
   // BD はジャンプの 2 回目の押下で届くので、ジャンプからの BD はキャンセルではなく BD の出だしとして扱う
   const bdFromJump = kind === 'bd' && previous === 'jump';
-  let namedCancel = canceled;
+  let namedCancel = linked;
   if (bdFromJump) {
     const before = mech.chain.slice(0, -1);
     mech.chain = [...before, kind];
@@ -367,8 +385,8 @@ function startAction(world: SimWorld, kind: MechAction, def: ActionDef, canceled
     // ジャンプ中の BD はただの BD。何かの行動からつないだときだけ BDC と呼ぶ
     namedCancel = before.length > 0 && before[before.length - 1] !== 'jump';
   } else {
-    mech.chain = canceled ? [...mech.chain, kind] : [kind];
-    mech.chainLabels = canceled ? [...mech.chainLabels, def.label] : [def.label];
+    mech.chain = linked ? [...mech.chain, kind] : [kind];
+    mech.chainLabels = linked ? [...mech.chainLabels, def.label] : [def.label];
   }
   if ((kind === 'jump' || kind === 'bd' || kind === 'step') && !bdFromJump) mech.airBoostUses += 1;
 
@@ -847,7 +865,7 @@ function stepAction(world: SimWorld, dt: number): void {
 
   // ジャンプと BD はボタンを離したら終わる（最低限の長さは出す）
   if (def.holdMinTime !== undefined && !mech.jumpHeld && mech.actionTime >= def.holdMinTime) {
-    endAction(mech);
+    finishAction(world);
     return;
   }
 
@@ -862,7 +880,8 @@ function stepAction(world: SimWorld, dt: number): void {
     if (mech.leverHeld.length > 0) mech.bdLever = mech.leverHeld[mech.leverHeld.length - 1];
     mech.vel.x = mech.bdDir.x * def.speed * speedScale;
     mech.vel.z = mech.bdDir.z * def.speed * speedScale;
-    mech.vel.y = 0;
+    // 地上から出した BD は少し浮き上がり、そのあとは高度を保つ
+    mech.vel.y = mech.pos.y < BD_LIFT_HEIGHT ? BD_LIFT_SPEED : 0;
   } else if (def.move === 'rise' && def.speed !== undefined) {
     mech.vel.y = def.speed;
     if (mech.carryInertia) {
@@ -918,7 +937,7 @@ function stepAction(world: SimWorld, dt: number): void {
     }
   }
 
-  if (mech.actionTime >= def.duration) endAction(mech);
+  if (mech.actionTime >= def.duration) finishAction(world);
 }
 
 /** 弾以外の、技が出た瞬間の効果（斬撃・アシスト・時限強化） */
@@ -1054,6 +1073,7 @@ function stepMechPhysics(world: SimWorld, dt: number): void {
       mech.grounded = true;
       mech.landingLag = landingLagFor(mech);
       endAction(mech);
+      mech.chainGraceUntil = null;
       mech.inertiaAvailable = false;
       mech.inertiaFlight = false;
       mech.airBoostUses = 0;

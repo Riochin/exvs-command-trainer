@@ -16,6 +16,12 @@ export const AIR_DRIFT_SPEED = 7;
 export const STEP_TAP_WINDOW_S = 0.25;
 /** BD 中にレバーの方向へ曲がる速さ（rad/s）。BD 旋回 */
 export const BD_TURN_RATE = 3.2;
+/**
+ * 地上で出した BD は少し浮いて飛ぶ（地走機を除く EXVS の通常の BD）。この高さまで上がる。
+ * 地面を滑ったまま BD が終わると「地上で止まった」扱いで硬直が入り、ズンダが途切れてしまう
+ */
+export const BD_LIFT_HEIGHT = 2.5;
+export const BD_LIFT_SPEED = 8;
 /** 機体が向き直る速さ（rad/s） */
 export const FACE_TURN_RATE = 9;
 /**
@@ -24,6 +30,8 @@ export const FACE_TURN_RATE = 9;
  * レバーなしのジャンプは慣性ジャンプにならない。
  */
 export const INERTIA_LEVER_WINDOW_S = 0.7;
+/** BD・ステップが終わってから、次の行動をまだ連携（ズンダなど）としてつなげる時間 */
+export const CHAIN_GRACE_S = 0.2;
 /** レバーを戻さず入れっぱなしで出した慣性ジャンプは、飛距離が少し短い（速さの倍率） */
 export const INERTIA_HELD_SCALE = 0.75;
 /** 慣性ジャンプが成立したときの横の初速（BD は 30。普通のジャンプの横流れは 7） */

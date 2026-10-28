@@ -3,6 +3,7 @@ import {
   ACTIONS,
   BOOST_MAX,
   INERTIA_LEVER_WINDOW_S,
+  LANDING_LAG_MAX_S,
   LANDING_LAG_S,
   STEP_TAP_WINDOW_S,
   WALK_SPEED,
@@ -180,13 +181,16 @@ describe('sim', () => {
       expect(applyInput(world, 'shot')).toBe('started');
     });
 
-    it('地上でブーストを使い切っても、止まれば硬直のあとに回復する', () => {
+    it('地上から出した BD は少し浮き、ブーストを使い切っても着地すれば硬直のあとに回復する', () => {
       const world = createWorld();
       startBd(world);
+      run(world, 0.5);
+      expect(world.mech.pos.y).toBeGreaterThan(1);
       for (let i = 0; i < 2000 && !world.mech.overheat; i++) stepWorld(world, FIXED_DT);
       jumpUp(world);
+      for (let i = 0; i < 2000 && !world.mech.grounded; i++) stepWorld(world, FIXED_DT);
       expect(world.mech.grounded).toBe(true);
-      run(world, LANDING_LAG_S + 0.1);
+      run(world, LANDING_LAG_MAX_S + 0.1);
       expect(world.mech.overheat).toBe(false);
       expect(world.mech.boost).toBe(BOOST_MAX);
     });

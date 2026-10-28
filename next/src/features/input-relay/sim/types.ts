@@ -172,6 +172,8 @@ export type MechState = {
   inertiaPending: { direction: LeverDirection; until: number } | null;
   /** 慣性ジャンプで飛んでいる。着地するまで横の勢いが落ちにくい */
   inertiaFlight: boolean;
+  /** BD・ステップが終わったあと、次の行動を連携としてつなげる期限（world.time）。なければ null */
+  chainGraceUntil: number | null;
 };
 
 export type EnemyState = {

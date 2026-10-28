@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * アシスト（ムラサメ・フリーダム）と射出したオオトリの描画。
+ * アシスト（ムラサメ・フリーダム・エスビット・GFreD）と射出したオオトリの描画。
  * 数が少ないので種類ごとに決まった数のメッシュを用意し、sim の並びに合わせて割り当てる。
  */
 import { useRef, type RefObject } from 'react';
@@ -10,7 +10,15 @@ import type { Group } from 'three';
 import type { AssistKind } from '../sim/actions';
 import type { SimWorld } from '../sim/types';
 
-const POOL: Readonly<Record<AssistKind, number>> = { murasame: 2, 'freedom-shot': 1, 'freedom-melee': 1, ootori: 1 };
+const POOL: Readonly<Record<AssistKind, number>> = {
+  murasame: 2,
+  'freedom-shot': 1,
+  'freedom-melee': 1,
+  ootori: 1,
+  esbit: 2,
+  'gfred-shot': 1,
+  'gfred-melee': 1,
+};
 
 function Box({ args, position, color, rotation }: { args: [number, number, number]; position: [number, number, number]; color: string; rotation?: [number, number, number] }) {
   return (
@@ -62,11 +70,45 @@ function Ootori() {
   );
 }
 
+/** エスビット: 先の尖った小さなビット。根元が淡く光る */
+function Esbit() {
+  return (
+    <group scale={0.8}>
+      <Box args={[0.35, 0.35, 0.9]} position={[0, 0, 0]} color="#e9ecf2" />
+      <Box args={[0.22, 0.22, 0.5]} position={[0, 0, 0.6]} color="#3b4a9c" />
+      <mesh position={[0, 0, -0.5]}>
+        <sphereGeometry args={[0.16, 10, 8]} />
+        <meshBasicMaterial color="#8fd3ff" />
+      </mesh>
+    </group>
+  );
+}
+
+/** GFreD: 白い体に紫の胸と肩、細身の人型 */
+function GFreD() {
+  return (
+    <group scale={0.75}>
+      <Box args={[0.85, 0.8, 0.5]} position={[0, 1.8, 0]} color="#6a4fa8" />
+      <Box args={[0.32, 0.32, 0.32]} position={[0, 2.4, 0]} color="#f2f3f6" />
+      <Box args={[0.7, 1.2, 0.4]} position={[0, 0.9, 0]} color="#f2f3f6" />
+      {([-1, 1] as const).map((side) => (
+        <group key={side}>
+          <Box args={[0.4, 0.3, 0.45]} position={[side * 0.6, 2.1, 0]} color="#6a4fa8" />
+          <Box args={[0.22, 1.0, 0.22]} position={[side * 0.62, 1.55, 0]} color="#f2f3f6" />
+        </group>
+      ))}
+    </group>
+  );
+}
+
 const MODELS: Readonly<Record<AssistKind, () => React.JSX.Element>> = {
   murasame: Murasame,
   'freedom-shot': Freedom,
   'freedom-melee': Freedom,
   ootori: Ootori,
+  esbit: Esbit,
+  'gfred-shot': GFreD,
+  'gfred-melee': GFreD,
 };
 
 export function Assists({ worldRef }: { worldRef: RefObject<SimWorld> }) {

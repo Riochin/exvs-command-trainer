@@ -52,7 +52,7 @@ export const LANDING_LAG_MAX_S = 0.75;
  * - lunge: 敵へ踏み込む。届いたら止まる。落下しない
  * - rise: 上昇し続ける（ジャンプ）。レバーで横に流れる
  * - step: 決まった向きへ素早く滑る。落下しない
- * - roll: 横へ転がりながら撃つ（横サブなど）。出だしが速く、だんだん止まる
+ * - roll: 決まった向き（moveDir、省略時は横）へ転がる・跳ぶ（横サブ、特殊移動など）。出だしが速く、だんだん止まる
  */
 export type MoveMode = 'free' | 'halt' | 'dash' | 'lunge' | 'rise' | 'step' | 'roll';
 
@@ -60,7 +60,14 @@ export type MoveMode = 'free' | 'halt' | 'dash' | 'lunge' | 'rise' | 'step' | 'r
 export type MovePose = 'shoot' | 'slash' | 'throw' | 'summon' | 'none';
 
 /** 呼び出す僚機（アシスト）・射出物 */
-export type AssistKind = 'murasame' | 'freedom-shot' | 'freedom-melee' | 'ootori';
+export type AssistKind =
+  | 'murasame'
+  | 'freedom-shot'
+  | 'freedom-melee'
+  | 'ootori'
+  | 'esbit'
+  | 'gfred-shot'
+  | 'gfred-melee';
 
 export type ProjectileSpec = {
   kind: ProjectileKind;
@@ -106,19 +113,33 @@ export type ActionDef = {
   comboMax?: number;
   /** 横格闘のように回り込む強さ（m/s）。レバーの左右で向きが決まる */
   curve?: number;
+  /** 近接攻撃が届く距離。鞭のように長いものに使う。省略時は MELEE_HIT_RANGE */
+  reach?: number;
+  /** move: 'roll' の向き。front は敵の方、side はレバーの左右（なければ右）、back は敵から離れる向き */
+  moveDir?: 'front' | 'side' | 'back';
   /** 使う弾。弾がなければ出せない */
   ammo?: string;
   /** 1 回で使う弾数。省略時は 1 */
   ammoCost?: number;
   /** この技をメイン射撃でキャンセルすると自由落下に移れる（アメキャン対応） */
   fallCancel?: boolean;
+  /**
+   * メイン射撃以外で、fallCancel の技をキャンセルしたときに落下に移る技
+   * （追従アシストに撃たせるサブなど。アサキャン）
+   */
+  fallOnCancel?: boolean;
   /** この技からのキャンセルルート。省略時はスロットの標準ルート */
   cancels?: { into: ReadonlyArray<string>; opens: 'always' | 'afterFire'; early?: ReadonlyArray<string> };
   /** fireAt で呼び出すアシスト・射出物 */
   assist?: AssistKind;
+  /** fireAt で消すアシスト（追従アシストを投げつけて解除する、など） */
+  dismissAssist?: AssistKind;
   /** fireAt で発動する時限強化 */
   buff?: 'seed';
-  /** メイン射撃に合わせて、追従アシストも撃つ */
+  /**
+   * fireAt で追従アシスト（ムラサメ・エスビット）にも撃たせる。メイン射撃の連動や、
+   * 弾を持たない「アシストに撃たせるだけ」の技に使う
+   */
   linkAssists?: boolean;
   pose?: MovePose;
   label: string;

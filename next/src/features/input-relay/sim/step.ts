@@ -8,6 +8,7 @@ import {
   FACE_TURN_RATE,
   GRAVITY,
   INERTIA_AIR_DAMPING,
+  INERTIA_HELD_SCALE,
   INERTIA_JUMP_SPEED,
   INERTIA_LEVER_ACCEL,
   INERTIA_LEVER_WINDOW_S,
@@ -301,17 +302,21 @@ function endAction(mech: MechState): void {
   mech.curveSign = 0;
 }
 
-/** 慣性ジャンプを成立させる。レバーの方向へ大きく流れる */
-function establishInertiaJump(world: SimWorld, direction: LeverDirection): void {
+/**
+ * 慣性ジャンプを成立させる。レバーの方向へ大きく流れる。
+ * held はレバーを戻さず入れっぱなしで出したとき。飛距離が少し短くなる。
+ */
+function establishInertiaJump(world: SimWorld, direction: LeverDirection, held = false): void {
   const mech = world.mech;
   const dir = leverToWorld(world, [direction]);
   if (!dir) return;
-  mech.vel.x = dir.x * INERTIA_JUMP_SPEED;
-  mech.vel.z = dir.z * INERTIA_JUMP_SPEED;
+  const speed = INERTIA_JUMP_SPEED * (held ? INERTIA_HELD_SCALE : 1);
+  mech.vel.x = dir.x * speed;
+  mech.vel.z = dir.z * speed;
   mech.carryInertia = true;
   mech.inertiaFlight = true;
   mech.inertiaPending = null;
-  pushEvent(world, 'route', '慣性ジャンプ');
+  pushEvent(world, 'route', held ? '慣性ジャンプ（入れっぱ）' : '慣性ジャンプ');
 }
 
 /** 行動を始める（キャンセルかどうかの判定は済んでいる前提）。ブーストが足りなければ false */
@@ -385,18 +390,20 @@ function startAction(world: SimWorld, kind: MechAction, def: ActionDef, canceled
         mech.carryInertia = true;
         technique = 'フワステ';
       } else {
-        // 慣性ジャンプ: BD でレバーを倒していた方向へ、一度戻してから入れ直すと成立する
+        // 慣性ジャンプ: BD でレバーを倒していた方向へ、一度戻してから入れ直すと成立する。
+        // 戻さず入れっぱなしでも出るが飛距離が短い。レバーなしなら普通のジャンプ
         const direction = mech.bdLever;
         const press = mech.lastLeverPress;
-        if (mech.inertiaAvailable && mech.leverNeutralSinceBd && direction !== null) {
-          if (
-            press !== null &&
-            press.direction === direction &&
-            mech.leverHeld.includes(direction) &&
-            world.time - press.at <= INERTIA_LEVER_WINDOW_S
-          ) {
-            establishInertiaJump(world, direction);
-          } else {
+        if (mech.inertiaAvailable && direction !== null) {
+          if (mech.leverHeld.includes(direction)) {
+            const reinput =
+              mech.leverNeutralSinceBd &&
+              press !== null &&
+              press.direction === direction &&
+              world.time - press.at <= INERTIA_LEVER_WINDOW_S;
+            establishInertiaJump(world, direction, !reinput);
+          } else if (mech.leverHeld.length === 0) {
+            // ジャンプのあとに入れ直すのを待つ
             mech.inertiaPending = { direction, until: world.time + INERTIA_LEVER_WINDOW_S };
           }
         }

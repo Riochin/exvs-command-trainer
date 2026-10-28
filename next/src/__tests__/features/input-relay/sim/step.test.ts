@@ -450,14 +450,50 @@ describe('EXVS のテクニック', () => {
       expect(lastRoute(world)).toBe('慣性ジャンプ');
     });
 
-    it('レバーを戻さずに倒しっぱなしだと成立しない', () => {
+    it('レバーを戻さず入れっぱなしでも成立するが、入れ直したときより飛距離が短い', () => {
+      function travel(reinput: boolean) {
+        const world = createWorld();
+        holdJump(world, 0.15);
+        setLever(world, 'right', true);
+        bdFor(world, 0.3);
+        if (reinput) {
+          setLever(world, 'right', false);
+          run(world, 0.05);
+          setLever(world, 'right', true);
+        }
+        const start = { ...world.mech.pos };
+        jumpDown(world);
+        const label = lastRoute(world);
+        run(world, 0.3);
+        jumpUp(world);
+        run(world, 0.5);
+        return { label, distance: Math.hypot(world.mech.pos.x - start.x, world.mech.pos.z - start.z) };
+      }
+      const held = travel(false);
+      const full = travel(true);
+      expect(held.label).toBe('慣性ジャンプ（入れっぱ）');
+      expect(full.label).toBe('慣性ジャンプ');
+      expect(held.distance).toBeLessThan(full.distance - 2);
+    });
+
+    it('レバーなしのジャンプは慣性ジャンプにならない', () => {
       const world = createWorld();
       holdJump(world, 0.15);
-      setLever(world, 'forward', true);
-      bdFor(world, 0.4);
+      leverBd(world, 'forward', 0.4);
       jumpDown(world);
-      run(world, 0.2);
-      expect(world.events.some((e) => e.label === '慣性ジャンプ')).toBe(false);
+      run(world, INERTIA_LEVER_WINDOW_S + 0.1);
+      expect(world.events.some((e) => e.label.startsWith('慣性ジャンプ'))).toBe(false);
+      expect(speedXZ(world)).toBeLessThan(1);
+    });
+
+    it('入れ直しはジャンプから 0.5 秒後でも間に合う', () => {
+      const world = createWorld();
+      holdJump(world, 0.15);
+      leverBd(world, 'left', 0.4);
+      jumpDown(world);
+      run(world, 0.5);
+      setLever(world, 'left', true);
+      expect(lastRoute(world)).toBe('慣性ジャンプ');
     });
 
     it('BD と違う方向に入れ直したり、間が空きすぎたりすると成立しない', () => {
@@ -466,7 +502,7 @@ describe('EXVS のテクニック', () => {
       leverBd(other, 'forward', 0.4);
       jumpDown(other);
       setLever(other, 'right', true);
-      expect(other.events.some((e) => e.label === '慣性ジャンプ')).toBe(false);
+      expect(other.events.some((e) => e.label.startsWith('慣性ジャンプ'))).toBe(false);
 
       const late = createWorld();
       holdJump(late, 0.15);
@@ -474,7 +510,7 @@ describe('EXVS のテクニック', () => {
       jumpDown(late);
       run(late, INERTIA_LEVER_WINDOW_S + 0.1);
       setLever(late, 'forward', true);
-      expect(late.events.some((e) => e.label === '慣性ジャンプ')).toBe(false);
+      expect(late.events.some((e) => e.label.startsWith('慣性ジャンプ'))).toBe(false);
     });
 
     it('普通のジャンプよりずっと進み、BD ほどは進まない', () => {

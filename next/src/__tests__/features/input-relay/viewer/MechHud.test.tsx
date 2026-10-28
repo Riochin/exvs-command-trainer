@@ -104,6 +104,13 @@ describe('MechHud のタッチ操作向けの出し分け', () => {
     expect(hud.getAttribute('data-compact')).toBe('true');
     expect(screen.getByText(/BOOST/)).not.toBeNull();
   });
+
+  it('HIT とブーストは 1 つのまとまりに入れる（タッチ操作中は右上にまとめて積むため）', () => {
+    const hud = renderHud({ compact: true });
+    const corner = screen.getByText('HIT').closest('div')?.parentElement;
+    expect(corner?.parentElement).toBe(hud);
+    expect(within(corner as HTMLElement).getByText(/BOOST/)).not.toBeNull();
+  });
 });
 
 describe('MechHud の中央の表示', () => {

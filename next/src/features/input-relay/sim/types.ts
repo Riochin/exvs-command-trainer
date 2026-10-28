@@ -186,6 +186,8 @@ export type MechState = {
    * 硬直が切れたら盾を出す。ほかの行動を出したら消える
    */
   guardQueuedAt: number | null;
+  /** レバーの後ろを戻した時刻。盾（後→前）は、ここから前に倒すまでの間で判定する */
+  backReleasedAt: number | null;
   /** 盾が成立して構え続ける期限（world.time）。成立していなければ null */
   guardBlockUntil: number | null;
 };

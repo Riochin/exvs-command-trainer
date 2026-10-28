@@ -178,6 +178,7 @@ export function createWorld({
       chainGraceUntil: null,
       jumpPress: null,
       guardQueuedAt: null,
+      backReleasedAt: null,
       guardBlockUntil: null,
     },
     enemy: {
@@ -734,6 +735,7 @@ export function setLever(
 ): InputResult | null {
   const mech = world.mech;
   if (!pressed) {
+    if (direction === 'back' && mech.leverHeld.includes('back')) mech.backReleasedAt = world.time;
     mech.leverHeld = mech.leverHeld.filter((d) => d !== direction);
     // BD 中に戻しても数える。ジャンプは少し押し続けてから出るので、そのあいだに BD が終わることがある
     if (mech.leverHeld.length === 0 && (mech.inertiaAvailable || mech.action === 'bd')) mech.leverNeutralSinceBd = true;
@@ -756,14 +758,22 @@ export function setLever(
 
 /**
  * レバーを 1 回倒したことを数える。同じ方向に STEP_TAP_WINDOW_S 以内で 2 回続けばステップを出す。
- * 後ろに倒してから GUARD_INPUT_WINDOW_S 以内に前へ倒すと盾を出す。そのあとの前はステップに数えない
+ * 後ろを戻してから GUARD_INPUT_WINDOW_S 以内に前へ倒すと盾を出す（後ろは長く倒していてもよい）。
+ * そのあとの前はステップに数えない
  * （後ろ入力からの前ステは盾に化ける。MBON wiki「後入力からの最速前ステ」）
  */
 export function tapLever(world: SimWorld, direction: LeverDirection): InputResult | null {
   const mech = world.mech;
   const tap = mech.lastLeverTap;
-  if (tap !== null && tap.direction === 'back' && direction === 'forward' && world.time - tap.at <= GUARD_INPUT_WINDOW_S) {
+  const released = mech.backReleasedAt;
+  if (
+    direction === 'forward' &&
+    tap?.direction === 'back' &&
+    released !== null &&
+    world.time - released <= GUARD_INPUT_WINDOW_S
+  ) {
     mech.lastLeverTap = null;
+    mech.backReleasedAt = null;
     return requestAction(world, 'guard');
   }
   if (tap !== null && tap.direction === direction && world.time - tap.at <= STEP_TAP_WINDOW_S) {

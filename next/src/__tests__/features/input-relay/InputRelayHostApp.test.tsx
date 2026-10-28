@@ -43,7 +43,8 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('InputRelayHostApp の接続案内', () => {
+// 画面全体を描画するので重い。並行実行時でも時間切れにならないよう長めに待つ
+describe('InputRelayHostApp の接続案内', { timeout: 20_000 }, () => {
   it('PC で開くと、機体選択の後に接続案内を出す', () => {
     mockPointer(false);
     render(<InputRelayHostApp lanOrigins={[]} />);

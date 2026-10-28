@@ -4,6 +4,15 @@ import { ArcadeController, SIMULTANEOUS_INPUT_DEFER_MS, BD_WINDOW_MS } from '@/f
 import { CHARGE_THRESHOLD_MS } from '@/hooks/useChargeInput';
 
 describe('ArcadeController', () => {
+  // 同時押しは押下の時刻差で決まるので、時計を止めて描画の遅れに左右されないようにする
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('3つのボタン（射撃・格闘・ジャンプ）が表示される', () => {
     render(<ArcadeController />);
     expect(screen.getByText('射撃')).toBeTruthy();
@@ -135,6 +144,66 @@ describe('ArcadeController', () => {
       expect(onButtonPress).toHaveBeenCalledWith(chord);
       expect(onButtonPress).not.toHaveBeenCalledWith(chargeStart);
       vi.useRealTimers();
+    });
+
+    it.each([
+      ['射撃', 'ジャンプ', 'special-shot', ['shot', 'jump']],
+      ['射撃', '格闘', 'sub', ['shot', 'melee']],
+      ['格闘', 'ジャンプ', 'special-melee', ['melee', 'jump']],
+      ['ジャンプ', '射撃', 'special-shot', ['jump', 'shot']],
+    ])(
+      '%s を押してから猶予より遅れて %s を押すと、押したままでも同時押し（%s）にならず、それぞれ単独で出る',
+      (first, second, chord, singles) => {
+        const onButtonPress = vi.fn();
+        render(<ArcadeController onButtonPress={onButtonPress} />);
+        const firstEl = screen.getByText(first).closest('button')!;
+        const secondEl = screen.getByText(second).closest('button')!;
+        fireEvent.pointerDown(firstEl, { pointerId: 1 });
+        act(() => {
+          vi.advanceTimersByTime(SIMULTANEOUS_INPUT_DEFER_MS + 30);
+        });
+        fireEvent.pointerDown(secondEl, { pointerId: 2 });
+        act(() => {
+          vi.advanceTimersByTime(60);
+        });
+        fireEvent.pointerUp(firstEl, { pointerId: 1 });
+        fireEvent.pointerUp(secondEl, { pointerId: 2 });
+        act(() => {
+          vi.advanceTimersByTime(SIMULTANEOUS_INPUT_DEFER_MS + BD_WINDOW_MS);
+        });
+        expect(onButtonPress).not.toHaveBeenCalledWith(chord);
+        for (const single of singles) expect(onButtonPress).toHaveBeenCalledWith(single);
+      },
+    );
+
+    it('猶予内なら、少しずれて押しても同時押しになる', () => {
+      const onButtonPress = vi.fn();
+      render(<ArcadeController onButtonPress={onButtonPress} />);
+      const shot = screen.getByText('射撃').closest('button')!;
+      const jump = screen.getByText('ジャンプ').closest('button')!;
+      fireEvent.pointerDown(shot, { pointerId: 1 });
+      act(() => {
+        vi.advanceTimersByTime(SIMULTANEOUS_INPUT_DEFER_MS - 10);
+      });
+      fireEvent.pointerDown(jump, { pointerId: 2 });
+      expect(onButtonPress).toHaveBeenCalledWith('special-shot');
+    });
+
+    it('射撃を離してから猶予より遅れて格闘を押したら、射撃は取り消さずに出す', () => {
+      const onButtonPress = vi.fn();
+      render(<ArcadeController onButtonPress={onButtonPress} />);
+      const shot = screen.getByText('射撃').closest('button')!;
+      const melee = screen.getByText('格闘').closest('button')!;
+      fireEvent.pointerDown(shot, { pointerId: 1 });
+      act(() => {
+        vi.advanceTimersByTime(SIMULTANEOUS_INPUT_DEFER_MS + 30);
+      });
+      fireEvent.pointerUp(shot, { pointerId: 1 });
+      fireEvent.pointerDown(melee, { pointerId: 2 });
+      act(() => {
+        vi.advanceTimersByTime(SIMULTANEOUS_INPUT_DEFER_MS + 20);
+      });
+      expect(onButtonPress).toHaveBeenCalledWith('shot');
     });
 
     it('格闘保持中にジャンプで onButtonPress が "special-melee" で呼ばれる', () => {

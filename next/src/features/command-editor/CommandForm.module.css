@@ -7,9 +7,8 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  background: linear-gradient(to bottom, #1f1f23, #121214);
-  border-top: 1px solid #333338;
-  border-bottom: 3px solid #000;
+  background: var(--glass);
+  border-bottom: 1px solid var(--line);
   box-shadow: var(--shadow-drop-md);
 }
 
@@ -81,7 +80,7 @@
 }
 
 .previewStep {
-  --c: #2b2b30;
+  --c: var(--ink-3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -94,7 +93,7 @@
   );
   box-shadow:
     0 2px 0 color-mix(in oklab, var(--c), black 55%),
-    0 0 0 2px var(--ink);
+    0 0 0 2px var(--line-strong);
   font-family: var(--font-body);
   font-weight: 900;
   letter-spacing: 0;
@@ -116,27 +115,28 @@
 .previewStep[data-button='jump'],
 .previewStep[data-button='bd'] { --c: var(--btn-green); }
 
-/* 小さな赤い物理ボタン */
+/* 取り消せない操作のボタン：赤い枠 */
 .resetButton {
-  --c: var(--btn-red);
   flex-shrink: 0;
-  border: 0;
-  border-radius: 0.3rem;
-  background: linear-gradient(to bottom, color-mix(in oklab, var(--c), white 25%), var(--c));
-  color: #fff;
   font-family: var(--font-label);
   font-size: 0.6rem;
   letter-spacing: 0.08em;
   padding: 0.15rem 0.4rem;
   cursor: pointer;
-  box-shadow: 0 2px 0 color-mix(in oklab, var(--c), black 55%), inset 0 1px 0 rgba(255, 255, 255, 0.4);
-  transform: translateY(-1px);
-  transition: transform var(--transition-press), box-shadow var(--transition-press);
+  border: 0;
+  background: transparent;
+  color: var(--danger);
+  box-shadow: inset 0 0 0 1px var(--danger);
+  clip-path: polygon(var(--cut-xs) 0, 100% 0, 100% calc(100% - var(--cut-xs)), calc(100% - var(--cut-xs)) 100%, 0 100%, 0 var(--cut-xs));
+  transition: background var(--transition-fast), transform var(--transition-press);
+}
+
+.resetButton:hover {
+  background: rgba(255, 75, 75, 0.12);
 }
 
 .resetButton:active {
   transform: translateY(1px);
-  box-shadow: 0 0 0 color-mix(in oklab, var(--c), black 55%), inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .maxLabel {

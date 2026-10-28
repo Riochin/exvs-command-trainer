@@ -1,27 +1,23 @@
 import type { Metadata, Viewport } from "next";
-import { Oswald, Share_Tech_Mono, Zen_Kaku_Gothic_New } from "next/font/google";
+import { M_PLUS_1, M_PLUS_1_Code } from "next/font/google";
 import { Providers } from "@/components/Providers";
 import { AnalyticsPageViewTracker } from "@/features/analytics/AnalyticsPageViewTracker";
 import { GoogleAnalyticsScripts } from "@/features/analytics/GoogleAnalyticsScripts";
 import "./globals.css";
 
 // 日本語フォントはサブセット指定ができないため preload しない
-const zenKaku = Zen_Kaku_Gothic_New({
-  variable: "--font-zen-kaku",
-  weight: ["500", "700", "900"],
+const mplus = M_PLUS_1({
+  variable: "--font-mplus",
+  weight: ["400", "500", "700", "800"],
   preload: false,
   display: "swap",
 });
 
-const oswald = Oswald({
-  variable: "--font-oswald",
+const mplusCode = M_PLUS_1_Code({
+  variable: "--font-mplus-code",
+  weight: ["500", "700"],
   subsets: ["latin"],
-});
-
-const shareTechMono = Share_Tech_Mono({
-  variable: "--font-share-tech-mono",
-  weight: "400",
-  subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -72,7 +68,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ja" className={`${zenKaku.variable} ${oswald.variable} ${shareTechMono.variable}`}>
+    <html lang="ja" className={`${mplus.variable} ${mplusCode.variable}`}>
       <body>
         {/* Google Analytics */}
         <GoogleAnalyticsScripts />

@@ -2,8 +2,8 @@
 .result {
   background: var(--surface-card);
   color: var(--ink);
-  border-radius: 0.5rem;
-  border-top: 6px solid var(--ink);
+  clip-path: polygon(var(--cut-md) 0, 100% 0, 100% calc(100% - var(--cut-md)), calc(100% - var(--cut-md)) 100%, 0 100%, 0 var(--cut-md));
+  border-top: 2px solid var(--cyan);
   box-shadow: var(--shadow-drop-lg);
   padding: 1.5rem 2rem;
   display: flex;

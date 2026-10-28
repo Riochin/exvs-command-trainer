@@ -1,7 +1,7 @@
 .history {
   background: var(--surface-card);
   color: var(--ink);
-  border-radius: 0.5rem;
+  clip-path: polygon(var(--cut-md) 0, 100% 0, 100% calc(100% - var(--cut-md)), calc(100% - var(--cut-md)) 100%, 0 100%, 0 var(--cut-md));
   overflow: hidden;
   box-shadow: var(--shadow-drop-md);
   padding: 0 1.25rem 0.75rem;
@@ -16,8 +16,9 @@
   font-weight: var(--font-weight-heading);
   font-size: 0.875rem;
   letter-spacing: var(--letter-spacing-ui);
-  color: var(--surface-card);
-  background: var(--ink);
+  color: var(--cyan-hi);
+  background: var(--ink-1);
+  border-bottom: 1px solid var(--line);
   margin: 0 -1.25rem;
   padding: 0.35rem 1.25rem;
 }

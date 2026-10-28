@@ -496,11 +496,12 @@
   text-align: right;
 }
 
-/* タッチ操作。スティックは左下、ボタンは右下。置いた場所以外のタップは 3D ビューに通す */
+/* タッチ操作。スティックは左の上下中央、ボタンは右下。置いた場所以外のタップは 3D ビューに通す */
 .touchStick {
   position: absolute;
   left: max(0.75rem, env(safe-area-inset-left));
-  bottom: calc(1rem + env(safe-area-inset-bottom));
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 /*
@@ -515,10 +516,10 @@
   bottom: calc(min(42vh, 165px) * -0.53 + env(safe-area-inset-bottom));
 }
 
-/* 縦向きはボタンの列が左下のスティックの上まで届くので、スティックより上に置く */
+/* 縦向きは画面の高さに余裕があるので、ボタンは沈めずに下端へ置く（スティックは上下中央なので被らない） */
 @media (orientation: portrait) {
   .touchButtons {
-    bottom: 8rem;
+    bottom: calc(1rem + env(safe-area-inset-bottom));
   }
 }
 

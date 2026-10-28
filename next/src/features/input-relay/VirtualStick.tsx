@@ -35,6 +35,12 @@ export function stickDirections(x: number, y: number, deadZone = STICK_DEAD_ZONE
   return table[sector] ?? [];
 }
 
+/**
+ * つまみがいちばん倒れたときに中心から動く距離（つまみの大きさに対する %）。
+ * つまみは台の 42% なので、65% 動くとつまみの縁が台の縁の近くまで届く
+ */
+const KNOB_TRAVEL_PCT = 65;
+
 export type VirtualStickProps = {
   /** レバーを倒した・戻した方向を 1 つずつ通知する */
   onLever: (direction: LeverDirection, pressed: boolean) => void;
@@ -103,7 +109,9 @@ export function VirtualStick({ onLever }: VirtualStickProps) {
     >
       <span
         className={styles.knob}
-        style={{ transform: `translate(calc(-50% + ${knob.x * 35}%), calc(-50% + ${-knob.y * 35}%))` }}
+        style={{
+          transform: `translate(calc(-50% + ${knob.x * KNOB_TRAVEL_PCT}%), calc(-50% + ${-knob.y * KNOB_TRAVEL_PCT}%))`,
+        }}
       />
     </div>
   );

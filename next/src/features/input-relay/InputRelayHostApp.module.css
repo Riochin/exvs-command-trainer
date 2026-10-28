@@ -484,16 +484,17 @@
   bottom: 1rem;
 }
 
+/* ボタンは練習画面と同じ大きさで横に広いので、中央下のブーストゲージより上に置く */
 .touchButtons {
   position: absolute;
-  right: max(0.5rem, env(safe-area-inset-right));
-  bottom: 0.5rem;
+  right: max(0.25rem, env(safe-area-inset-right));
+  bottom: 3.5rem;
 }
 
-/* 縦向きは画面が細いので、中央下のブーストゲージより上に上げる */
+/* 縦向きはボタンの列が左下のスティックの上まで届くので、スティックより上に上げる */
 @media (orientation: portrait) {
   .touchButtons {
-    bottom: 4.5rem;
+    bottom: 7.5rem;
   }
 }
 

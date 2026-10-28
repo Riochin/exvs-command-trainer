@@ -72,6 +72,27 @@ export const AIR_BOOST_FREE_USES = 3;
 export const LANDING_LAG_PER_USE_S = 0.1;
 export const LANDING_LAG_MAX_S = 0.75;
 
+/*
+ * 盾（シールドガード）。レバーを後→前と入れると、敵に向き直って構える。
+ * 出典: EXVS2 wiki システム「シールドガード」、MBON wiki テクニック「シールド関連テクニック」。
+ * wiki に数値は無いので、どれも実機の値は未確認の仮の値。
+ */
+/** 後ろに倒してから前に倒すまでの猶予。ステップ（同じ方向に 2 回）と同じ長さにする */
+export const GUARD_INPUT_WINDOW_S = 0.25;
+/** 前を入れっぱなしにしていなくても構えている時間 */
+export const GUARD_TIME_S = 0.5;
+/** 前を長く倒し続けてブーストで延ばせる上限（構え始めから） */
+export const GUARD_HOLD_MAX_S = 1.5;
+/** 前の長倒しで延ばしているあいだのブースト消費（毎秒） */
+export const GUARD_HOLD_BOOST_PER_SEC = 20;
+/** 盾が成立したあと、そのまま構え続ける時間。攻撃を受け続ける限り延びる */
+export const GUARD_BLOCK_HOLD_S = 0.4;
+/** 盾が成立したとき、ブーストがこれより少なければ少し回復する */
+export const GUARD_RECOVER_BELOW = 25;
+export const GUARD_RECOVER_AMOUNT = 15;
+/** 硬直中に入れた盾の先行入力を、何秒まで覚えておくか */
+export const GUARD_QUEUE_S = 1;
+
 /**
  * 行動中の移動の仕方。
  * - free: 重力と慣性に任せる
@@ -84,8 +105,8 @@ export const LANDING_LAG_MAX_S = 0.75;
  */
 export type MoveMode = 'free' | 'halt' | 'dash' | 'lunge' | 'rise' | 'step' | 'roll';
 
-/** 描画の姿勢。射撃系は銃を構え、格闘系は剣を振り、呼び出し系は手を掲げる */
-export type MovePose = 'shoot' | 'slash' | 'throw' | 'summon' | 'none';
+/** 描画の姿勢。射撃系は銃を構え、格闘系は剣を振り、呼び出し系は手を掲げ、盾は腕の前に盾を構える */
+export type MovePose = 'shoot' | 'slash' | 'throw' | 'summon' | 'guard' | 'none';
 
 /** 呼び出す僚機（アシスト）・射出物 */
 export type AssistKind =
@@ -280,6 +301,15 @@ export const ACTIONS: Readonly<Record<Exclude<ActionKind, 'idle'>, ActionDef>> =
     fireAt: 0.45,
     strike: true,
   },
+  // 盾。足を止めて敵に向き直る（空中では落下がゆるむ）。前の長倒しで延びる分は step.ts で扱う
+  guard: {
+    id: 'guard',
+    label: '盾',
+    duration: GUARD_TIME_S,
+    move: 'halt',
+    boostCost: 0,
+    boostPerSec: 0,
+  },
 };
 
 const SLOT_POSES: Readonly<Record<Exclude<ActionKind, 'idle'>, MovePose>> = {
@@ -293,6 +323,7 @@ const SLOT_POSES: Readonly<Record<Exclude<ActionKind, 'idle'>, MovePose>> = {
   jump: 'none',
   bd: 'none',
   step: 'none',
+  guard: 'guard',
 };
 
 /** 技の姿勢。技に指定がなければスロットから決める */

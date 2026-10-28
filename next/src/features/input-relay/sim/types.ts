@@ -19,7 +19,8 @@ export type ActionKind =
   | 'special-shot'
   | 'special-melee'
   | 'shot-cs'
-  | 'melee-cs';
+  | 'melee-cs'
+  | 'guard';
 
 export type MechAction = Exclude<ActionKind, 'idle'>;
 
@@ -46,7 +47,7 @@ export type SimEvent = {
   time: number;
 };
 
-export type EffectKind = 'hit' | 'muzzle' | 'land' | 'slash';
+export type EffectKind = 'hit' | 'muzzle' | 'land' | 'slash' | 'guard';
 
 /** 一瞬だけ出す見た目の効果。sim が発生させ、描画は寿命に合わせて広げて消す */
 export type Effect = {
@@ -180,6 +181,13 @@ export type MechState = {
   chainGraceUntil: number | null;
   /** 今のジャンプボタンの押下。押した時刻と、その押下でもうジャンプを始めたか。BD になったら null */
   jumpPress: { at: number; started: boolean } | null;
+  /**
+   * 硬直中（着地硬直・キャンセルできない技）に入れた盾の先行入力。入れた時刻。
+   * 硬直が切れたら盾を出す。ほかの行動を出したら消える
+   */
+  guardQueuedAt: number | null;
+  /** 盾が成立して構え続ける期限（world.time）。成立していなければ null */
+  guardBlockUntil: number | null;
 };
 
 export type EnemyState = {

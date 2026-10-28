@@ -9,6 +9,13 @@ import {
   BOOST_MAX,
   FACE_TURN_RATE,
   GRAVITY,
+  GUARD_BLOCK_HOLD_S,
+  GUARD_HOLD_BOOST_PER_SEC,
+  GUARD_HOLD_MAX_S,
+  GUARD_INPUT_WINDOW_S,
+  GUARD_QUEUE_S,
+  GUARD_RECOVER_AMOUNT,
+  GUARD_RECOVER_BELOW,
   INERTIA_AIR_DAMPING,
   INERTIA_HELD_SCALE,
   INERTIA_JUMP_SPEED,
@@ -36,7 +43,16 @@ import {
   type ProjectileSpec,
 } from './actions';
 import { cancelState, INPUT_BUFFER_S, routeName } from './cancel';
-import type { EffectKind, InputResult, LeverDirection, MechAction, MechState, SimWorld, Vec3 } from './types';
+import type {
+  EffectKind,
+  InputResult,
+  LeverDirection,
+  MechAction,
+  MechState,
+  Projectile,
+  SimWorld,
+  Vec3,
+} from './types';
 import { chargeTimeOf, GENERIC_UNIT, isRejection, unitById, type LeverKind, type UnitDef } from './units';
 
 /**
@@ -45,7 +61,7 @@ import { chargeTimeOf, GENERIC_UNIT, isRejection, unitById, type LeverKind, type
  * 入力はまずスロット（射撃・格闘・サブ……）になり、機体データ（units.ts）がレバーの入れ方や状態から
  * 実際に出す技を決める。行動中の入力はキャンセルルートに従って、出す・受付まで待たせる・捨てるを決める。
  * EXVS の移動テクニック（慣性ジャンプ・フワステ・BD 旋回・振り向き撃ち・アメキャン・滑り特射・
- * 誘導切りなど）は、行動の始め方と毎フレームの動かし方で再現する。
+ * 誘導切り・盾など）は、行動の始め方と毎フレームの動かし方で再現する。
  */
 
 /** 敵は左右にゆっくり動き、ロックオンで機体の向きが追従するのを見せる */
@@ -60,7 +76,7 @@ export const ENEMY_FIRE_INTERVAL_S = 2.8;
 const ENEMY_BEAM = { speed: 70, radius: 0.25, life: 2.5, homing: 1.6 };
 
 const EVENT_LIMIT = 8;
-const EFFECT_LIFE: Readonly<Record<EffectKind, number>> = { hit: 0.35, muzzle: 0.12, land: 0.4, slash: 0.25 };
+const EFFECT_LIFE: Readonly<Record<EffectKind, number>> = { hit: 0.35, muzzle: 0.12, land: 0.4, slash: 0.25, guard: 0.3 };
 
 /** アシストの持続と動き */
 const ASSIST_LIFE: Readonly<Record<AssistKind, number>> = {
@@ -161,6 +177,8 @@ export function createWorld({
       inertiaFlight: false,
       chainGraceUntil: null,
       jumpPress: null,
+      guardQueuedAt: null,
+      guardBlockUntil: null,
     },
     enemy: {
       pos: { ...ENEMY_BASE },
@@ -300,7 +318,9 @@ function spawnEffect(world: SimWorld, kind: EffectKind, pos: Vec3): void {
 /** スロットとレバーと状態から、この機体が実際に出す技を決める */
 function resolveMove(world: SimWorld, slot: MechAction): ActionDef | { reject: string } {
   const mech = world.mech;
-  return unitOf(world).resolve(slot, {
+  const unit = unitOf(world);
+  if (slot === 'guard' && !unit.shieldGuard) return { reject: '盾なし' };
+  return unit.resolve(slot, {
     lever: leverKind(mech.leverHeld),
     inBd: mech.action === 'bd',
     seed: seedActive(mech),
@@ -395,6 +415,9 @@ function startAction(world: SimWorld, kind: MechAction, def: ActionDef, canceled
   const linked =
     canceled || (previous === 'idle' && mech.chainGraceUntil !== null && world.time <= mech.chainGraceUntil);
   mech.chainGraceUntil = null;
+  // 盾の先行入力は、ほかの行動を出したら捨てる
+  mech.guardQueuedAt = null;
+  mech.guardBlockUntil = null;
   const lever = leverToWorld(world, mech.leverHeld);
   let technique: string | null = null;
 
@@ -515,6 +538,11 @@ function startAction(world: SimWorld, kind: MechAction, def: ActionDef, canceled
       }
       break;
     }
+    case 'guard':
+      // 足を止めて構える。上昇の勢いも止め、空中ではゆっくり落ちる
+      mech.vel.y = Math.min(mech.vel.y, 0);
+      technique = '盾';
+      break;
     case 'special-shot': {
       // ジャンプを押した直後にレバーを入れて特射を出すと、その方向へ大きく滑る
       if (previous === 'jump' && previousTime <= SLIDE_WINDOW_S && lever) {
@@ -563,6 +591,11 @@ function startAction(world: SimWorld, kind: MechAction, def: ActionDef, canceled
 function requestAction(world: SimWorld, kind: MechAction, quiet = false): InputResult {
   const mech = world.mech;
   if (mech.landingLag > 0) {
+    // 盾だけは硬直中の先行入力が効き、硬直が切れた瞬間に出る
+    if (kind === 'guard' && !isRejection(resolveMove(world, kind))) {
+      mech.guardQueuedAt = world.time;
+      return 'buffered';
+    }
     if (!quiet) pushEvent(world, 'reject', '着地硬直');
     return 'rejected';
   }
@@ -599,6 +632,11 @@ function requestAction(world: SimWorld, kind: MechAction, quiet = false): InputR
       mech.buffered = { action: kind, move: def, at: world.time };
       return 'buffered';
     case 'closed':
+      if (kind === 'guard') {
+        // 技の硬直中に入れた盾は、技が終わったら出る（先行入力盾）
+        mech.guardQueuedAt = world.time;
+        return 'buffered';
+      }
       if (!quiet) pushEvent(world, 'reject', 'キャンセル不可');
       return 'rejected';
   }
@@ -718,10 +756,16 @@ export function setLever(
 
 /**
  * レバーを 1 回倒したことを数える。同じ方向に STEP_TAP_WINDOW_S 以内で 2 回続けばステップを出す。
+ * 後ろに倒してから GUARD_INPUT_WINDOW_S 以内に前へ倒すと盾を出す。そのあとの前はステップに数えない
+ * （後ろ入力からの前ステは盾に化ける。MBON wiki「後入力からの最速前ステ」）
  */
 export function tapLever(world: SimWorld, direction: LeverDirection): InputResult | null {
   const mech = world.mech;
   const tap = mech.lastLeverTap;
+  if (tap !== null && tap.direction === 'back' && direction === 'forward' && world.time - tap.at <= GUARD_INPUT_WINDOW_S) {
+    mech.lastLeverTap = null;
+    return requestAction(world, 'guard');
+  }
   if (tap !== null && tap.direction === direction && world.time - tap.at <= STEP_TAP_WINDOW_S) {
     mech.lastLeverTap = null;
     const previousStepDir = mech.stepDir;
@@ -1077,7 +1121,63 @@ function stepAction(world: SimWorld, dt: number): void {
     }
   }
 
-  if (mech.actionTime >= def.duration) finishAction(world);
+  if (mech.actionTime >= def.duration) {
+    if (mech.action === 'guard' && keepGuarding(world, dt)) return;
+    finishAction(world);
+  }
+}
+
+/**
+ * 盾を構えた時間が過ぎたあとも構え続けるか。成立している間は続き、前を長く倒していればブーストを使って延びる
+ */
+function keepGuarding(world: SimWorld, dt: number): boolean {
+  const { mech } = world;
+  if (mech.guardBlockUntil !== null && world.time < mech.guardBlockUntil) return true;
+  if (!mech.leverHeld.includes('forward') || mech.actionTime >= GUARD_HOLD_MAX_S || mech.overheat) return false;
+  mech.boost -= GUARD_HOLD_BOOST_PER_SEC * boostScaleOf(world) * dt;
+  if (mech.boost <= 0) {
+    mech.boost = 0;
+    mech.overheat = true;
+    return false;
+  }
+  return true;
+}
+
+/** 硬直中に入れておいた盾を、硬直が切れたら出す */
+function stepGuardQueue(world: SimWorld): void {
+  const { mech } = world;
+  const at = mech.guardQueuedAt;
+  if (at === null) return;
+  if (world.time - at > GUARD_QUEUE_S) {
+    mech.guardQueuedAt = null;
+    return;
+  }
+  if (mech.action !== 'idle' || mech.landingLag > 0) return;
+  mech.guardQueuedAt = null;
+  const resolved = resolveMove(world, 'guard');
+  if (!isRejection(resolved) && startAction(world, 'guard', resolved, false)) pushEvent(world, 'route', '先行入力盾');
+}
+
+/** 正面から来た敵の弾を盾で防いだか。防いだら構えを延ばし、ブーストが少なければ少し戻す */
+function guardBlocks(world: SimWorld, p: Projectile): boolean {
+  const { mech } = world;
+  if (mech.action !== 'guard') return false;
+  // 盾は正面だけ。弾が機体の向きから 90 度より後ろにあれば防げない
+  const toShot = Math.atan2(p.pos.x - mech.pos.x, p.pos.z - mech.pos.z);
+  if (Math.abs(angleDiff(mech.yaw, toShot)) > Math.PI / 2) return false;
+  const first = mech.guardBlockUntil === null;
+  mech.guardBlockUntil = world.time + GUARD_BLOCK_HOLD_S;
+  if (mech.boost < GUARD_RECOVER_BELOW) {
+    mech.boost = Math.min(BOOST_MAX, mech.boost + GUARD_RECOVER_AMOUNT);
+    mech.overheat = false;
+  }
+  spawnEffect(world, 'guard', {
+    x: mech.pos.x + Math.sin(mech.yaw) * 1.2,
+    y: mech.pos.y + 1.5,
+    z: mech.pos.z + Math.cos(mech.yaw) * 1.2,
+  });
+  if (first) pushEvent(world, 'route', '盾成立');
+  return true;
 }
 
 /** 弾以外の、技が出た瞬間の効果（斬撃・アシスト・時限強化） */
@@ -1219,6 +1319,12 @@ function stepMechPhysics(world: SimWorld, dt: number): void {
     const keepsAltitude = move === 'dash' || move === 'step' || move === 'lunge' || move === 'roll';
     if (keepsAltitude) {
       mech.grounded = true;
+    } else if (!mech.grounded && mech.vel.y <= 0 && mech.action === 'guard') {
+      // 空中で構えた盾は、着地しても構えたまま。構え終わってから着地の硬直が入る
+      mech.grounded = true;
+      mech.vel.x = 0;
+      mech.vel.z = 0;
+      spawnEffect(world, 'land', mech.pos);
     } else if (!mech.grounded && mech.vel.y <= 0) {
       mech.grounded = true;
       mech.landingLag = landingLagFor(mech);
@@ -1300,7 +1406,7 @@ function stepProjectiles(world: SimWorld, dt: number): void {
     const distance = Math.hypot(p.pos.x - target.x, p.pos.y - target.y, p.pos.z - target.z);
     if (distance <= radius + p.radius) {
       if (p.owner === 'mech') hitEnemy(world);
-      else hitMech(world);
+      else if (!guardBlocks(world, p)) hitMech(world);
       return false;
     }
     return p.life > 0;
@@ -1320,6 +1426,7 @@ export function stepWorld(world: SimWorld, dt: number): void {
   stepJumpPress(world);
   stepAction(world, dt);
   stepMechPhysics(world, dt);
+  stepGuardQueue(world);
   stepAssists(world, dt);
   stepProjectiles(world, dt);
 }

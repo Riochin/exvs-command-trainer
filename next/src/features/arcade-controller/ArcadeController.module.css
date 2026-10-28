@@ -74,3 +74,78 @@
     padding: 0;
   }
 }
+
+/* ---- タッチ用（3D 画面に重ねる半透明のボタン） ---- */
+
+/* 三角に並べる: 射撃は右下、格闘は左下、ジャンプは上。親指で 2 つを同時に押せる間隔 */
+.touchController {
+  --touch-size: clamp(3.6rem, 15vmin, 5.5rem);
+  position: relative;
+  width: calc(var(--touch-size) * 2.3);
+  height: calc(var(--touch-size) * 2.1);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.touchSeat {
+  position: absolute;
+  width: var(--touch-size);
+  aspect-ratio: 1;
+}
+
+.touch-shot {
+  right: 0;
+  bottom: 0;
+}
+
+.touch-melee {
+  left: 0;
+  bottom: 0;
+}
+
+.touch-jump {
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+}
+
+/* ControllerButton の筐体ボタンの見た目を上書きする（同じ要素に両方のクラスが付く）。詳細度を上げて確実に勝たせる */
+.touchController .touchSeat .touchButton {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  box-shadow: none;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(2px);
+  transform: none;
+  touch-action: none;
+}
+
+.touchController .touchSeat .touchButton[aria-pressed='true'] {
+  background: rgba(255, 255, 255, 0.32);
+  border-color: rgba(255, 255, 255, 0.85);
+}
+
+.touch-shot .touchButton {
+  border-color: rgba(216, 53, 44, 0.75);
+}
+
+.touch-melee .touchButton {
+  border-color: rgba(77, 95, 224, 0.75);
+}
+
+.touch-jump .touchButton {
+  border-color: rgba(39, 168, 90, 0.75);
+}
+
+.touchController .touchSeat .touchButton::before,
+.touchController .touchSeat .touchButton::after {
+  display: none;
+}

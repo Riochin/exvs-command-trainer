@@ -43,3 +43,7 @@ Kiro-style Spec-Driven Development on an agentic SDLC
 - Load entire `.kiro/steering/` as project memory
 - Default files: `product.md`, `tech.md`, `structure.md`
 - Custom files are supported (managed via `/kiro:steering-custom`)
+
+## 入力リレー 3D ビューの機体追加
+- 機体・技を足すときは `.kiro/steering/unit-authoring.md`（手順）、`.kiro/steering/exvs-references.md`（参照する wiki）、`.kiro/steering/unit-modeling.md`（3D モデル）に従う
+- `/add-unit <wiki の機体ページ URL>`（`.claude/skills/add-unit/`）でこの手順を呼び出せる

@@ -57,6 +57,7 @@ import { validateCommand } from './utils'
 - フィーチャー間の依存は許可しない（`features/A` が `features/B` をインポートしない）
 - フィーチャーから `components/`・`hooks/`・`types/` への依存はOK
 - ボタン座標ロジックは「論理座標 → 実座標変換」を明確に分離する（プロトタイプ実績パターン）
+- 入力リレーの 3D ビューの機体は 1 機 1 ファイル（`features/input-relay/sim/units/<機体id>.ts`）で、`units/index.ts` の `UNITS` に登録する。sim（`sim/`）は描画に依存しない純粋な TS に保つ。手順は `unit-authoring.md`
 
 ---
 _パターンを記録。ファイルツリーの列挙はしない。新規ファイルが既存パターンに従う限りステアリング更新不要_

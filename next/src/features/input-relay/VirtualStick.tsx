@@ -83,7 +83,12 @@ export function VirtualStick({ onLever }: VirtualStickProps) {
       onPointerDown={(e) => {
         if (pointerRef.current !== null) return;
         pointerRef.current = e.pointerId;
-        e.currentTarget.setPointerCapture?.(e.pointerId);
+        // 指が台の外へ出ても追いかける。捕まえられない環境でも操作は続ける
+        try {
+          e.currentTarget.setPointerCapture?.(e.pointerId);
+        } catch {
+          // 何もしない
+        }
         track(e.clientX, e.clientY);
       }}
       onPointerMove={(e) => {

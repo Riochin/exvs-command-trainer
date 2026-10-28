@@ -90,4 +90,43 @@ describe('VirtualStick', () => {
     fireEvent.pointerMove(base, { pointerId: 1, clientX: 100, clientY: 50 });
     expect(onTap.mock.calls).toEqual([['forward'], ['right']]);
   });
+
+  it('台の 4 分の 1 ほど傾けただけで倒したことになる', () => {
+    const { onLever, onTap, base } = setup();
+    // 中心 (50, 50) から上へ 15px（半径比 0.3）
+    fireEvent.pointerDown(base, { pointerId: 1, clientX: 50, clientY: 35 });
+    expect(onLever.mock.calls).toEqual([['forward', true]]);
+    expect(onTap.mock.calls).toEqual([['forward']]);
+  });
+
+  it('倒す境目のあたりで指が震えても、中立には戻らず 2 回弾いた扱いにしない', () => {
+    const { onLever, onTap, base } = setup();
+    fireEvent.pointerDown(base, { pointerId: 1, clientX: 50, clientY: 35 }); // 0.3
+    fireEvent.pointerMove(base, { pointerId: 1, clientX: 50, clientY: 40 }); // 0.2
+    fireEvent.pointerMove(base, { pointerId: 1, clientX: 50, clientY: 37 }); // 0.26
+    expect(onLever.mock.calls).toEqual([['forward', true]]);
+    expect(onTap.mock.calls).toEqual([['forward']]);
+
+    // はっきり戻せば中立になり、もう一度倒せば 2 回目として数える
+    fireEvent.pointerMove(base, { pointerId: 1, clientX: 50, clientY: 46 }); // 0.08
+    fireEvent.pointerMove(base, { pointerId: 1, clientX: 50, clientY: 40 }); // 0.2: まだ倒していない
+    expect(onTap.mock.calls).toEqual([['forward']]);
+    fireEvent.pointerMove(base, { pointerId: 1, clientX: 50, clientY: 35 }); // 0.3
+    expect(onLever.mock.calls).toEqual([
+      ['forward', true],
+      ['forward', false],
+      ['forward', true],
+    ]);
+    expect(onTap.mock.calls).toEqual([['forward'], ['forward']]);
+  });
+
+  it('倒したまま斜めで震えても、上下左右の受け持ちは少し越えただけでは変えない', () => {
+    const { onTap, base } = setup();
+    fireEvent.pointerDown(base, { pointerId: 1, clientX: 65, clientY: 20 }); // (0.3, 0.6): 上
+    fireEvent.pointerMove(base, { pointerId: 1, clientX: 77.5, clientY: 25 }); // (0.55, 0.5): 右がわずかに大きい
+    fireEvent.pointerMove(base, { pointerId: 1, clientX: 65, clientY: 20 });
+    expect(onTap.mock.calls).toEqual([['forward']]);
+    fireEvent.pointerMove(base, { pointerId: 1, clientX: 85, clientY: 30 }); // (0.7, 0.4): はっきり右
+    expect(onTap.mock.calls).toEqual([['forward'], ['right']]);
+  });
 });

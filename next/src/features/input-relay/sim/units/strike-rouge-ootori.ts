@@ -1,123 +1,15 @@
-import { ACTIONS, type ActionDef, type ProjectileSpec } from './actions';
-import type { ActionKind, MechAction } from './types';
+import { ACTIONS, type ActionDef, type ProjectileSpec } from '../actions';
+import type { MechAction } from '../types';
+import { actionMaker, BOOST_STEP } from './helpers';
+import type { ResolveContext, Rejection, UnitDef } from './types';
 
 /**
- * 機体データ。スロット（射撃・格闘・サブ……）とレバーの入れ方から、実際に出す技を決める。
+ * ストライクルージュ（オオトリ装備）。
  *
- * 汎用機はレバーに関係なくスロットごとに 1 つの技を持つ。ストライクルージュ（オオトリ装備）は
- * EXVS2IB wiki の武装・キャンセルルートを元に、レバー入れの技・弾数・SEED 発現・アシストを持つ。
- * 威力やダウン値は扱わず、動き・つながり・弾数だけを再現する。
+ * 出典: EXVS2IB wiki https://w.atwiki.jp/exvs2infiniteboost/pages/117.html
+ * 武装・キャンセルルートを元に、レバー入れの技・弾数・SEED 発現（時限強化）・アシスト・
+ * オオトリ射出（背中の装備を飛ばす）を持つ。
  */
-
-/** レバーの入れ方。前は敵の方向 */
-export type LeverKind = 'N' | 'front' | 'side' | 'back';
-
-export type ResolveContext = {
-  lever: LeverKind;
-  /** BD 中に出したか（BD 格闘の判定） */
-  inBd: boolean;
-  /** 時限強化中か */
-  seed: boolean;
-  /** 背中の装備を射出しているか */
-  packOut: boolean;
-  /** 時限強化をまた使えるようになるまでの残り（秒） */
-  seedCooldown: number;
-  /** 今出している技（格闘の追加入力や派生の判定に使う） */
-  current: ActionDef | null;
-  currentSlot: ActionKind;
-};
-
-/** 出せない理由。HUD に出す */
-export type Rejection = { reject: string };
-
-export type AmmoDef = {
-  /** HUD に出す名前 */
-  label: string;
-  max: number;
-  /** 1 発（empty なら全弾）が戻るまでの秒数 */
-  reload: number;
-  /** each: 1 発ずつ戻る / empty: 撃ち切ってから全弾戻る */
-  mode: 'each' | 'empty';
-  /** 時限強化中のリロード秒数 */
-  seedReload?: number;
-  /** 時限強化を発動したときに全弾戻る */
-  refillOnSeed?: boolean;
-  /** 射出した装備が戻ってくるまでリロードしない */
-  waitsForPack?: boolean;
-};
-
-export type UnitLook = {
-  /** 手足など外装の色 */
-  frame: string;
-  /** 胸の色 */
-  chest: string;
-  /** 腰・足先・肩などの差し色 */
-  accent: string;
-  /** アンテナ・ダクトの色 */
-  trim: string;
-  backpack: 'standard' | 'ootori';
-  meleeWeapon: 'saber' | 'blade';
-};
-
-export type CommandRow = { input: string; name: string; note?: string };
-
-export type UnitDef = {
-  id: string;
-  name: string;
-  pilot: string;
-  cost: number;
-  series: string;
-  description: string;
-  /** ブースト消費の倍率。BD 回数が多い機体ほど小さい */
-  boostScale: number;
-  /** 時限強化中のブースト消費倍率と移動速度の倍率 */
-  seedBoostScale?: number;
-  seedSpeedScale?: number;
-  /** 時限強化の長さと、終わってからまた使えるまでの秒数 */
-  seedDuration?: number;
-  seedCooldown?: number;
-  ammo: Readonly<Record<string, AmmoDef>>;
-  resolve(slot: MechAction, ctx: ResolveContext): ActionDef | Rejection;
-  look: UnitLook;
-  commands: ReadonlyArray<CommandRow>;
-};
-
-export function isRejection(value: ActionDef | Rejection): value is Rejection {
-  return 'reject' in value;
-}
-
-// ---- 汎用機 ----
-
-export const GENERIC_UNIT: UnitDef = {
-  id: 'generic',
-  name: 'ガンダム（汎用）',
-  pilot: '—',
-  cost: 2500,
-  series: '練習用',
-  description: 'BR・ミサイル・太いビーム・サーベルを持つ標準的な機体。弾数の制限なし。',
-  boostScale: 1,
-  ammo: {},
-  resolve: (slot) => ACTIONS[slot],
-  look: {
-    frame: '#eef0f3',
-    chest: '#2546c9',
-    accent: '#d8352c',
-    trim: '#f2c21a',
-    backpack: 'standard',
-    meleeWeapon: 'saber',
-  },
-  commands: [
-    { input: '射撃', name: 'ビームライフル' },
-    { input: '格闘', name: 'サーベル（3 段）' },
-    { input: '射撃＋格闘', name: 'サブ：ミサイル', note: 'BR でキャンセルするとアメキャン' },
-    { input: '射撃＋ジャンプ', name: '特射：太いビーム' },
-    { input: '格闘＋ジャンプ', name: '特格：回転斬り' },
-    { input: '射撃長押し', name: '射CS：チャージビーム' },
-    { input: '格闘長押し', name: '格CS：突進斬り' },
-  ],
-};
-
-// ---- ストライクルージュ（オオトリ装備） ----
 
 const BEAM: ProjectileSpec = { kind: 'beam', speed: 120, radius: 0.18, life: 1.2, homing: 0.6, count: 1, spread: 0 };
 const LAUNCHER: ProjectileSpec = { kind: 'big-beam', speed: 100, radius: 0.55, life: 1.4, homing: 0.4, count: 1, spread: 0 };
@@ -126,11 +18,7 @@ const LASER: ProjectileSpec = { kind: 'laser', speed: 140, radius: 0.5, life: 0.
 const SMALL_MISSILE: ProjectileSpec = { kind: 'small-missile', speed: 60, radius: 0.15, life: 2, homing: 1.4, count: 2, spread: 0.35 };
 const SWORD: ProjectileSpec = { kind: 'sword', speed: 60, radius: 0.5, life: 1.6, homing: 0.3, count: 1, spread: 0 };
 
-const BOOST_STEP = ['bd', 'step'] as const;
-
-function rouge(id: string, label: string, def: Omit<ActionDef, 'id' | 'label'>): ActionDef {
-  return { id: `rouge-${id}`, label, ...def };
-}
+const rouge = actionMaker('rouge');
 
 const R = {
   main: rouge('main', 'BR', {
@@ -396,9 +284,3 @@ export const STRIKE_ROUGE_OOTORI: UnitDef = {
     { input: '格闘長押し', name: 'SEED 発現（20 秒）', note: 'サブ強化・機動力アップ。発現中はミサイル' },
   ],
 };
-
-export const UNITS: ReadonlyArray<UnitDef> = [GENERIC_UNIT, STRIKE_ROUGE_OOTORI];
-
-export function unitById(id: string): UnitDef {
-  return UNITS.find((u) => u.id === id) ?? GENERIC_UNIT;
-}

@@ -47,9 +47,9 @@ export function stickTapDirection(x: number, y: number, deadZone = STICK_DEAD_ZO
 
 /**
  * つまみがいちばん倒れたときに中心から動く距離（つまみの大きさに対する %）。
- * つまみは台の 56% なので、38% 動くとつまみの縁が台の縁の近くまで届く
+ * つまみは台の 64% なので、28% 動くとつまみの縁が台の縁の近くまで届く
  */
-const KNOB_TRAVEL_PCT = 38;
+const KNOB_TRAVEL_PCT = 28;
 
 export type VirtualStickProps = {
   /** レバーを倒した・戻した方向を 1 つずつ通知する */

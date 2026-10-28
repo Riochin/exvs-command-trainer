@@ -485,23 +485,25 @@
 }
 
 /*
- * 右下にタッチ用ボタンを出している間: 武装パネルは左上（HIT の下）へ移し、
- * 2 列に並べて縮める（右下のボタンや左下のスティックまで届かない大きさに収める）
+ * 下にタッチ用ボタンを出している間: ブーストゲージと武装パネルを左上（HIT の下）へ移す。
+ * 武装パネルは 2 列に並べて縮め、左下のスティックまで届かない大きさに収める
  */
-.hud[data-touch-buttons='true'] .weapons {
-  /* zoom は top / left にもかかるので、縮めたあとの位置で HIT の下・左端にそろう値にしている */
-  top: 8.5rem;
+.hud[data-touch-buttons='true'] .boost {
+  top: 4.6rem;
   bottom: auto;
-  left: 1.25rem;
+  left: 0.75rem;
+  justify-items: start;
+  width: min(16rem, 40%);
+  transform: none;
+}
+
+.hud[data-touch-buttons='true'] .weapons {
+  /* zoom は top / left にもかかるので、縮めたあとの位置でブーストゲージの下・左端にそろう値にしている */
+  top: 15rem;
+  bottom: auto;
+  left: 1.5rem;
   right: auto;
   grid-template-columns: repeat(2, auto);
   column-gap: 0.75rem;
-  zoom: 0.55;
-}
-
-/* 縦向きはブーストゲージが左下のスティックにかからない幅にする */
-@media (orientation: portrait) {
-  .hud[data-touch-buttons='true'] .boost {
-    width: min(26rem, 38%);
-  }
+  zoom: 0.5;
 }

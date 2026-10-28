@@ -3,6 +3,13 @@ import { applyInput, applyRawInput, createWorld, FIXED_DT, setLever, stepWorld }
 import { STRIKE_ROUGE_OOTORI } from '@/features/input-relay/sim/units';
 import type { LeverDirection, SimWorld } from '@/features/input-relay/sim/types';
 
+/** 満タンまで溜めた状態にして離す（CS は満タンでだけ出る） */
+function releaseCharge(world: SimWorld, kind: 'shot' | 'melee') {
+  world.mech.charging[kind] = true;
+  world.mech.chargeSince[kind] = world.time - 10;
+  return applyInput(world, kind === 'shot' ? 'shot-charge-end' : 'melee-charge-end');
+}
+
 function rougeWorld() {
   return createWorld({ unitId: STRIKE_ROUGE_OOTORI.id });
 }
@@ -104,7 +111,7 @@ describe('ストライクルージュ（オオトリ装備）', () => {
     for (const setup of [
       (w: SimWorld) => withLever(w, 'back', () => applyInput(w, 'melee')),
       (w: SimWorld) => applyInput(w, 'special-shot'),
-      (w: SimWorld) => applyInput(w, 'shot-charge-end'),
+      (w: SimWorld) => releaseCharge(w, 'shot'),
     ]) {
       const world = rougeWorld();
       applyRawInput(world, { button: 'jump', phase: 'down' });
@@ -136,7 +143,7 @@ describe('ストライクルージュ（オオトリ装備）', () => {
 
   it('射CS のムラサメ 2 機は付いてきて、メインに合わせて撃つ', () => {
     const world = rougeWorld();
-    applyInput(world, 'shot-charge-end');
+    releaseCharge(world, 'shot');
     untilFired(world);
     expect(world.assists.filter((a) => a.kind === 'murasame')).toHaveLength(2);
     run(world, 1);
@@ -146,13 +153,13 @@ describe('ストライクルージュ（オオトリ装備）', () => {
     expect(world.projectiles.length + world.enemy.hitCount - before).toBe(3);
     // 展開中はもう呼べない
     run(world, 0.5);
-    expect(applyInput(world, 'shot-charge-end')).toBe('rejected');
+    expect(releaseCharge(world, 'shot')).toBe('rejected');
   });
 
   it('格CS で SEED 発現。サブが全回復してレールガンも撃ち、メインから特格に、横特格も出せる', () => {
     const world = rougeWorld();
     world.mech.ammo.sub.count = 0;
-    applyInput(world, 'melee-charge-end');
+    releaseCharge(world, 'melee');
     untilFired(world);
     expect(world.mech.seedTime).toBeGreaterThan(0);
     expect(world.mech.ammo.sub.count).toBe(2);
@@ -171,19 +178,19 @@ describe('ストライクルージュ（オオトリ装備）', () => {
 
     // 発現中の格CS は小型ミサイル
     run(world, 1.5);
-    applyInput(world, 'melee-charge-end');
+    releaseCharge(world, 'melee');
     expect(world.mech.move?.id).toBe('rouge-missiles');
   });
 
   it('SEED が切れたら、しばらくは発現できない', () => {
     const world = rougeWorld();
-    applyInput(world, 'melee-charge-end');
+    releaseCharge(world, 'melee');
     run(world, (STRIKE_ROUGE_OOTORI.seedDuration ?? 20) + 1);
     expect(world.mech.seedTime).toBe(0);
-    expect(applyInput(world, 'melee-charge-end')).toBe('rejected');
+    expect(releaseCharge(world, 'melee')).toBe('rejected');
     expect(lastEvent(world).label).toBe('SEED チャージ中');
     run(world, STRIKE_ROUGE_OOTORI.seedCooldown ?? 15);
-    expect(applyInput(world, 'melee-charge-end')).toBe('started');
+    expect(releaseCharge(world, 'melee')).toBe('started');
   });
 
   it('N格は 3 段まで出せて、後ろレバーで後派生する', () => {

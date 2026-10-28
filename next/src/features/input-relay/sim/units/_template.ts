@@ -165,4 +165,10 @@ export const TEMPLATE_UNIT: UnitDef = {
     { input: '特射（射撃＋ジャンプ）', name: 'アシスト呼出', note: 'メインでアメキャン' },
     { input: '格闘', name: 'N格・横格・前格・BD格', note: '追加入力で次の段、後ろで後派生' },
   ],
+  // 画面右下の武装パネル。射撃 CS があればメインの行に charge: 'shot'、格闘 CS は専用の行を作る
+  weapons: [
+    { ammo: 'main', buttons: ['shot'] },
+    { ammo: 'sub', buttons: ['shot', 'melee'] },
+    { ammo: 'assist', buttons: ['shot', 'jump'] },
+  ],
 };

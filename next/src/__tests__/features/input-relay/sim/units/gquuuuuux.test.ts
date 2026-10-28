@@ -3,6 +3,13 @@ import { applyInput, applyRawInput, createWorld, FIXED_DT, setLever, stepWorld }
 import { GQUUUUUUX } from '@/features/input-relay/sim/units';
 import type { LeverDirection, SimWorld } from '@/features/input-relay/sim/types';
 
+/** 満タンまで溜めた状態にして離す（CS は満タンでだけ出る） */
+function releaseCharge(world: SimWorld, kind: 'shot' | 'melee') {
+  world.mech.charging[kind] = true;
+  world.mech.chargeSince[kind] = world.time - 10;
+  return applyInput(world, kind === 'shot' ? 'shot-charge-end' : 'melee-charge-end');
+}
+
 function gqxWorld() {
   return createWorld({ unitId: GQUUUUUUX.id });
 }
@@ -144,7 +151,7 @@ describe('GQuuuuuuX', () => {
   });
 
   it('エスビット展開中は、特射・射CS をサブでキャンセルして落ちる（アサキャン）', () => {
-    for (const setup of [(w: SimWorld) => applyInput(w, 'special-shot'), (w: SimWorld) => applyInput(w, 'shot-charge-end')]) {
+    for (const setup of [(w: SimWorld) => applyInput(w, 'special-shot'), (w: SimWorld) => releaseCharge(w, 'shot')]) {
       const world = gqxWorld();
       deployEsbit(world);
       jumpUp(world);
@@ -233,7 +240,7 @@ describe('GQuuuuuuX', () => {
     function omegaWorld() {
       const world = gqxWorld();
       world.enemy.moves = false;
-      applyInput(world, 'melee-charge-end');
+      releaseCharge(world, 'melee');
       untilFired(world);
       run(world, 0.6);
       return world;
@@ -242,23 +249,23 @@ describe('GQuuuuuuX', () => {
     it('17 秒続き、終わってから 14 秒は使えない', () => {
       const world = omegaWorld();
       expect(world.mech.seedTime).toBeGreaterThan(0);
-      expect(applyInput(world, 'melee-charge-end')).toBe('rejected');
+      expect(releaseCharge(world, 'melee')).toBe('rejected');
       expect(lastEvent(world).label).toBe('オメガ・サイコミュ解放中');
       run(world, 17);
       expect(world.mech.seedTime).toBe(0);
-      expect(applyInput(world, 'melee-charge-end')).toBe('rejected');
+      expect(releaseCharge(world, 'melee')).toBe('rejected');
       expect(lastEvent(world).label).toBe('オメガ・サイコミュ チャージ中');
       run(world, 14);
-      expect(applyInput(world, 'melee-charge-end')).toBe('started');
+      expect(releaseCharge(world, 'melee')).toBe('started');
     });
 
     it('射CS は N で最大出力、横で移動連射になる', () => {
       const n = omegaWorld();
-      applyInput(n, 'shot-charge-end');
+      releaseCharge(n, 'shot');
       expect(n.mech.move?.id).toBe('gqx-cs-max');
 
       const side = omegaWorld();
-      withLever(side, 'right', () => applyInput(side, 'shot-charge-end'));
+      withLever(side, 'right', () => releaseCharge(side, 'shot'));
       expect(side.mech.move?.id).toBe('gqx-cs-roll');
       run(side, 0.6);
       expect(Math.abs(side.mech.pos.x)).toBeGreaterThan(2);

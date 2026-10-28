@@ -124,6 +124,8 @@ export type MechState = {
   /** 今の行動で弾や攻撃判定をもう出したか */
   actionFired: boolean;
   charging: { shot: boolean; melee: boolean };
+  /** チャージを始めた時刻（sim の秒）。溜めていなければ null。満タンまでの時間は機体の chargeTime */
+  chargeSince: { shot: number | null; melee: number | null };
   /** 格闘の何段目か（1〜3）。格闘以外では 0 */
   meleeStage: number;
   /** キャンセル受付前に来た入力。受付が始まったときにまだ新しければ出す */

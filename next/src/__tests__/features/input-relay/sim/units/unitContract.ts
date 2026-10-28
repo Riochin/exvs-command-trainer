@@ -73,6 +73,15 @@ export function unitProblems(unit: UnitDef): string[] {
   if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(unit.id)) problems.push(`id は kebab-case にする: ${unit.id}`);
   if (!(unit.boostScale > 0)) problems.push('boostScale は 0 より大きくする');
   if (unit.commands.length === 0) problems.push('技表 commands が空');
+  // 右下の武装パネル：弾はどれも 1 行ずつ出し、知らない弾のキーを書かない
+  const panelAmmo = unit.weapons.flatMap((w) => (w.ammo ? [w.ammo] : []));
+  for (const key of panelAmmo) if (!(key in unit.ammo)) problems.push(`weapons に知らない弾がある: ${key}`);
+  for (const key of Object.keys(unit.ammo))
+    if (!panelAmmo.includes(key)) problems.push(`弾 ${key} の行が weapons にない`);
+  for (const w of unit.weapons) {
+    if (w.buttons.length === 0) problems.push('weapons の行に押すボタンがない');
+    if (!w.ammo && !w.charge) problems.push('弾もチャージもない行は weapons に入れない');
+  }
   for (const [key, color] of Object.entries(unit.look)) {
     if ((key === 'frame' || key === 'chest' || key === 'accent' || key === 'trim') && !/^#[0-9a-f]{6}$/i.test(color))
       problems.push(`look.${key} は #rrggbb で書く: ${color}`);

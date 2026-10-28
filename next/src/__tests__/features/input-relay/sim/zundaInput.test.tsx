@@ -5,76 +5,33 @@
  * ここではキーボードの keydown / keyup を送り、生の押下・解放と解釈済みの入力が sim に届く順序と遅れ
  * （射撃は 50ms の遅延、BD は 2 回目の押下から少し遅れて届く）をそのまま再現する。
  */
-import { render, fireEvent, act } from '@testing-library/react';
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { ArcadeController, type ArcadePhysicalButton } from '@/features/arcade-controller/ArcadeController';
-import { advanceWorld, applyInput, applyRawInput, createWorld, setLever } from '@/features/input-relay/sim/step';
+import { describe, it, expect, beforeEach, afterEach, vi, type TestContext } from 'vitest';
 import type { LeverDirection, SimWorld } from '@/features/input-relay/sim/types';
+import { createKeyboardHarness, type KeyboardHarness } from './keyboardHarness';
 
-const KEYS: Readonly<Record<string, ArcadePhysicalButton>> = { j: 'shot', o: 'melee', '[': 'jump' };
-const STEP_MS = 4;
-
+let h: KeyboardHarness;
 let world: SimWorld;
-let carry = 0;
 
-function setup() {
-  world = createWorld();
-  render(
-    <ArcadeController
-      keyboardKeys={KEYS}
-      onButtonPress={(button) => applyInput(world, button)}
-      onRawInput={(input) => applyRawInput(world, input)}
-    />,
-  );
+/** 失敗したら、入力と状態の時系列を出す */
+function setup({ onTestFailed }: TestContext) {
+  vi.useFakeTimers();
+  h = createKeyboardHarness();
+  world = h.world;
+  onTestFailed(() => {
+    console.log(h.trace());
+  });
 }
 
-/** タイマー（アケコンの判定）と sim を同じ時間だけ進める */
-function wait(ms: number) {
-  for (let t = 0; t < ms; t += STEP_MS) {
-    act(() => {
-      vi.advanceTimersByTime(STEP_MS);
-    });
-    carry = advanceWorld(world, STEP_MS / 1000, carry);
-  }
-}
-
-function down(key: string) {
-  fireEvent.keyDown(window, { key });
-}
-
-function up(key: string) {
-  fireEvent.keyUp(window, { key });
-}
-
-function tap(key: string, holdMs = 40) {
-  down(key);
-  wait(holdMs);
-  up(key);
-}
-
-/** BD: ジャンプを 2 回。2 回目は holdMs だけ押し続ける */
-function bd(holdMs = 250) {
-  tap('[', 40);
-  wait(50);
-  down('[');
-  wait(holdMs);
-  up('[');
-}
-
-function lever(direction: LeverDirection, pressed: boolean) {
-  setLever(world, direction, pressed);
-}
-
-function labels() {
-  return world.events.map((e) => e.label);
-}
+const wait = (ms: number) => h.wait(ms);
+const down = (key: string) => h.down(key);
+const up = (key: string) => h.up(key);
+const tap = (key: string, holdMs?: number) => h.tap(key, holdMs);
+const bd = (holdMs?: number) => h.bd(holdMs);
+const lever = (direction: LeverDirection, pressed: boolean) => h.lever(direction, pressed);
+const labels = () => h.labels();
 
 describe('キーボードのジャンプボタン', () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-    carry = 0;
-    setup();
-  });
+  beforeEach(setup);
 
   afterEach(() => {
     vi.useRealTimers();
@@ -110,11 +67,7 @@ describe('キーボードのジャンプボタン', () => {
 });
 
 describe('キーボードで打つズンダ', () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-    carry = 0;
-    setup();
-  });
+  beforeEach(setup);
 
   afterEach(() => {
     vi.useRealTimers();

@@ -20,6 +20,7 @@ import {
   stepWorld,
 } from '@/features/input-relay/sim/step';
 import type { LeverDirection, SimWorld } from '@/features/input-relay/sim/types';
+import { runUntil } from './keyboardHarness';
 
 function run(world: SimWorld, seconds: number) {
   for (let t = 0; t < seconds; t += FIXED_DT) stepWorld(world, FIXED_DT);
@@ -165,7 +166,7 @@ describe('sim', () => {
     it('着地硬直中は行動を受け付けない', () => {
       const world = createWorld();
       holdJump(world, 0.1);
-      while (!world.mech.grounded || world.mech.landingLag === 0) stepWorld(world, FIXED_DT);
+      runUntil(world, (w) => w.mech.grounded && w.mech.landingLag > 0);
       expect(world.mech.landingLag).toBeLessThanOrEqual(LANDING_LAG_S);
       expect(applyInput(world, 'shot')).toBe('rejected');
     });
@@ -386,14 +387,14 @@ describe('sim', () => {
       startBd(world);
       run(world, 0.9);
       applyInput(world, 'melee');
-      while (!world.mech.actionFired) stepWorld(world, FIXED_DT);
+      runUntil(world, (w) => w.mech.actionFired);
       expect(world.mech.meleeStage).toBe(1);
 
       for (const stage of [2, 3]) {
         expect(applyInput(world, 'melee')).toBe('canceled');
         expect(world.mech.meleeStage).toBe(stage);
         expect(lastEvent(world).label).toBe(`格闘 ${stage}段目`);
-        while (!world.mech.actionFired) stepWorld(world, FIXED_DT);
+        runUntil(world, (w) => w.mech.actionFired);
       }
       expect(applyInput(world, 'melee')).toBe('rejected');
       expect(world.enemy.hitCount).toBe(3);
@@ -745,7 +746,7 @@ describe('EXVS のテクニック', () => {
       const world = createWorld();
       holdJump(world, 0.2);
       for (let i = 1; i < boosts; i++) holdJump(world, 0.05);
-      while (!world.mech.grounded) stepWorld(world, FIXED_DT);
+      runUntil(world, (w) => w.mech.grounded);
       return world.mech.landingLag;
     }
     expect(landingLagAfter(2)).toBeCloseTo(LANDING_LAG_S, 1);

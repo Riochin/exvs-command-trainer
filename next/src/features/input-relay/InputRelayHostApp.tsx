@@ -155,8 +155,11 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
   const closeSelect = useCallback(() => setSelecting(false), []);
   // 開発中は、ブラウザのコンソールから sim の状態を読めるようにする（window.__inputRelay）
   useEffect(() => exposeSimForDebug(() => worldRef.current), []);
-  // キーボードだけで練習するときは接続案内を閉じられる
-  const [guideHidden, setGuideHidden] = useState(false);
+  // キーボードだけで練習するときは接続案内を閉じられる。
+  // スマホで開いたときはその端末で直接操作するので、最初から閉じておく（設定から開ける）。
+  // 案内は機体選択を閉じた後に出るので、初回描画（指かどうか未判定）で一瞬出ることはない
+  const [guideOverride, setGuideHidden] = useState<boolean | null>(null);
+  const guideHidden = guideOverride ?? coarsePointer;
   // 3D と HUD 以外（接続・機体・遅延・ログ・技表など）は設定画面にまとめる
   const [settingsOpen, setSettingsOpen] = useState(false);
   useEffect(() => {

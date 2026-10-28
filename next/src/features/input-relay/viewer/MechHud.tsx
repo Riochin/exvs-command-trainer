@@ -141,11 +141,14 @@ export type MechHudProps = {
   worldRef: RefObject<SimWorld>;
   /** 左下のレバー表示（矢印）を出すか。タッチのスティックを出している間は隠す */
   showLever?: boolean;
-  /** 右下にタッチ用ボタンが出ているか。出ている間は残弾の札を左上に詰め、ブーストゲージを細くする */
-  touchButtons?: boolean;
+  /**
+   * タッチ操作用の小さな HUD にするか。ブーストゲージは左上、武装パネルは右上に縦に並べて小さく出し、
+   * 押し方の表示と機体名は省く（画面を指とボタンに空ける）
+   */
+  compact?: boolean;
 };
 
-export function MechHud({ worldRef, showLever = true, touchButtons = false }: MechHudProps) {
+export function MechHud({ worldRef, showLever = true, compact = false }: MechHudProps) {
   const [hud, setHud] = useState<HudSnapshot | null>(null);
 
   useEffect(() => {
@@ -158,7 +161,7 @@ export function MechHud({ worldRef, showLever = true, touchButtons = false }: Me
   const status = hud.overheat ? 'OVERHEAT' : hud.landing ? 'LANDING' : hud.grounded ? '' : 'AIR';
 
   return (
-    <div className={styles.hud} data-testid="mech-hud" data-touch-buttons={touchButtons}>
+    <div className={styles.hud} data-testid="mech-hud" data-compact={compact}>
       <div className={styles.topLeft}>
         <span className={styles.caption}>HIT</span>
         <span className={styles.hits}>{hud.hitCount}</span>

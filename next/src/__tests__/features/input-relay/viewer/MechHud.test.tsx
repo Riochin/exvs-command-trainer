@@ -82,16 +82,16 @@ describe('MechHud のタッチ操作向けの出し分け', () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
 
-  function renderHud(props: { showLever?: boolean; touchButtons?: boolean }) {
+  function renderHud(props: { showLever?: boolean; compact?: boolean }) {
     render(<MechHud worldRef={{ current: createWorld() }} {...props} />);
     act(() => vi.advanceTimersByTime(60));
     return screen.getByTestId('mech-hud');
   }
 
-  it('ふだんはレバー表示を出し、タッチ用ボタンの印は付けない', () => {
+  it('ふだんはレバー表示を出し、小さな HUD にはしない', () => {
     const hud = renderHud({});
     expect(screen.queryByLabelText('レバー')).not.toBeNull();
-    expect(hud.getAttribute('data-touch-buttons')).toBe('false');
+    expect(hud.getAttribute('data-compact')).toBe('false');
   });
 
   it('タッチのスティックを出している間はレバー表示を消す', () => {
@@ -99,8 +99,9 @@ describe('MechHud のタッチ操作向けの出し分け', () => {
     expect(screen.queryByLabelText('レバー')).toBeNull();
   });
 
-  it('タッチ用ボタンを出している間は印を付ける（武装パネルをよける）', () => {
-    const hud = renderHud({ touchButtons: true });
-    expect(hud.getAttribute('data-touch-buttons')).toBe('true');
+  it('タッチ操作中は小さな HUD の印を付ける（残弾とブーストは出したまま）', () => {
+    const hud = renderHud({ compact: true });
+    expect(hud.getAttribute('data-compact')).toBe('true');
+    expect(screen.getByText(/BOOST/)).not.toBeNull();
   });
 });

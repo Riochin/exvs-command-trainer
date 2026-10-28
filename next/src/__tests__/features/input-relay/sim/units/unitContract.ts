@@ -1,4 +1,4 @@
-import type { ActionDef } from '@/features/input-relay/sim/actions';
+import type { ActionDef, AssistKind } from '@/features/input-relay/sim/actions';
 import type { ActionKind, MechAction } from '@/features/input-relay/sim/types';
 import { isRejection, type LeverKind, type ResolveContext, type UnitDef } from '@/features/input-relay/sim/units';
 
@@ -21,6 +21,11 @@ export const SLOTS: ReadonlyArray<MechAction> = [
 ];
 const LEVERS: ReadonlyArray<LeverKind> = ['N', 'front', 'side', 'back'];
 const FLAGS = [false, true] as const;
+/** 出ているアシストの組み合わせ。何も出ていないときと、1 種類ずつ出ているとき */
+const ASSIST_SETS: ReadonlyArray<ReadonlyArray<AssistKind>> = [
+  [],
+  ...(['murasame', 'freedom-shot', 'freedom-melee', 'ootori', 'esbit', 'gfred-shot', 'gfred-melee'] as const).map((k) => [k]),
+];
 
 /** resolve に渡しうる状況をひと通り作る（今出している技ごと） */
 function contexts(current: ActionDef | null, currentSlot: ActionKind): ResolveContext[] {
@@ -30,7 +35,8 @@ function contexts(current: ActionDef | null, currentSlot: ActionKind): ResolveCo
       for (const seed of FLAGS)
         for (const packOut of FLAGS)
           for (const seedCooldown of [0, 5])
-            list.push({ lever, inBd, seed, packOut, seedCooldown, current, currentSlot });
+            for (const assists of ASSIST_SETS)
+              list.push({ lever, inBd, seed, packOut, seedCooldown, assists, current, currentSlot });
   return list;
 }
 

@@ -21,6 +21,7 @@ function resolve(slot: MechAction, ctx: Partial<ResolveContext> = {}): ActionDef
     seed: false,
     packOut: false,
     seedCooldown: 0,
+    assists: [],
     current: null,
     currentSlot: 'idle',
     ...ctx,
@@ -62,7 +63,7 @@ describe(UNIT.name, () => {
   });
 
   it('持っていない武装は理由を返す', () => {
-    expect(UNIT.resolve('melee-cs', { lever: 'N', inBd: false, seed: false, packOut: false, seedCooldown: 0, current: null, currentSlot: 'idle' })).toEqual({
+    expect(UNIT.resolve('melee-cs', { lever: 'N', inBd: false, seed: false, packOut: false, seedCooldown: 0, assists: [], current: null, currentSlot: 'idle' })).toEqual({
       reject: '格CS なし',
     });
   });

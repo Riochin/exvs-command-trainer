@@ -67,7 +67,9 @@ export type ProjectileKind =
   | 'laser'
   | 'small-missile'
   | 'sword'
-  | 'assist-beam';
+  | 'assist-beam'
+  | 'bit'
+  | 'heat-hawk';
 
 /** 呼び出したアシストや射出物。機体の周りに付いてくるものと、敵へ向かうものがある */
 export type Assist = {

@@ -61,9 +61,19 @@ const ASSIST_LIFE: Readonly<Record<AssistKind, number>> = {
   'freedom-shot': 1.3,
   'freedom-melee': 2.2,
   ootori: 3,
+  esbit: 15,
+  'gfred-shot': 1.4,
+  'gfred-melee': 2.2,
 };
 const ASSIST_BEAM: ProjectileSpec = { kind: 'assist-beam', speed: 110, radius: 0.18, life: 1.2, homing: 0.6, count: 1, spread: 0 };
+/** メイン射撃などに連動して撃つ追従アシストと、その弾 */
+const LINKED_ASSIST_SHOTS: Partial<Readonly<Record<AssistKind, ProjectileSpec>>> = {
+  murasame: ASSIST_BEAM,
+  esbit: { kind: 'assist-beam', speed: 100, radius: 0.18, life: 1.2, homing: 0.5, count: 1, spread: 0 },
+};
 const FREEDOM_BEAM: ProjectileSpec = { kind: 'big-beam', speed: 110, radius: 0.5, life: 1.2, homing: 0.7, count: 2, spread: 0.08 };
+const GFRED_BEAM: ProjectileSpec = { kind: 'beam', speed: 120, radius: 0.18, life: 1.2, homing: 0.6, count: 1, spread: 0 };
+const GFRED_BIG_BEAM: ProjectileSpec = { kind: 'big-beam', speed: 120, radius: 0.4, life: 1.2, homing: 0.6, count: 1, spread: 0 };
 const OOTORI_SHOT: ProjectileSpec = { kind: 'rail', speed: 150, radius: 0.25, life: 1, homing: 0.5, count: 1, spread: 0 };
 
 /**
@@ -286,6 +296,7 @@ function resolveMove(world: SimWorld, slot: MechAction): ActionDef | { reject: s
     seed: seedActive(mech),
     packOut: mech.packOut,
     seedCooldown: mech.seedCooldown,
+    assists: [...new Set(world.assists.map((a) => a.kind))],
     current: mech.move,
     currentSlot: mech.action,
   });
@@ -476,10 +487,16 @@ function startAction(world: SimWorld, kind: MechAction, def: ActionDef, canceled
   }
 
   if (def.move === 'roll') {
-    // 横へ転がる。レバーの左右、入れていなければ右
+    // 横はレバーの左右、入れていなければ右。前・後は敵へ向かう・離れる
     const { dx, dz } = towardEnemy(world);
+    const dir = def.moveDir ?? 'side';
     const sign = sideSign(mech.leverHeld) || 1;
-    mech.stepDir = { x: -dz * sign, z: dx * sign };
+    mech.stepDir = dir === 'side' ? { x: -dz * sign, z: dx * sign } : dir === 'front' ? { x: dx, z: dz } : { x: -dx, z: -dz };
+  }
+  if (def.fallOnCancel && kind !== 'shot' && canceled && previousMove?.fallCancel) {
+    // 足の止まる行動を追従アシストの射撃などでキャンセルすると、メインと同じく落ち始める
+    mech.vel.y = Math.min(mech.vel.y, 0);
+    technique = 'アサキャン';
   }
   if (def.riseSpeed !== undefined) {
     mech.vel.y = def.riseSpeed;
@@ -651,20 +668,22 @@ function enemyCenter(world: SimWorld): Vec3 {
 /** 技の弾を 1 回分撃つ。メイン連動の追従アシストもここで撃つ */
 function fireMove(world: SimWorld, def: ActionDef): void {
   const specs = def.projectiles ?? (def.projectile ? [def.projectile] : []);
-  if (specs.length === 0) return;
   const { mech } = world;
-  const muzzle: Vec3 = { x: mech.pos.x, y: mech.pos.y + 1.8, z: mech.pos.z };
-  spawnEffect(world, 'muzzle', {
-    x: muzzle.x + Math.sin(mech.lockYaw) * 1.6,
-    y: muzzle.y - 0.6,
-    z: muzzle.z + Math.cos(mech.lockYaw) * 1.6,
-  });
   const target = enemyCenter(world);
-  for (const spec of specs) shootSpec(world, muzzle, spec, 'mech', target);
+  if (specs.length > 0) {
+    const muzzle: Vec3 = { x: mech.pos.x, y: mech.pos.y + 1.8, z: mech.pos.z };
+    spawnEffect(world, 'muzzle', {
+      x: muzzle.x + Math.sin(mech.lockYaw) * 1.6,
+      y: muzzle.y - 0.6,
+      z: muzzle.z + Math.cos(mech.lockYaw) * 1.6,
+    });
+    for (const spec of specs) shootSpec(world, muzzle, spec, 'mech', target);
+  }
   if (def.linkAssists) {
     for (const assist of world.assists) {
-      if (assist.kind !== 'murasame') continue;
-      shootSpec(world, { ...assist.pos }, ASSIST_BEAM, 'mech', target);
+      const spec = LINKED_ASSIST_SHOTS[assist.kind];
+      if (!spec) continue;
+      shootSpec(world, { ...assist.pos }, spec, 'mech', target);
       assist.shots += 1;
     }
   }
@@ -684,6 +703,12 @@ function spawnAssist(world: SimWorld, kind: AssistKind): void {
       shots: 0,
     });
   };
+  if (kind === 'esbit') {
+    // 2 基を左右に展開する。撃つのはメイン連動とサブの再入力のとき
+    make(-1);
+    make(1);
+    return;
+  }
   if (kind === 'murasame') {
     make(-1);
     make(1);
@@ -694,7 +719,7 @@ function spawnAssist(world: SimWorld, kind: AssistKind): void {
     return;
   }
   if (kind === 'ootori') mech.packOut = true;
-  make(kind === 'freedom-shot' ? -1 : 1);
+  make(kind === 'freedom-shot' || kind === 'gfred-shot' ? -1 : 1);
 }
 
 function stepAssists(world: SimWorld, dt: number): void {
@@ -719,6 +744,35 @@ function stepAssists(world: SimWorld, dt: number): void {
         a.yaw = mech.lockYaw;
         break;
       }
+      case 'esbit': {
+        // 機体の左右すぐそばに浮かぶ
+        const goal = {
+          x: mech.pos.x + right.x * 1.8 * a.side,
+          y: mech.pos.y + 2.6,
+          z: mech.pos.z + right.z * 1.8 * a.side,
+        };
+        const k = Math.min(1, 10 * dt);
+        a.pos.x += (goal.x - a.pos.x) * k;
+        a.pos.y += (goal.y - a.pos.y) * k;
+        a.pos.z += (goal.z - a.pos.z) * k;
+        a.yaw = mech.lockYaw;
+        break;
+      }
+      case 'gfred-shot': {
+        // 機体の横に現れて、ライフルを片手で 2 射 → 両手で 1 射
+        const goal = { x: mech.pos.x + right.x * 4 * a.side, y: mech.pos.y + 2, z: mech.pos.z + right.z * 4 * a.side };
+        const k = Math.min(1, 10 * dt);
+        a.pos.x += (goal.x - a.pos.x) * k;
+        a.pos.y += (goal.y - a.pos.y) * k;
+        a.pos.z += (goal.z - a.pos.z) * k;
+        a.yaw = mech.lockYaw;
+        const fireTimes = [0.3, 0.5, 0.9];
+        if (a.shots < fireTimes.length && a.age >= fireTimes[a.shots]) {
+          shootSpec(world, a.pos, a.shots < 2 ? GFRED_BEAM : GFRED_BIG_BEAM, 'mech', target);
+          a.shots += 1;
+        }
+        break;
+      }
       case 'freedom-shot': {
         // 機体の横に現れて、バラエーナを 2 連射する
         const goal = { x: mech.pos.x + right.x * 4 * a.side, y: mech.pos.y + 3, z: mech.pos.z + right.z * 4 * a.side };
@@ -734,7 +788,8 @@ function stepAssists(world: SimWorld, dt: number): void {
         }
         break;
       }
-      case 'freedom-melee': {
+      case 'freedom-melee':
+      case 'gfred-melee': {
         // 敵へ突っ込んで 3 回斬り、斬り抜ける
         const dx = target.x - a.pos.x;
         const dy = target.y - a.pos.y;
@@ -930,8 +985,9 @@ function onFirstFire(world: SimWorld, def: ActionDef): void {
       y: mech.pos.y + 1.8,
       z: mech.pos.z + Math.cos(mech.lockYaw) * 1.5,
     });
-    if (towardEnemy(world).distance <= MELEE_HIT_RANGE) hitEnemy(world);
+    if (towardEnemy(world).distance <= (def.reach ?? MELEE_HIT_RANGE)) hitEnemy(world);
   }
+  if (def.dismissAssist) world.assists = world.assists.filter((a) => a.kind !== def.dismissAssist);
   if (def.assist) spawnAssist(world, def.assist);
   if (def.buff === 'seed') {
     const unit = unitOf(world);
@@ -950,6 +1006,8 @@ function stepAmmo(world: SimWorld, dt: number): void {
     const ammo = mech.ammo[key];
     if (!ammo) continue;
     if (def.waitsForPack && mech.packOut) continue;
+    const waitsFor = def.waitsForAssists;
+    if (waitsFor && world.assists.some((a) => waitsFor.includes(a.kind))) continue;
     const reload = seedActive(mech) ? (def.seedReload ?? def.reload) : def.reload;
     if (def.mode === 'each' ? ammo.count < def.max : ammo.count <= 0) {
       ammo.timer += dt;

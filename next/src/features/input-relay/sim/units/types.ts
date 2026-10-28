@@ -1,4 +1,4 @@
-import type { ActionDef } from '../actions';
+import type { ActionDef, AssistKind } from '../actions';
 import type { ActionKind, MechAction } from '../types';
 
 /**
@@ -21,6 +21,8 @@ export type ResolveContext = {
   packOut: boolean;
   /** 時限強化をまた使えるようになるまでの残り（秒） */
   seedCooldown: number;
+  /** 出ているアシストの種類（追従アシストの展開中かどうかなど） */
+  assists: ReadonlyArray<AssistKind>;
   /** 今出している技（格闘の追加入力や派生の判定に使う） */
   current: ActionDef | null;
   currentSlot: ActionKind;
@@ -43,6 +45,8 @@ export type AmmoDef = {
   refillOnSeed?: boolean;
   /** 射出した装備が戻ってくるまでリロードしない */
   waitsForPack?: boolean;
+  /** このアシストが出ているあいだはリロードしない（消えてからリロードを始める） */
+  waitsForAssists?: ReadonlyArray<AssistKind>;
 };
 
 /**

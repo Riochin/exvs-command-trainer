@@ -484,17 +484,21 @@
   bottom: 1rem;
 }
 
-/* ボタンは練習画面と同じ大きさで横に広いので、中央下のブーストゲージより上に置く */
+/*
+ * ボタンは練習画面と同じ大きさを保ったまま、画面の下へ沈める（下側が切れて半円くらいになってよい）。
+ * 3D の画面をなるべく隠さないため。ブーストゲージはこのあいだ左上に移る
+ */
 .touchButtons {
   position: absolute;
   right: max(0.25rem, env(safe-area-inset-right));
-  bottom: 3.5rem;
+  /* いちばん低い射撃ボタンが半分ほど見える深さ */
+  bottom: calc(min(42vh, 165px) * -0.53);
 }
 
-/* 縦向きはボタンの列が左下のスティックの上まで届くので、スティックより上に上げる */
+/* 縦向きはボタンの列が左下のスティックの上まで届くので、スティックより上に置く */
 @media (orientation: portrait) {
   .touchButtons {
-    bottom: 7.5rem;
+    bottom: 8rem;
   }
 }
 

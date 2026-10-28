@@ -116,6 +116,11 @@
 .touchController .touchSeat .touchButton {
   width: var(--btn-size);
   height: var(--btn-size);
+  /* 画面の下に沈めて下側が切れても読めるよう、文字はボタンの上寄りに置く */
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: calc(var(--btn-size) * 0.18) 0 0;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.1);
   border: 2px solid rgba(255, 255, 255, 0.45);

@@ -17,6 +17,7 @@ import {
   FIXED_DT,
   setLever,
   stepWorld,
+  tapLever as countLeverTap,
 } from '@/features/input-relay/sim/step';
 import type { LeverDirection, SimWorld } from '@/features/input-relay/sim/types';
 import { chargeTimeOf, DEFAULT_CHARGE_TIME, GENERIC_UNIT } from '@/features/input-relay/sim/units';
@@ -228,6 +229,23 @@ describe('sim', () => {
       tapLever(mixed, 'left');
       expect(tapLever(mixed, 'right')).toBeNull();
       expect(mixed.mech.action).toBe('idle');
+    });
+
+    it('倒した回数を数えない倒し方（タッチのスティック）は、別に数えた回数でステップする', () => {
+      const world = createWorld();
+      // 斜め右上に 2 回倒しても、倒した回数としては数えない
+      for (let i = 0; i < 2; i += 1) {
+        setLever(world, 'forward', true, { countTap: false });
+        setLever(world, 'right', true, { countTap: false });
+        setLever(world, 'forward', false);
+        setLever(world, 'right', false);
+      }
+      expect(world.mech.action).toBe('idle');
+      // 上下左右の 1 方向として数えた 2 回でステップする
+      expect(countLeverTap(world, 'forward')).toBeNull();
+      run(world, 0.1);
+      expect(countLeverTap(world, 'forward')).toBe('started');
+      expect(world.mech.action).toBe('step');
     });
   });
 

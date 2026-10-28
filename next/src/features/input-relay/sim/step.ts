@@ -620,8 +620,15 @@ export function applyRawInput(world: SimWorld, input: ArcadeRawInput): InputResu
 
 /**
  * レバー（PC では十字キー）を倒す・戻す。同じ方向に素早く 2 回倒すとステップになる。
+ * countTap を false にすると、倒した回数（ステップ判定）は数えない。タッチのスティックは
+ * 斜めでも上下左右のどれか 1 方向として tapLever で別に数えるので、こちらでは数えない
  */
-export function setLever(world: SimWorld, direction: LeverDirection, pressed: boolean): InputResult | null {
+export function setLever(
+  world: SimWorld,
+  direction: LeverDirection,
+  pressed: boolean,
+  { countTap = true }: { countTap?: boolean } = {},
+): InputResult | null {
   const mech = world.mech;
   if (!pressed) {
     mech.leverHeld = mech.leverHeld.filter((d) => d !== direction);
@@ -639,6 +646,15 @@ export function setLever(world: SimWorld, direction: LeverDirection, pressed: bo
     return null;
   }
 
+  if (!countTap) return null;
+  return tapLever(world, direction);
+}
+
+/**
+ * レバーを 1 回倒したことを数える。同じ方向に STEP_TAP_WINDOW_S 以内で 2 回続けばステップを出す。
+ */
+export function tapLever(world: SimWorld, direction: LeverDirection): InputResult | null {
+  const mech = world.mech;
   const tap = mech.lastLeverTap;
   if (tap !== null && tap.direction === direction && world.time - tap.at <= STEP_TAP_WINDOW_S) {
     mech.lastLeverTap = null;

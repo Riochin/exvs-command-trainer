@@ -17,7 +17,7 @@ import type { ButtonType } from '@/types';
 import { inputLabel, phaseLabel } from './inputLabels';
 import { summarize, type LatencySummary } from './latencyStats';
 import { useRelayHost, type RelayLogEntry } from './useRelayHost';
-import { applyInput, applyRawInput, createWorld, ENEMY_FIRE_INTERVAL_S, setLever } from './sim/step';
+import { applyInput, applyRawInput, createWorld, ENEMY_FIRE_INTERVAL_S, setLever, tapLever } from './sim/step';
 import type { LeverDirection, SimWorld } from './sim/types';
 import type { RelayConnectionState, RelayInputMessage } from './types';
 import { GENERIC_UNIT, unitById } from './sim/units';
@@ -130,8 +130,12 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
   const [touchButtons, setTouchButtons] = useState(true);
   const showStick = touchControls && touchLever;
   const showTouchButtons = touchControls && touchButtons;
+  // ステップ判定は、スティックが上下左右の 1 方向にまとめて別に数える（斜めにぶれても同じ方向として 2 回になる）
   const handleStickLever = useCallback((direction: LeverDirection, pressed: boolean) => {
-    setLever(worldRef.current, direction, pressed);
+    setLever(worldRef.current, direction, pressed, { countTap: false });
+  }, []);
+  const handleStickTap = useCallback((direction: LeverDirection) => {
+    tapLever(worldRef.current, direction);
   }, []);
   const [unitId, setUnitId] = useState(GENERIC_UNIT.id);
   // 開いたときは機体選択から始める
@@ -240,7 +244,7 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
         {/* タッチ操作: スティックは左下、ボタンは右下に半透明で重ねる（左右の親指で持つ配置） */}
         {showStick && (
           <div className={styles.touchStick} data-testid="touch-stick">
-            <VirtualStick onLever={handleStickLever} />
+            <VirtualStick onLever={handleStickLever} onTap={handleStickTap} />
           </div>
         )}
         {showTouchButtons && (

@@ -10,6 +10,8 @@ import type { MechAction, MechState } from './types';
  * - BD・ジャンプ中はいつでも何でも出せる
  * - 射撃から射撃、射撃から格闘は直接つながらない（ズンダは BD かステップを挟む）
  * - ステップは射撃・格闘のどちらからでも出せる（ステキャン）。ステップ中は何でも出せる
+ * - 盾は BD・ジャンプ・ステップ中ならすぐ出せる。ほかの技からはキャンセルできず、硬直が切れたら出る（先行入力。step.ts）
+ * - 盾からは BD・ジャンプ（盾アメキャン）・格闘（盾前格）に移れる
  */
 export type CancelRule = {
   into: ReadonlyArray<MechAction>;
@@ -30,6 +32,7 @@ const EVERYTHING: ReadonlyArray<MechAction> = [
   'special-melee',
   'shot-cs',
   'melee-cs',
+  'guard',
 ];
 
 export const CANCEL_RULES: Readonly<Record<MechAction, CancelRule>> = {
@@ -45,6 +48,7 @@ export const CANCEL_RULES: Readonly<Record<MechAction, CancelRule>> = {
   jump: { into: EVERYTHING, opens: 'always' },
   bd: { into: EVERYTHING, opens: 'always' },
   step: { into: EVERYTHING, opens: 'always' },
+  guard: { into: ['bd', 'jump', 'melee'], opens: 'always' },
 };
 
 export const MELEE_MAX_STAGE = 3;

@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * sim が出す一瞬の効果（命中の爆発・発射炎・着地の土煙・斬撃の閃き）の描画。
+ * sim が出す一瞬の効果（命中の爆発・発射炎・着地の土煙・斬撃の閃き・盾の成立）の描画。
  * 弾と同じく決まった数のメッシュを使い回し、寿命の進みに合わせて広げて薄くする。
  */
 import { useRef, type RefObject } from 'react';
@@ -16,6 +16,8 @@ const LOOKS: Readonly<Record<EffectKind, { color: string; from: number; to: numb
   muzzle: { color: '#fff4c2', from: 0.4, to: 1.0, opacity: 1, flat: false },
   land: { color: '#c9c2b0', from: 0.6, to: 3.5, opacity: 0.6, flat: true },
   slash: { color: '#ff5fd2', from: 1.0, to: 2.4, opacity: 0.7, flat: false },
+  // 盾が成立したときの緑の閃き
+  guard: { color: '#5dff9a', from: 0.8, to: 2.6, opacity: 0.8, flat: false },
 };
 
 export function Effects({ worldRef }: { worldRef: RefObject<SimWorld> }) {

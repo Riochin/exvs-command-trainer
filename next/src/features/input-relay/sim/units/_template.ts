@@ -145,6 +145,8 @@ export const TEMPLATE_UNIT: UnitDef = {
   description: '新しい機体の雛形。',
   // BD 回数 6 なら 4 / 6（汎用機の 4 回が 1）
   boostScale: 4 / 6,
+  /** 基本情報の「盾コマンド」。なしなら false */
+  shieldGuard: true,
   ammo: {
     main: { label: 'BR', max: 7, reload: 3, mode: 'each' },
     sub: { label: 'ミサイル', max: 2, reload: 6, mode: 'each' },

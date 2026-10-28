@@ -16,8 +16,7 @@
 
 .unit {
   position: absolute;
-  /* 右上の固定メニューボタンを避ける */
-  top: 3.2rem;
+  top: 0.75rem;
   right: 1rem;
   display: grid;
   gap: 0.3rem;
@@ -96,8 +95,7 @@
 
 .topLeft {
   position: absolute;
-  /* 左上の「戻る」リンクを避ける */
-  top: 2.6rem;
+  top: 0.75rem;
   left: 0.75rem;
   display: flex;
   align-items: baseline;
@@ -495,7 +493,6 @@
  */
 .hud[data-compact='true'] .corner {
   position: absolute;
-  /* 右上の固定メニューボタンのすぐ下 */
   top: 0.75rem;
   right: 0.75rem;
   display: flex;

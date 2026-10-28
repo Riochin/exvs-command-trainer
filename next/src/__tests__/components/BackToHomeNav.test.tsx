@@ -15,13 +15,13 @@ describe('BackToHomeNav', () => {
     vi.clearAllMocks();
   });
 
-  it('pathname が / のときリンクを表示しない', () => {
-    mockUsePathname.mockReturnValue('/');
+  it('pathname が /practice（フリー練習）のときリンクを表示しない', () => {
+    mockUsePathname.mockReturnValue('/practice');
     render(<BackToHomeNav />);
     expect(screen.queryByRole('link', { name: /コマンド一覧に戻る/ })).toBeNull();
   });
 
-  it('pathname が / 以外のときコマンド一覧へのリンクを表示する', () => {
+  it('フリー練習・一覧以外のときコマンド一覧へのリンクを表示する', () => {
     mockUsePathname.mockReturnValue('/commands/foo');
     render(<BackToHomeNav />);
     const link = screen.getByRole('link', { name: /コマンド一覧に戻る/ });

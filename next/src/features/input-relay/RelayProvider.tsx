@@ -16,7 +16,8 @@ import { getRelayRoom, getServerRelayRoom, setRelayRoom, subscribeRelayRoom } fr
 import type { RelayConnectionState } from './types';
 import { useRelaySender } from './useRelaySender';
 
-/** PC 側（3D 画面）のページ。ここではスマホとしてつながない */
+/** PC 側（3D 画面）のページ。ここではスマホとしてつながない。3D 画面はトップ（/）そのもの */
+export const HOST_PATHS = ['/'] as const;
 export const HOST_PATH_PREFIXES = ['/3d', '/tools'] as const;
 
 export type RelayContextValue = {
@@ -36,7 +37,9 @@ export function useRelay(): RelayContextValue | null {
 }
 
 function isHostPath(pathname: string | null): boolean {
-  return pathname !== null && HOST_PATH_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  if (pathname === null) return false;
+  if ((HOST_PATHS as ReadonlyArray<string>).includes(pathname)) return true;
+  return HOST_PATH_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
 export function RelayProvider({ children }: { children: React.ReactNode }) {

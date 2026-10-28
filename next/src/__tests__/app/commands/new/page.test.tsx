@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import CommandNewPage from '@/app/commands/new/page';
+import CommandNewPage from '@/app/(site)/commands/new/page';
 import { flushChargeDeferredInput } from '@/__tests__/utils/flushChargeDeferredInput';
 
 vi.mock('@/hooks/useCommandStore', () => ({
@@ -61,7 +61,7 @@ describe('CommandNewPage', () => {
     expect(screen.getByLabelText('コマンド名')).toBeTruthy();
   });
 
-  it('コマンド登録成功後に / へリダイレクトする', async () => {
+  it('コマンド登録成功後にコマンド一覧（/commands）へ移る', async () => {
     const push = vi.fn();
     mockUseRouter.mockReturnValue({ push } as ReturnType<typeof useRouter>);
     render(<CommandNewPage />);
@@ -73,6 +73,6 @@ describe('CommandNewPage', () => {
     });
     await flushChargeDeferredInput();
     fireEvent.click(screen.getByRole('button', { name: /保存/ }));
-    expect(push).toHaveBeenCalledWith('/');
+    expect(push).toHaveBeenCalledWith('/commands');
   });
 });

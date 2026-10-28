@@ -8,7 +8,7 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useSession } from 'next-auth/react';
-import ChartAuthorPage from '@/app/tools/chart-author/page';
+import ChartAuthorPage from '@/app/(site)/tools/chart-author/page';
 import { HamburgerMenu } from '@/components/HamburgerMenu';
 import { loadVideo, renderApp, stepRows } from '../features/chart-author/appHarness';
 

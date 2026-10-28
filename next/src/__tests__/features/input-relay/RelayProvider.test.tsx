@@ -22,13 +22,13 @@ describe('RelayProvider', () => {
     vi.clearAllMocks();
     window.sessionStorage.clear();
     resetRelayRoomStore();
-    pathname.mockReturnValue('/');
+    pathname.mockReturnValue('/practice');
     useRelaySender.mockImplementation(() => ({ connection: 'idle', error: null, sendRaw: vi.fn(), sendButton: vi.fn() }));
-    window.history.replaceState(null, '', '/');
+    window.history.replaceState(null, '', '/practice');
   });
 
   it('URL の ?relay= を読み取ってつなぎ、URL からは消す', () => {
-    window.history.replaceState(null, '', '/?relay=abcd&x=1');
+    window.history.replaceState(null, '', '/practice?relay=abcd&x=1');
     render(
       <RelayProvider>
         <Probe />
@@ -64,9 +64,9 @@ describe('RelayProvider', () => {
     expect(window.sessionStorage.getItem('input-relay:room')).toBeNull();
   });
 
-  it('PC 側の 3D 画面では、スマホとしてはつながない', () => {
+  it.each(['/', '/3d', '/tools/chart-author'])('PC 側の画面（%s）では、スマホとしてはつながない', (path) => {
     window.sessionStorage.setItem('input-relay:room', 'WXYZ');
-    pathname.mockReturnValue('/3d');
+    pathname.mockReturnValue(path);
     render(
       <RelayProvider>
         <Probe />
@@ -76,7 +76,7 @@ describe('RelayProvider', () => {
   });
 
   it('不正なコードは無視する', () => {
-    window.history.replaceState(null, '', '/?relay=a1');
+    window.history.replaceState(null, '', '/practice?relay=a1');
     render(
       <RelayProvider>
         <Probe />

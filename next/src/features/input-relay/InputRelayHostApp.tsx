@@ -7,12 +7,14 @@
  * 接続・機体・遅延・ログ・技表は小さな帯から開く設定画面にまとめる。
  */
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import {
   ArcadeController,
   type ArcadePhysicalButton,
   type ArcadeRawInput,
 } from '@/features/arcade-controller/ArcadeController';
+import { AuthButton } from '@/components/AuthButton';
 import type { ButtonType } from '@/types';
 import { inputLabel, phaseLabel } from './inputLabels';
 import { summarize, type LatencySummary } from './latencyStats';
@@ -220,11 +222,11 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
         {lanOrigins.length > 0 ? (
           lanOrigins.map((origin) => (
             <code key={origin} className={styles.code}>
-              {origin}
+              {origin}/practice
             </code>
           ))
         ) : (
-          <span>このサイト</span>
+          <span>このサイトのフリー練習（/practice）</span>
         )}{' '}
         を開き、練習画面上部の <span className={styles.chip}>PC連携</span> でコード{' '}
         <code className={styles.code}>{host.room ?? '----'}</code> を入力
@@ -272,7 +274,7 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
             機体
           </button>
           <button type="button" className={styles.toolbarButton} onClick={() => setSettingsOpen(true)}>
-            設定
+            設定・メニュー
           </button>
         </div>
 
@@ -317,6 +319,23 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
             </div>
 
             <div className={styles.modalGrid}>
+              {/* 3D ビューはヘッダーを出さないので、ほかの画面へはここから移る */}
+              <nav aria-label="ほかの画面" className={styles.modalSection}>
+                <h3 className={styles.heading}>ほかの画面</h3>
+                <div className={styles.navList}>
+                  <Link href="/practice" className={styles.navLink}>
+                    フリー練習（スマホ）
+                  </Link>
+                  <Link href="/commands" className={styles.navLink}>
+                    コマンド一覧・練習
+                  </Link>
+                  <Link href="/commands/new" className={styles.navLink}>
+                    コマンドを登録する
+                  </Link>
+                </div>
+                <AuthButton />
+              </nav>
+
               <section aria-label="スマホとの接続" className={styles.modalSection}>
                 <h3 className={styles.heading}>スマホとの接続</h3>
                 <div className={styles.connectRow}>

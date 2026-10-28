@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import ChartAuthorPage from '@/app/tools/chart-author/page';
+import ChartAuthorPage from '@/app/(site)/tools/chart-author/page';
 import { HamburgerMenu } from '@/components/HamburgerMenu';
 
 vi.mock('next/navigation', () => ({

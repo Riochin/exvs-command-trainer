@@ -29,7 +29,7 @@ export default function CommandNewPage() {
       <h1 className={styles.title}>コマンドを登録する</h1>
       <CommandForm
         onAdd={handleAdd}
-        onSuccess={() => router.push('/')}
+        onSuccess={() => router.push('/commands')}
       />
     </main>
   );

@@ -21,7 +21,7 @@ export function PracticePageContent({
     return (
       <div>
         <p>コマンドが見つかりません</p>
-        <Link href="/">コマンド一覧に戻る</Link>
+        <Link href="/commands">コマンド一覧に戻る</Link>
       </div>
     );
   }

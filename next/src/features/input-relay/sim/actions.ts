@@ -16,6 +16,17 @@ export const AIR_DRIFT_SPEED = 7;
 export const STEP_TAP_WINDOW_S = 0.25;
 /** BD 中にレバーの方向へ曲がる速さ（rad/s）。BD 旋回 */
 export const BD_TURN_RATE = 3.2;
+/**
+ * 地上で出した BD は少し浮いて飛ぶ（地走機を除く EXVS の通常の BD）。この高さまで上がる。
+ * 地面を滑ったまま BD が終わると「地上で止まった」扱いで硬直が入り、ズンダが途切れてしまう
+ */
+export const BD_LIFT_HEIGHT = 2.5;
+export const BD_LIFT_SPEED = 8;
+/**
+ * BD からつないだ射撃を空中で撃っているあいだの落ち方（重力の倍率）。BD の勢いが残ってゆっくり落ちる。
+ * 普通に落ちると、地上 BD の高さからでは次の BD を入れる前に着地して、ズンダが途切れやすい
+ */
+export const SHOT_AFTER_BD_GRAVITY_SCALE = 0.5;
 /** 機体が向き直る速さ（rad/s） */
 export const FACE_TURN_RATE = 9;
 /**
@@ -24,6 +35,18 @@ export const FACE_TURN_RATE = 9;
  * レバーなしのジャンプは慣性ジャンプにならない。
  */
 export const INERTIA_LEVER_WINDOW_S = 0.7;
+/**
+ * ジャンプを始めてからこの時間内に BD が届いたら、そのジャンプは BD の 1 回目の押下だったとみなす。
+ * アケコンの BD 判定の窓（2 回押し）と、射撃との同時押しを待つ遅れを足したくらい
+ */
+export const BD_FROM_JUMP_WINDOW_S = 0.3;
+/** BD・ステップが終わってから、次の行動をまだ連携（ズンダなど）としてつなげる時間 */
+export const CHAIN_GRACE_S = 0.2;
+/**
+ * ジャンプボタンをこの時間押し続けたらジャンプを始める。それより短い押下は BD（2 回押し）の 1 回目かもしれないので、
+ * 押しただけでは飛ばない。短く 1 回だけ押したときは、アケコンが BD ではないと決めた時点（'jump'）で小ジャンプする
+ */
+export const JUMP_HOLD_S = 0.12;
 /** レバーを戻さず入れっぱなしで出した慣性ジャンプは、飛距離が少し短い（速さの倍率） */
 export const INERTIA_HELD_SCALE = 0.75;
 /** 慣性ジャンプが成立したときの横の初速（BD は 30。普通のジャンプの横流れは 7） */
@@ -36,6 +59,11 @@ export const INERTIA_LEVER_ACCEL = 14;
 export const INERTIA_MAX_SPEED = 34;
 /** 振り向き撃ちで向き直るのにかかる時間。この分だけ発射と硬直が遅れる */
 export const TURN_SHOT_DELAY_S = 0.22;
+/**
+ * 機体の向きと敵の方向がこの角度より開いていると振り向き撃ちになる（敵が後ろ側にいる）。
+ * 90 度ちょうどだと、横 BD からの BR（ジグザグのズンダ）が少しのずれで振り向き撃ちになってしまう
+ */
+export const TURN_SHOT_ANGLE = (Math.PI * 2) / 3;
 /** 滑り特射: ジャンプを押してからこの時間内に特射を出し、レバーを入れていれば滑る */
 export const SLIDE_WINDOW_S = 0.15;
 export const SLIDE_SPEED = 24;

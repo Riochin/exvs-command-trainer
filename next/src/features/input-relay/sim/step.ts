@@ -3,6 +3,8 @@ import type { ButtonType } from '@/types';
 import {
   AIR_BOOST_FREE_USES,
   AIR_DRIFT_SPEED,
+  BD_LIFT_HEIGHT,
+  BD_LIFT_SPEED,
   BD_TURN_RATE,
   BOOST_MAX,
   FACE_TURN_RATE,
@@ -12,6 +14,10 @@ import {
   INERTIA_JUMP_SPEED,
   INERTIA_LEVER_ACCEL,
   INERTIA_LEVER_WINDOW_S,
+  CHAIN_GRACE_S,
+  JUMP_HOLD_S,
+  BD_FROM_JUMP_WINDOW_S,
+  SHOT_AFTER_BD_GRAVITY_SCALE,
   INERTIA_MAX_SPEED,
   LANDING_LAG_MAX_S,
   LANDING_LAG_PER_USE_S,
@@ -21,6 +27,7 @@ import {
   SLIDE_SPEED,
   SLIDE_WINDOW_S,
   STEP_TAP_WINDOW_S,
+  TURN_SHOT_ANGLE,
   TURN_SHOT_DELAY_S,
   WALK_SPEED,
   type ActionDef,
@@ -152,6 +159,8 @@ export function createWorld({
       lastLeverPress: null,
       inertiaPending: null,
       inertiaFlight: false,
+      chainGraceUntil: null,
+      jumpPress: null,
     },
     enemy: {
       pos: { ...ENEMY_BASE },
@@ -304,10 +313,20 @@ function resolveMove(world: SimWorld, slot: MechAction): ActionDef | { reject: s
 }
 
 /** 行動を終えて止まる。BD・ステップの終わりは、次のジャンプに慣性を乗せられる */
+/**
+ * 行動が最後まで出て終わった。BD・ステップのあとは少しのあいだ、次の行動を連携（ズンダなど）としてつなぐ。
+ * 射撃ボタンは離してから届くので、BD を離した直後に押した射撃は BD が終わってから始まることがある
+ */
+function finishAction(world: SimWorld): void {
+  const mech = world.mech;
+  if (mech.action === 'bd' || mech.action === 'step') mech.chainGraceUntil = world.time + CHAIN_GRACE_S;
+  endAction(mech);
+}
+
 function endAction(mech: MechState): void {
   if (mech.action === 'bd' || mech.action === 'step') {
     mech.inertiaAvailable = true;
-    if (mech.action === 'bd') mech.leverNeutralSinceBd = mech.leverHeld.length === 0;
+    if (mech.action === 'bd') mech.leverNeutralSinceBd ||= mech.leverHeld.length === 0;
   }
   mech.action = 'idle';
   mech.move = null;
@@ -339,6 +358,25 @@ function establishInertiaJump(world: SimWorld, direction: LeverDirection, held =
   pushEvent(world, 'route', held ? '慣性ジャンプ（入れっぱ）' : '慣性ジャンプ');
 }
 
+/**
+ * ジャンプの直後に BD が届いたら、そのジャンプで成立した慣性ジャンプを取り消す。
+ * BD の 1 回目の押下はジャンプとして届くので、BD のつもりの入力が慣性ジャンプと表示されてしまう
+ */
+function cancelInertiaJump(world: SimWorld): void {
+  const mech = world.mech;
+  mech.inertiaPending = null;
+  if (!mech.inertiaFlight) return;
+  mech.inertiaFlight = false;
+  mech.carryInertia = false;
+  for (let i = world.events.length - 1; i >= 0; i--) {
+    const e = world.events[i];
+    if (e.kind === 'route' && e.label.startsWith('慣性ジャンプ')) {
+      world.events.splice(i, 1);
+      break;
+    }
+  }
+}
+
 /** 行動を始める（キャンセルかどうかの判定は済んでいる前提）。ブーストが足りなければ false */
 function startAction(world: SimWorld, kind: MechAction, def: ActionDef, canceled: boolean, quiet = false): boolean {
   const mech = world.mech;
@@ -353,6 +391,10 @@ function startAction(world: SimWorld, kind: MechAction, def: ActionDef, canceled
   const previousTime = mech.actionTime;
   const previousFired = mech.actionFired;
   const previousTurnShot = mech.turnShot;
+  // BD・ステップが終わってすぐなら、終わる前に出したのと同じく連携としてつなぐ
+  const linked =
+    canceled || (previous === 'idle' && mech.chainGraceUntil !== null && world.time <= mech.chainGraceUntil);
+  mech.chainGraceUntil = null;
   const lever = leverToWorld(world, mech.leverHeld);
   let technique: string | null = null;
 
@@ -371,23 +413,24 @@ function startAction(world: SimWorld, kind: MechAction, def: ActionDef, canceled
   mech.meleeStage = kind === 'melee' || kind === 'special-melee' ? (comboMelee ? mech.meleeStage + 1 : 1) : 0;
   // BD はジャンプの 2 回目の押下で届くので、ジャンプからの BD はキャンセルではなく BD の出だしとして扱う
   const bdFromJump = kind === 'bd' && previous === 'jump';
-  let namedCancel = canceled;
+  let namedCancel = linked;
   if (bdFromJump) {
     const before = mech.chain.slice(0, -1);
     mech.chain = [...before, kind];
     mech.chainLabels = [...mech.chainLabels.slice(0, -1), def.label];
     // ジャンプ中の BD はただの BD。何かの行動からつないだときだけ BDC と呼ぶ
     namedCancel = before.length > 0 && before[before.length - 1] !== 'jump';
+    if (previousTime <= BD_FROM_JUMP_WINDOW_S) cancelInertiaJump(world);
   } else {
-    mech.chain = canceled ? [...mech.chain, kind] : [kind];
-    mech.chainLabels = canceled ? [...mech.chainLabels, def.label] : [def.label];
+    mech.chain = linked ? [...mech.chain, kind] : [kind];
+    mech.chainLabels = linked ? [...mech.chainLabels, def.label] : [def.label];
   }
   if ((kind === 'jump' || kind === 'bd' || kind === 'step') && !bdFromJump) mech.airBoostUses += 1;
 
   // 前の行動の名残を消してから、今の行動の準備をする
   if (previous === 'bd' || previous === 'step') {
     mech.inertiaAvailable = true;
-    if (previous === 'bd') mech.leverNeutralSinceBd = mech.leverHeld.length === 0;
+    if (previous === 'bd') mech.leverNeutralSinceBd ||= mech.leverHeld.length === 0;
   }
   mech.action = kind;
   mech.move = def;
@@ -461,7 +504,7 @@ function startAction(world: SimWorld, kind: MechAction, def: ActionDef, canceled
     }
     case 'shot': {
       // 敵が機体の後ろ側にいると振り向き撃ちになり、足が止まって発射も遅れる
-      mech.turnShot = Math.abs(angleDiff(mech.yaw, mech.lockYaw)) > Math.PI / 2;
+      mech.turnShot = Math.abs(angleDiff(mech.yaw, mech.lockYaw)) > TURN_SHOT_ANGLE;
       if (mech.turnShot) {
         mech.actionTime = -TURN_SHOT_DELAY_S;
         technique = '振り向き撃ち';
@@ -598,14 +641,24 @@ export function applyInput(world: SimWorld, button: ButtonType): InputResult {
     }
   }
 
+  if (button === 'jump') {
+    // 短く 1 回だけ押したジャンプ。長押しでもう飛んでいれば何もしない
+    const press = mech.jumpPress;
+    if (press === null || press.started) return 'rejected';
+    press.started = true;
+    return requestAction(world, 'jump', true);
+  }
+  // BD になった押下は、もうジャンプにしない
+  if (button === 'bd') mech.jumpPress = null;
+
   const kind = INPUT_TO_SLOT[button];
   if (kind === undefined) return 'rejected';
   return requestAction(world, kind);
 }
 
 /**
- * ボタンの生の押下・解放を受ける。ジャンプは押した瞬間に上昇を始め、押している間だけ続く。
- * BD の 1 回目の押下としても来るので、出せなくても理由は出さない。
+ * ボタンの生の押下・解放を受ける。ジャンプは少し押し続けたら上昇を始め（JUMP_HOLD_S）、押している間だけ続く。
+ * 短い押下は BD の 1 回目かもしれないので、押した瞬間には飛ばない。
  */
 export function applyRawInput(world: SimWorld, input: ArcadeRawInput): InputResult | null {
   if (input.button !== 'jump') return null;
@@ -615,7 +668,19 @@ export function applyRawInput(world: SimWorld, input: ArcadeRawInput): InputResu
     return null;
   }
   mech.jumpHeld = true;
-  return requestAction(world, 'jump', true);
+  mech.jumpPress = { at: world.time, started: false };
+  return null;
+}
+
+/** ジャンプボタンを押し続けていたら、ジャンプを始める */
+function stepJumpPress(world: SimWorld): void {
+  const mech = world.mech;
+  const press = mech.jumpPress;
+  if (press === null || press.started || !mech.jumpHeld) return;
+  if (world.time - press.at < JUMP_HOLD_S) return;
+  press.started = true;
+  // BD の 1 回目の押下と同じく、出せなくても理由は出さない
+  requestAction(world, 'jump', true);
 }
 
 /**
@@ -625,7 +690,8 @@ export function setLever(world: SimWorld, direction: LeverDirection, pressed: bo
   const mech = world.mech;
   if (!pressed) {
     mech.leverHeld = mech.leverHeld.filter((d) => d !== direction);
-    if (mech.leverHeld.length === 0 && mech.inertiaAvailable) mech.leverNeutralSinceBd = true;
+    // BD 中に戻しても数える。ジャンプは少し押し続けてから出るので、そのあいだに BD が終わることがある
+    if (mech.leverHeld.length === 0 && (mech.inertiaAvailable || mech.action === 'bd')) mech.leverNeutralSinceBd = true;
     return null;
   }
   if (mech.leverHeld.includes(direction)) return null;
@@ -923,7 +989,7 @@ function stepAction(world: SimWorld, dt: number): void {
 
   // ジャンプと BD はボタンを離したら終わる（最低限の長さは出す）
   if (def.holdMinTime !== undefined && !mech.jumpHeld && mech.actionTime >= def.holdMinTime) {
-    endAction(mech);
+    finishAction(world);
     return;
   }
 
@@ -938,7 +1004,8 @@ function stepAction(world: SimWorld, dt: number): void {
     if (mech.leverHeld.length > 0) mech.bdLever = mech.leverHeld[mech.leverHeld.length - 1];
     mech.vel.x = mech.bdDir.x * def.speed * speedScale;
     mech.vel.z = mech.bdDir.z * def.speed * speedScale;
-    mech.vel.y = 0;
+    // 地上から出した BD は少し浮き上がり、そのあとは高度を保つ
+    mech.vel.y = mech.pos.y < BD_LIFT_HEIGHT ? BD_LIFT_SPEED : 0;
   } else if (def.move === 'rise' && def.speed !== undefined) {
     mech.vel.y = def.speed;
     if (mech.carryInertia) {
@@ -994,7 +1061,7 @@ function stepAction(world: SimWorld, dt: number): void {
     }
   }
 
-  if (mech.actionTime >= def.duration) endAction(mech);
+  if (mech.actionTime >= def.duration) finishAction(world);
 }
 
 /** 弾以外の、技が出た瞬間の効果（斬撃・アシスト・時限強化） */
@@ -1094,7 +1161,14 @@ function stepMechPhysics(world: SimWorld, dt: number): void {
   const move = moveModeOf(mech);
 
   if (move === 'free' || move === 'halt') {
-    const gravityScale = move === 'halt' && !mech.grounded ? 0.3 : 1;
+    const shotAfterBd = mech.action === 'shot' && mech.chain[mech.chain.length - 2] === 'bd';
+    const gravityScale = mech.grounded
+      ? 1
+      : move === 'halt'
+        ? 0.3
+        : shotAfterBd
+          ? SHOT_AFTER_BD_GRAVITY_SCALE
+          : 1;
     mech.vel.y -= GRAVITY * gravityScale * dt;
     // 滑り特射は足が止まる行動でも滑りを残す。慣性ジャンプは着地まで勢いが落ちにくい
     const damping = mech.sliding
@@ -1133,6 +1207,7 @@ function stepMechPhysics(world: SimWorld, dt: number): void {
       mech.grounded = true;
       mech.landingLag = landingLagFor(mech);
       endAction(mech);
+      mech.chainGraceUntil = null;
       mech.inertiaAvailable = false;
       mech.inertiaFlight = false;
       mech.airBoostUses = 0;
@@ -1226,6 +1301,7 @@ export function stepWorld(world: SimWorld, dt: number): void {
   stepEffects(world, dt);
   stepEnemy(world, dt);
   stepAmmo(world, dt);
+  stepJumpPress(world);
   stepAction(world, dt);
   stepMechPhysics(world, dt);
   stepAssists(world, dt);

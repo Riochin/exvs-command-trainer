@@ -18,6 +18,7 @@ import { inputLabel, phaseLabel } from './inputLabels';
 import { summarize, type LatencySummary } from './latencyStats';
 import { useRelayHost, type RelayLogEntry } from './useRelayHost';
 import { applyInput, applyRawInput, createWorld, ENEMY_FIRE_INTERVAL_S, setLever } from './sim/step';
+import { exposeSimForDebug } from './sim/debug';
 import type { LeverDirection, SimWorld } from './sim/types';
 import type { RelayConnectionState, RelayInputMessage } from './types';
 import { GENERIC_UNIT, unitById } from './sim/units';
@@ -133,6 +134,8 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
     [enemyFires, enemyMoves],
   );
   const closeSelect = useCallback(() => setSelecting(false), []);
+  // 開発中は、ブラウザのコンソールから sim の状態を読めるようにする（window.__inputRelay）
+  useEffect(() => exposeSimForDebug(() => worldRef.current), []);
   // キーボードだけで練習するときは接続案内を閉じられる
   const [guideHidden, setGuideHidden] = useState(false);
   // 3D と HUD 以外（接続・機体・遅延・ログ・技表など）は設定画面にまとめる

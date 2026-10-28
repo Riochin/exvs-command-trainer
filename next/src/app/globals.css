@@ -23,21 +23,23 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* 筐体天板のストライプ背景 */
+/* 計器盤の地：ink-0 に薄い水色のグリッドと、下からの光 */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   z-index: -1;
   background:
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.1), rgba(0, 0, 0, 0.18)),
-    repeating-linear-gradient(
-      to bottom,
-      var(--cab-stripe-a) 0 8px,
-      var(--cab-stripe-b) 8px 13px,
-      var(--cab-stripe-line) 13px 14px
-    );
+    radial-gradient(ellipse at 50% 120%, rgba(54, 200, 242, 0.14), transparent 60%),
+    repeating-linear-gradient(to right, rgba(120, 200, 255, 0.06) 0 1px, transparent 1px 48px),
+    repeating-linear-gradient(to bottom, rgba(120, 200, 255, 0.06) 0 1px, transparent 1px 48px),
+    var(--ink-0);
   pointer-events: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--cyan-hi);
+  outline-offset: 2px;
 }
 
 * {

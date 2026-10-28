@@ -1,67 +1,106 @@
 :root {
-  /* ===== アーケード筐体テーマ ===== */
+  /* ===== TACTICAL LINK =====
+     3D ビューの HUD の水色を主役にした、MS のコックピット計器のテーマ。
+     決まりごとは .kiro/steering/ui-design.md に書いてある。 */
 
-  /* 天板ストライプ */
-  --cab-stripe-a: #8d9096;
-  --cab-stripe-b: #6c6f75;
-  --cab-stripe-line: #55585d;
-  --cab-panel: #111113;
-  --cab-bezel-hi: #2a2a2e;
-  --cab-bezel-lo: #050506;
+  /* 面：奥から ink-0 → ink-1 → ink-2 → ink-3 */
+  --ink-0: #05080d;
+  --ink-1: #0a111b;
+  --ink-2: #111c2a;
+  --ink-3: #17263a;
+  --glass: rgba(10, 17, 27, 0.78);
 
-  /* 面：黒プレート（明るい文字）／インストカード（濃い文字） */
-  --surface-plate: #18181b;
-  --surface-plate-hi: #232327;
-  --surface-plate-edge: #34343a;
-  --surface-card: #efe9d8;
-  --surface-card-rule: #cfc6ad;
-  --ink: #17171a;
-  --ink-muted: #5c574a;
+  /* 線：飾りの枠は line、押せるもの・入力欄の枠は line-strong */
+  --line: rgba(120, 200, 255, 0.22);
+  --line-strong: rgba(185, 246, 255, 0.65);
 
-  /* ボタン色 */
+  /* アクセント（水色ひとつ） */
+  --cyan: #36c8f2;
+  --cyan-hi: #b9f6ff;
+  --cyan-deep: #1b8fd1;
+  --on-cyan: #031019;
+
+  /* 文字 */
+  --text: #e6f3ff;
+  --text-muted: #8ea6ba;
+  --text-dim: #6b8296;
+
+  /* 意味の色（アクセントには使わない） */
+  --ok: #3ee08f;
+  --warn: #ffb020;
+  --danger: #ff4b4b;
+  --awaken: #ff8fd0;
+
+  /* アケコンの物理ボタン（ArcadeButton とタッチ操作だけ） */
   --btn-red: #d8352c;
   --btn-blue: #4d5fe0;
   --btn-green: #27a85a;
-  --btn-yellow: #f2c21a;
 
-  /* 状態リング */
-  --ring-guide: #f5c33b;
-  --ring-success: #3ee08f;
-  --ring-fail: #ff4b4b;
+  /* 余白 */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
 
-  /* LED 表示 */
-  --led-bg: #0c0a06;
-  --led-on: #ffb020;
+  /* 斜めカット（左上と右下を落とす。clip-path で使う） */
+  --cut-lg: 14px;
+  --cut-md: 10px;
+  --cut-sm: 6px;
+  --cut-xs: 4px;
+  --skew-gauge: -24deg;
 
   /* 影 */
+  --glow-cyan: 0 0 12px rgba(54, 200, 242, 0.45);
+  --drop-modal: 0 20px 50px rgba(0, 0, 0, 0.6);
+  --drop-hud: 0 0 10px rgba(0, 0, 0, 0.5);
+
+  /* 書体：M PLUS 1（見出し・ラベル・本文）と M PLUS 1 Code（数字・コード） */
+  --font-body: var(--font-mplus), 'Hiragino Sans', 'Noto Sans JP', system-ui, sans-serif;
+  --font-label: var(--font-body);
+  --font-num: var(--font-mplus-code), ui-monospace, monospace;
+
+  /* ===== 旧テーマの名前（移し終えた画面から使わなくなる） =====
+     旧トークンを参照している CSS が新しい見た目になるよう、新しい値に向ける。 */
+  --surface-plate: var(--ink-1);
+  --surface-plate-hi: var(--ink-2);
+  --surface-plate-edge: var(--line);
+  --surface-card: var(--ink-2);
+  --surface-card-rule: var(--line);
+  --ink: var(--text);
+  --ink-muted: var(--text-muted);
+  --btn-yellow: var(--cyan);
+  --ring-guide: var(--cyan-hi);
+  --ring-success: var(--ok);
+  --ring-fail: var(--danger);
+  --led-bg: var(--ink-0);
+  --led-on: var(--cyan-hi);
+  --cab-panel: var(--ink-1);
+  --cab-bezel-hi: var(--ink-2);
+  --cab-bezel-lo: var(--ink-0);
   --shadow-drop-sm: 0 2px 4px rgba(0, 0, 0, 0.45);
   --shadow-drop-md: 0 4px 8px rgba(0, 0, 0, 0.5);
-  --shadow-drop-lg: 0 8px 20px rgba(0, 0, 0, 0.55);
-  --plate-bevel: inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  --border-plate: 1px solid var(--surface-plate-edge);
-
-  /* カラートークン */
-  --color-bg-base: #1b1c1f;
-  --color-bg-mid: var(--surface-plate-hi);
-  --color-bg-card: var(--surface-plate);
-  --color-accent-primary: var(--btn-yellow);
-  --color-accent-deep: #8a6d0a;
-  --color-text: #f1f1ee;
-  --color-text-muted: #b9b7ae;
-  --color-success: var(--ring-success);
-  --color-error: var(--ring-fail);
-  --color-warning: #f59e0b;
-
-  /* タイポグラフィトークン */
-  --font-body: var(--font-zen-kaku), 'Hiragino Sans', 'Noto Sans JP', system-ui, sans-serif;
-  --font-label: var(--font-oswald), var(--font-zen-kaku), 'Arial Narrow', sans-serif;
-  --font-led: var(--font-share-tech-mono), ui-monospace, monospace;
+  --shadow-drop-lg: var(--drop-modal);
+  --plate-bevel: inset 0 1px 0 rgba(185, 246, 255, 0.06);
+  --border-plate: 1px solid var(--line);
+  --color-bg-base: var(--ink-0);
+  --color-bg-mid: var(--ink-2);
+  --color-bg-card: var(--ink-1);
+  --color-accent-primary: var(--cyan);
+  --color-accent-deep: var(--cyan-deep);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-success: var(--ok);
+  --color-error: var(--danger);
+  --color-warning: var(--warn);
+  --font-led: var(--font-num);
   --font-mono: var(--font-label);
-  --font-weight-heading: 700;
-  --letter-spacing-ui: 0.08em;
+  --font-weight-heading: 800;
+  --letter-spacing-ui: 0.06em;
   --letter-spacing-body: 0.02em;
 
-  /* トランジショントークン */
+  /* トランジション */
   --transition-press: 45ms ease-out;
   --transition-fast: 150ms ease-out;
   --transition-base: 200ms ease-out;

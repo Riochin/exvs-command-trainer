@@ -364,3 +364,33 @@
   color: rgba(255, 255, 255, 0.5);
   text-align: right;
 }
+
+/* 右下にタッチ用ボタンを出している間: 残弾の札は左上（HIT の下）に詰めて並べ、ブーストゲージはボタンにかからない幅にする */
+.hud[data-touch-buttons='true'] .weapons {
+  top: 5rem;
+  bottom: auto;
+  left: 0.75rem;
+  right: auto;
+  gap: 0.2rem;
+}
+
+.hud[data-touch-buttons='true'] .weapon {
+  grid-template-columns: 2rem 7rem;
+  padding: 0.1rem 0.5rem 0.15rem 0.3rem;
+  border-right: 0;
+  border-left: 3px solid rgba(120, 200, 255, 0.7);
+  clip-path: none;
+  background: linear-gradient(to left, rgba(12, 18, 28, 0.35), rgba(12, 18, 28, 0.85));
+}
+
+.hud[data-touch-buttons='true'] .weaponCount {
+  font-size: 1.3rem;
+}
+
+.hud[data-touch-buttons='true'] .weaponCaption {
+  display: none;
+}
+
+.hud[data-touch-buttons='true'] .boost {
+  width: min(26rem, 30%);
+}

@@ -74,7 +74,8 @@ next/src/__tests__/features/input-relay/sim/
 | ジャンプ・BD・ステップ | `jump` / `bd` / `step` | 機体で変えない。`default: return ACTIONS[slot]` |
 
 - レバーは「後ろ ＞ 横 ＞ 前」の順で優先される（斜め後ろは後ろ）。
-- その機体に無い武装は `{ reject: '○○なし' }` を返す（HUD に出る）。
+- その機体に無い武装は `{ reject: '○○なし' }` を返す（出せなかった理由として sim の出来事に残る。HUD に出すかは下の許可リスト次第）。
+- HUD の画面中央に出す技名・理由は `viewer/hudLabels.ts` の許可リストにあるものだけ。新しい技名を HUD に出したいときは、そこに足す（足さなければ出ない）。
 
 ### 技の性質（`ActionDef`）
 
@@ -155,9 +156,9 @@ wiki の各武装のリロード表を写す。キーは技の `ammo` に書く�
 
 ## アメキャン・キャンセル落下（`fallCancel`）
 
-wiki に「アメキャン対応」「メインでキャンセルすると落下」とある技に `fallCancel: true` を付け、`cancels.into` に `'shot'` を入れる。メインでキャンセルすると上昇を打ち消して落ち始める。HUD には、アシストかサブなら「アメキャン」、それ以外は「キャンセル落下」と出る。後格メインのような降りテクも同じ書き方（後格に `fallCancel`、`into` に `'shot'`）。
+wiki に「アメキャン対応」「メインでキャンセルすると落下」とある技に `fallCancel: true` を付け、`cancels.into` に `'shot'` を入れる。メインでキャンセルすると上昇を打ち消して落ち始める。sim の出来事は、アシストかサブなら「アメキャン」、それ以外は「キャンセル落下」（HUD に出るのは「アメキャン」だけ）。後格メインのような降りテクも同じ書き方（後格に `fallCancel`、`into` に `'shot'`）。
 
-メイン以外で落ちる技（追従アシストに撃たせるサブで降りる「アサキャン」など）は、落ちる側の技に `fallOnCancel: true` を付ける。キャンセル元の技の `fallCancel` と `cancels.into`（落ちる側の技の id かスロット名）が要るのはメインと同じ。HUD には「アサキャン」と出る。
+メイン以外で落ちる技（追従アシストに撃たせるサブで降りる「アサキャン」など）は、落ちる側の技に `fallOnCancel: true` を付ける。キャンセル元の技の `fallCancel` と `cancels.into`（落ちる側の技の id かスロット名）が要るのはメインと同じ。sim の出来事は「アサキャン」（HUD には出さない）。
 
 ## 技表（`commands`）と説明
 
@@ -184,7 +185,7 @@ wiki に「アメキャン対応」「メインでキャンセルすると落下
 - **world のテスト**（`rouge.test.ts` の形）: `createWorld({ unitId })` → `applyInput(world, 'shot')`・`setLever(world, 'back', true)` → `stepWorld(world, FIXED_DT)` で進める。確かめるとよいもの:
   - 弾数が減り、撃ち切ると「弾切れ」、リロード秒数で戻る
   - wiki のキャンセルルートにある組み合わせが `'canceled'`、無い組み合わせが `'rejected'`（「キャンセル不可」）
-  - アメキャン対応の技 → メインで `vel.y <= 0` になり、HUD に「アメキャン」
+  - アメキャン対応の技 → メインで `vel.y <= 0` になり、出来事に「アメキャン」
   - 時限強化の発動・終了・再使用までの待ち、強化中のリロード
 - 弾が出るまで進めるには `for (…; !world.mech.actionFired; …) stepWorld(…)`。
 - 機体は原点、敵は z=-40 にいる（前レバー・敵へ向かう動きは z が減る）。距離を変えるときは `world.mech.pos.z` を書き換え、敵の左右の揺れを止めるなら `world.enemy.moves = false`。

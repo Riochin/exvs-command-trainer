@@ -17,7 +17,7 @@ import type { ButtonType } from '@/types';
 import { inputLabel, phaseLabel } from './inputLabels';
 import { summarize, type LatencySummary } from './latencyStats';
 import { useRelayHost, type RelayLogEntry } from './useRelayHost';
-import { applyInput, applyRawInput, createWorld, ENEMY_FIRE_INTERVAL_S, setLever } from './sim/step';
+import { applyInput, applyRawInput, createWorld, ENEMY_FIRE_INTERVAL_S, setLever, tapLever } from './sim/step';
 import { exposeSimForDebug } from './sim/debug';
 import type { LeverDirection, SimWorld } from './sim/types';
 import type { RelayConnectionState, RelayInputMessage } from './types';
@@ -77,14 +77,21 @@ function describeEntry(entry: RelayLogEntry): string {
 }
 
 const noopSubscribe = () => () => {};
-/** 指で操作する端末（スマホ・タブレット）か。タッチ操作の初期値に使う */
-const COARSE_POINTER = '(pointer: coarse)';
+/**
+ * 指で操作する端末（スマホ・タブレット）か。タッチ操作の初期値に使う。
+ * 主な入力が指か、マウスのホバーがない端末なら指とみなす
+ */
+const COARSE_POINTER = '(pointer: coarse), (hover: none)';
+/** 「PC 版サイトを表示」にしたスマホでも指とみなす（画面の短い辺がこれ以下でタッチできる端末） */
+const PHONE_SHORT_SIDE_PX = 600;
 const subscribeCoarsePointer = (onChange: () => void) => {
   const query = window.matchMedia(COARSE_POINTER);
   query.addEventListener('change', onChange);
   return () => query.removeEventListener('change', onChange);
 };
-const readCoarsePointer = () => window.matchMedia(COARSE_POINTER).matches;
+const readCoarsePointer = () =>
+  window.matchMedia(COARSE_POINTER).matches ||
+  (navigator.maxTouchPoints > 0 && Math.min(window.screen.width, window.screen.height) <= PHONE_SHORT_SIDE_PX);
 const readServerCoarsePointer = () => false;
 /** タッチ用ボタンはキーボードに反応させない（キーボードは隠したコントローラが受け持つ） */
 const NO_KEYS: Readonly<Record<string, ArcadePhysicalButton>> = {};
@@ -119,8 +126,17 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
   const coarsePointer = useSyncExternalStore(subscribeCoarsePointer, readCoarsePointer, readServerCoarsePointer);
   const [touchOverride, setTouchOverride] = useState<boolean | null>(null);
   const touchControls = touchOverride ?? coarsePointer;
+  // タッチ操作の中で、レバー（スティック）とボタンは別々に出し分けられる
+  const [touchLever, setTouchLever] = useState(true);
+  const [touchButtons, setTouchButtons] = useState(true);
+  const showStick = touchControls && touchLever;
+  const showTouchButtons = touchControls && touchButtons;
+  // ステップ判定は、スティックが上下左右の 1 方向にまとめて別に数える（斜めにぶれても同じ方向として 2 回になる）
   const handleStickLever = useCallback((direction: LeverDirection, pressed: boolean) => {
-    setLever(worldRef.current, direction, pressed);
+    setLever(worldRef.current, direction, pressed, { countTap: false });
+  }, []);
+  const handleStickTap = useCallback((direction: LeverDirection) => {
+    tapLever(worldRef.current, direction);
   }, []);
   const [unitId, setUnitId] = useState(GENERIC_UNIT.id);
   // 開いたときは機体選択から始める
@@ -226,20 +242,22 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
 
       <div className={styles.stage}>
         <MechViewer worldRef={worldRef} unitId={unitId} />
-        <MechHud worldRef={worldRef} showLever={!touchControls} />
+        <MechHud worldRef={worldRef} showLever={!showStick} compact={touchControls} />
 
-        {/* タッチ操作: 画面左側に、スティック（下）とボタン（その上）を半透明で重ねる */}
-        {touchControls && (
-          <div className={styles.touchLayer} data-testid="touch-controls">
-            <div className={styles.touchButtons}>
-              <ArcadeController
-                variant="touch"
-                onButtonPress={handleKeyboardInput}
-                onRawInput={handleKeyboardRaw}
-                keyboardKeys={NO_KEYS}
-              />
-            </div>
-            <VirtualStick onLever={handleStickLever} />
+        {/* タッチ操作: スティックは左下、ボタンは右下に半透明で重ねる（左右の親指で持つ配置） */}
+        {showStick && (
+          <div className={styles.touchStick} data-testid="touch-stick">
+            <VirtualStick onLever={handleStickLever} onTap={handleStickTap} />
+          </div>
+        )}
+        {showTouchButtons && (
+          <div className={styles.touchButtons} data-testid="touch-buttons">
+            <ArcadeController
+              variant="touch"
+              onButtonPress={handleKeyboardInput}
+              onRawInput={handleKeyboardRaw}
+              keyboardKeys={NO_KEYS}
+            />
           </div>
         )}
 
@@ -348,8 +366,28 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
                     タッチ操作: {touchControls ? 'ON' : 'OFF'}
                   </button>
                 </div>
+                <div className={styles.subToggles}>
+                  <button
+                    type="button"
+                    className={styles.restart}
+                    onClick={() => setTouchLever(!touchLever)}
+                    aria-pressed={showStick}
+                    disabled={!touchControls}
+                  >
+                    レバー: {showStick ? 'ON' : 'OFF'}
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.restart}
+                    onClick={() => setTouchButtons(!touchButtons)}
+                    aria-pressed={showTouchButtons}
+                    disabled={!touchControls}
+                  >
+                    ボタン: {showTouchButtons ? 'ON' : 'OFF'}
+                  </button>
+                </div>
                 <p className={styles.note}>
-                  タッチ操作は、この画面をスマホで開いて操作するとき用。画面左側にスティックと射撃・格闘・ジャンプのボタンが出ます
+                  タッチ操作は、この画面をスマホで開いて操作するとき用。左下にスティック、右下に射撃・格闘・ジャンプのボタンが出ます（別々に消せます）
                 </p>
                 <h4 className={styles.subHeading}>キーボード操作</h4>
                 <dl className={styles.keyList}>

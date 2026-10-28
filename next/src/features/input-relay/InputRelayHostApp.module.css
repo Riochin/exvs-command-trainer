@@ -477,21 +477,41 @@
   text-align: right;
 }
 
-/* タッチ操作のレイヤー。画面左側だけに置き、ほかの場所のタップは 3D ビューに通す */
-.touchLayer {
+/* タッチ操作。スティックは左下、ボタンは右下。置いた場所以外のタップは 3D ビューに通す */
+.touchStick {
   position: absolute;
   left: max(0.75rem, env(safe-area-inset-left));
   bottom: 1rem;
-  display: grid;
-  justify-items: center;
-  gap: 0.75rem;
-  pointer-events: none;
 }
 
-.touchLayer > * {
-  pointer-events: auto;
-}
-
+/*
+ * ボタンは練習画面と同じ大きさを保ったまま、画面の下へ沈める（下側が切れて半円くらいになってよい）。
+ * 3D の画面をなるべく隠さないため。ブーストゲージはこのあいだ左上に移る
+ */
 .touchButtons {
-  margin-bottom: 0.25rem;
+  position: absolute;
+  right: max(0.25rem, env(safe-area-inset-right));
+  /* いちばん低い射撃ボタンが半分ほど見える深さ */
+  bottom: calc(min(42vh, 165px) * -0.53);
+}
+
+/* 縦向きはボタンの列が左下のスティックの上まで届くので、スティックより上に置く */
+@media (orientation: portrait) {
+  .touchButtons {
+    bottom: 8rem;
+  }
+}
+
+/* タッチ操作の中のレバー・ボタンの切り替え（親の ON/OFF の下に一段下げて並べる） */
+.subToggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding-left: 1rem;
+  border-left: 2px solid var(--surface-plate-edge);
+}
+
+.subToggles button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }

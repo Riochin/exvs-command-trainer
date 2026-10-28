@@ -1,7 +1,7 @@
 /* 半透明の丸い台と、指に付いてくるつまみ */
 .base {
   position: relative;
-  width: clamp(6rem, 26vmin, 9rem);
+  width: clamp(7rem, 30vmin, 10.5rem);
   aspect-ratio: 1;
   border-radius: 50%;
   background: radial-gradient(circle, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.12));

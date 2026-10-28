@@ -2,6 +2,7 @@
 
 /**
  * 箱と円柱で組んだ仮のロボ。配色・背中の装備・格闘武器は機体データ（UnitLook）で変える。
+ * 背中の装備と格闘武器のモデルは parts/equipment.tsx にまとめてある。作り方は `.kiro/steering/unit-modeling.md`。
  *
  * 姿勢は React の state を通さず、useFrame で sim の状態を読んで直接書き換える
  * （毎フレームの再描画を避けるため）。
@@ -12,14 +13,8 @@ import { AdditiveBlending, type Group, type Mesh, type PointLight } from 'three'
 import { poseOf } from '../sim/actions';
 import type { MechState, SimWorld } from '../sim/types';
 import type { UnitLook } from '../sim/units';
-
-const GREY = '#9aa1ab';
-const DARK = '#2f3238';
-const EYE = '#59ff8a';
-const THRUST = '#7ef9ff';
-const SABER = '#ff5fd2';
-const SEED_AURA = '#ff8fd0';
-const BLADE = '#c9d1db';
+import { BACKPACKS, MELEE_WEAPONS } from './parts/equipment';
+import { DARK, EYE, GREY, Part, SABER, SEED_AURA, THRUST } from './parts/Part';
 
 /** 0→1 の進み具合（行動していなければ 0） */
 function progress(mech: MechState): number {
@@ -42,33 +37,6 @@ function isSummoning(mech: MechState): boolean {
 
 function isBoosting(mech: MechState): boolean {
   return mech.action === 'bd' || mech.action === 'jump' || mech.action === 'step' || mech.action === 'special-melee' || mech.action === 'melee-cs' || (mech.action === 'melee' && !mech.actionFired);
-}
-
-function Part({
-  args,
-  position,
-  rotation,
-  color,
-  emissive,
-}: {
-  args: [number, number, number];
-  position: [number, number, number];
-  rotation?: [number, number, number];
-  color: string;
-  emissive?: boolean;
-}) {
-  return (
-    <mesh position={position} rotation={rotation} castShadow>
-      <boxGeometry args={args} />
-      <meshStandardMaterial
-        color={color}
-        roughness={0.55}
-        metalness={0.15}
-        emissive={emissive ? color : '#000000'}
-        emissiveIntensity={emissive ? 1.2 : 0}
-      />
-    </mesh>
-  );
 }
 
 /** 二重のコーンで芯の白い炎を作る。scale.y を伸縮して噴射量を表す */
@@ -104,7 +72,9 @@ export function MechModel({ worldRef, look }: { worldRef: RefObject<SimWorld>; l
   const thrustLight = useRef<PointLight>(null);
   const hitGlow = useRef<Mesh>(null);
   const seedAura = useRef<Mesh>(null);
-  const ootori = useRef<Group>(null);
+  const detachable = useRef<Group>(null);
+  const Backpack = BACKPACKS[look.backpack];
+  const MeleeWeapon = MELEE_WEAPONS[look.meleeWeapon];
 
   useFrame(({ clock }) => {
     const mech = worldRef.current.mech;
@@ -187,7 +157,8 @@ export function MechModel({ worldRef, look }: { worldRef: RefObject<SimWorld>; l
       seedAura.current.visible = seed;
       if (seed) seedAura.current.scale.setScalar(1 + Math.sin(t * 6) * 0.05);
     }
-    if (ootori.current) ootori.current.visible = !mech.packOut;
+    // 射出した装備（オオトリなど）は戻ってくるまで背中から消す
+    if (detachable.current) detachable.current.visible = !mech.packOut;
     if (hitGlow.current) {
       hitGlow.current.visible = mech.hitFlash > 0;
       hitGlow.current.scale.setScalar(1 + (0.3 - mech.hitFlash) * 2);
@@ -230,27 +201,9 @@ export function MechModel({ worldRef, look }: { worldRef: RefObject<SimWorld>; l
           <Part args={[0.38, 0.05, 0.03]} position={[-0.15, 0.27, 0.2]} rotation={[0, 0, -0.75]} color={YELLOW} />
           <Part args={[0.38, 0.05, 0.03]} position={[0.15, 0.27, 0.2]} rotation={[0, 0, 0.75]} color={YELLOW} />
         </group>
-        {/* バックパックとスラスター、サーベルの柄 */}
+        {/* バックパックとスラスター。背中の装備は機体ごと */}
         <Part args={[0.7, 0.6, 0.3]} position={[0, 1.95, -0.42]} color={GREY} />
-        {look.backpack === 'standard' &&
-          ([-0.22, 0.22] as const).map((x) => (
-            <Part key={`hilt-${x}`} args={[0.07, 0.4, 0.07]} position={[x, 2.32, -0.5]} rotation={[-0.4, 0, 0]} color={WHITE} />
-          ))}
-        {/* オオトリ: 左右の大きな翼と、肩越しのビームランチャー・レールガン、対艦刀 */}
-        {look.backpack === 'ootori' && (
-          <group ref={ootori} position={[0, 2.0, -0.75]}>
-            <Part args={[0.6, 0.5, 0.6]} position={[0, 0, 0]} color={RED} />
-            {([-1, 1] as const).map((side) => (
-              <group key={side}>
-                <Part args={[1.7, 0.1, 0.7]} position={[side * 1.05, 0.25, -0.15]} rotation={[0, 0, side * -0.35]} color={WHITE} />
-                <Part args={[0.5, 0.11, 0.5]} position={[side * 1.7, 0.53, -0.15]} rotation={[0, 0, side * -0.35]} color={RED} />
-                <Part args={[0.16, 0.16, 2.2]} position={[side * 0.45, 0.55, 0.55]} color={DARK} />
-                <Part args={[0.22, 0.22, 0.5]} position={[side * 0.45, 0.55, -0.2]} color={GREY} />
-              </group>
-            ))}
-            <Part args={[0.12, 1.6, 0.18]} position={[0.32, -0.35, -0.3]} rotation={[0, 0, 0.3]} color={BLADE} />
-          </group>
-        )}
+        <Backpack look={look} detachRef={detachable} />
         {([-0.22, 0.22] as const).map((x, i) => (
           <group key={x} position={[x, 1.68, -0.55]} rotation={[0.55, 0, 0]}>
             <mesh>
@@ -295,28 +248,7 @@ export function MechModel({ worldRef, look }: { worldRef: RefObject<SimWorld>; l
               <Part args={[0.1, 0.5, 0.1]} position={[-0.02, 0.2, 0]} color={YELLOW} />
             </group>
             <group ref={saber} position={[-0.08, -1.18, 0.15]} rotation={[Math.PI / 2, 0, 0]} visible={false}>
-              {look.meleeWeapon === 'blade' ? (
-                <>
-                  {/* 対艦刀: 長い実体剣と、刃先のビーム */}
-                  <Part args={[0.12, 2.6, 0.32]} position={[0, 1.3, 0]} color={BLADE} />
-                  <Part args={[0.14, 0.4, 0.14]} position={[0, -0.05, 0]} color={DARK} />
-                  <mesh position={[0, 1.3, 0.2]}>
-                    <boxGeometry args={[0.06, 2.5, 0.08]} />
-                    <meshBasicMaterial color={SABER} transparent opacity={0.7} blending={AdditiveBlending} depthWrite={false} />
-                  </mesh>
-                </>
-              ) : (
-                <>
-                  <mesh position={[0, 1.0, 0]}>
-                    <cylinderGeometry args={[0.05, 0.05, 2.0, 8]} />
-                    <meshBasicMaterial color="#ffffff" />
-                  </mesh>
-                  <mesh position={[0, 1.0, 0]}>
-                    <cylinderGeometry args={[0.13, 0.11, 2.1, 10]} />
-                    <meshBasicMaterial color={SABER} transparent opacity={0.6} blending={AdditiveBlending} depthWrite={false} />
-                  </mesh>
-                </>
-              )}
+              <MeleeWeapon />
             </group>
           </group>
         </group>

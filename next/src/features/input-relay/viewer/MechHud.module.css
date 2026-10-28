@@ -491,7 +491,7 @@
 }
 
 .hud[data-compact='true'] .boost {
-  top: 4.4rem;
+  top: 2.6rem;
   bottom: auto;
   left: 0.75rem;
   justify-items: start;
@@ -516,7 +516,7 @@
 
 .hud[data-compact='true'] .weapons {
   /* zoom は top / right にもかかるので、縮めたあとの位置で右上（SEED 表示の下）にそろう値にしている */
-  top: 10rem;
+  top: 5rem;
   right: 1.5rem;
   bottom: auto;
   gap: 0.2rem;

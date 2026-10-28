@@ -9,7 +9,7 @@
 - **言語**: TypeScript（strict モード）
 - **フレームワーク**: Next.js（App Router）
 - **UIライブラリ**: React
-- **スタイリング**: CSS Modules ＋ `src/styles/theme.css` のデザイントークン（アーケード筐体テーマ）。立体感はグラデーションと多層シャドウによる CSS 疑似3Dで表現し、練習 UI では3Dライブラリを使わない。例外として、PC 側の入力リレー 3D ビューア（`/tools/input-relay`）だけは three / @react-three/fiber で描画する（`next/dynamic` の ssr:false で読み込む）。参照モック: `design/arcade-ui-mock.html`
+- **スタイリング**: CSS Modules ＋ `src/styles/theme.css` のデザイントークン（TACTICAL LINK：水色の計器盤のテーマ。決まりごとは `ui-design.md`）。練習 UI では3Dライブラリを使わない。例外として、PC 側の 3D ビュー（トップ `/`）だけは three / @react-three/fiber で描画する（`next/dynamic` の ssr:false で読み込む）
 - **データ永続化**: ローカルストレージ（MVP）→ Firebase（Firestore + Auth）
 
 ## 開発標準

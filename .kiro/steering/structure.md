@@ -28,6 +28,17 @@
 ### Routeページ
 **場所**: `src/app/` （Next.js App Router規約に従う）
 
+| URL | 画面 | 主な端末 |
+|-----|------|----------|
+| `/` | 3D ビュー（スマホの入力どおりに機体を動かす）。ヘッダーなし、ほかの画面へは設定モーダルから | PC |
+| `/practice` | フリー練習。PC の QR コードは `/practice?relay=コード` を開く | スマホ横 |
+| `/practice/[commandId]` | コマンド練習 | スマホ横 |
+| `/commands`, `/commands/new`, `/commands/[id]` | コマンド一覧・登録・詳細 | スマホ |
+| `/tools/chart-author` | 譜面作成（メニューには出さない） | PC |
+
+- `/` 以外の画面は `src/app/(site)/` にまとめ、その `layout.tsx` でメニューと「コマンド一覧に戻る」を出す。
+- 旧 URL は転送で残す: `/3d`・`/tools/input-relay` → `/`、`/?relay=コード` → `/practice?relay=コード`。
+
 ## 命名規則
 
 - **ファイル（コンポーネント）**: PascalCase（例: `CommandCard.tsx`）

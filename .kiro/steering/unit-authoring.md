@@ -1,6 +1,6 @@
 # 機体の足し方（入力リレー 3D ビュー）
 
-PC 側の 3D ビュー（`/3d`）に機体と技を足す手順。参照する wiki は `exvs-references.md`、見た目（3D モデル）の作り方は `unit-modeling.md`。Claude Code からは `/add-unit <wiki の機体ページ URL>`（`.claude/skills/add-unit/`）でこの手順を呼び出せる。
+PC 側の 3D ビュー（トップ `/`）に機体と技を足す手順。参照する wiki は `exvs-references.md`、見た目（3D モデル）の作り方は `unit-modeling.md`。Claude Code からは `/add-unit <wiki の機体ページ URL>`（`.claude/skills/add-unit/`）でこの手順を呼び出せる。
 
 ## 方針
 
@@ -52,7 +52,7 @@ next/src/__tests__/features/input-relay/sim/
 7. **見た目と技表**: `look`（配色・背中の装備・格闘武器）と `commands` を書く。新しい装備のモデルが要るときは `unit-modeling.md`。
 8. **登録**: `sim/units/index.ts` で export し、`UNITS` に足す。
 9. **テスト**: `_template.test.ts` をコピーして `units/<機体id>.test.ts` を作る。world を動かすテストは `rouge.test.ts` を見本にする。`contract.test.ts` は UNITS を全部見るので書き足さなくてよい。
-10. **確かめる**: `next/` で `pnpm test`・`pnpm typecheck`・`pnpm lint`。`pnpm dev` で `/3d` を開き、機体選択（設定モーダル）から選んで動かす（キーボード: WASD・十字キーと J/O/[ など）。
+10. **確かめる**: `next/` で `pnpm test`・`pnpm typecheck`・`pnpm lint`。`pnpm dev` で トップ（`/`）を開き、機体選択（設定モーダル）から選んで動かす（キーボード: WASD・十字キーと J/O/[ など）。
 
 ## wiki の項目 → 機体データの対応表
 
@@ -203,4 +203,4 @@ wiki に「アメキャン対応」「メインでキャンセルすると落下
 - [ ] `units/index.ts` の export と `UNITS`
 - [ ] `units/<機体id>.test.ts`
 - [ ] `pnpm test`・`pnpm typecheck`・`pnpm lint` が通る
-- [ ] `/3d` で選んで、主な技とキャンセルを実際に出してみた
+- [ ] トップ（`/`）で選んで、主な技とキャンセルを実際に出してみた

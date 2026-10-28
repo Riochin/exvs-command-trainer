@@ -26,11 +26,11 @@ const shareTechMono = Share_Tech_Mono({
 
 export const metadata: Metadata = {
   title: "EXVSコマンド道場",
-  description: "機動戦士ガンダム EXTREME VS.のコマンドを練習・確認できるWebアプリ。コマンドの登録・編集・練習モードを搭載。",
+  description: "機動戦士ガンダム EXTREME VS.のコマンドを練習・確認できるWebアプリ。3D ビューでスマホの入力どおりに機体を動かせるほか、コマンドの登録・編集・練習モードを搭載。",
   metadataBase: new URL("https://exvs-command-trainer.vercel.app"),
   openGraph: {
     title: "EXVSコマンド道場",
-    description: "機動戦士ガンダム EXTREME VS.のコマンドを練習・確認できるWebアプリ。コマンドの登録・編集・練習モードを搭載。",
+    description: "機動戦士ガンダム EXTREME VS.のコマンドを練習・確認できるWebアプリ。3D ビューでスマホの入力どおりに機体を動かせるほか、コマンドの登録・編集・練習モードを搭載。",
     images: [{ url: "/ogp.png", width: 1200, height: 630 }],
     locale: "ja_JP",
     type: "website",
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "EXVSコマンド道場",
-    description: "機動戦士ガンダム EXTREME VS.のコマンドを練習・確認できるWebアプリ。コマンドの登録・編集・練習モードを搭載。",
+    description: "機動戦士ガンダム EXTREME VS.のコマンドを練習・確認できるWebアプリ。3D ビューでスマホの入力どおりに機体を動かせるほか、コマンドの登録・編集・練習モードを搭載。",
     images: ["/ogp.png"],
   },
   icons: {

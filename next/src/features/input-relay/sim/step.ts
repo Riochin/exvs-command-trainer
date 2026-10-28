@@ -30,7 +30,7 @@ import {
 } from './actions';
 import { cancelState, INPUT_BUFFER_S, routeName } from './cancel';
 import type { EffectKind, InputResult, LeverDirection, MechAction, MechState, SimWorld, Vec3 } from './types';
-import { GENERIC_UNIT, isRejection, unitById, type LeverKind, type UnitDef } from './units';
+import { chargeTimeOf, GENERIC_UNIT, isRejection, unitById, type LeverKind, type UnitDef } from './units';
 
 /**
  * 機体のシミュレーション。毎フレーム呼ぶので、world はコピーせずその場で書き換える。
@@ -126,6 +126,7 @@ export function createWorld({
       actionTime: 0,
       actionFired: false,
       charging: { shot: false, melee: false },
+      chargeSince: { shot: null, melee: null },
       meleeStage: 0,
       buffered: null,
       chain: [],
@@ -560,22 +561,42 @@ function requestAction(world: SimWorld, kind: MechAction, quiet = false): InputR
   }
 }
 
+const CHARGE_KIND: Partial<Record<ButtonType, 'shot' | 'melee'>> = {
+  'shot-charge-start': 'shot',
+  'shot-charge-end': 'shot',
+  'melee-charge-start': 'melee',
+  'melee-charge-end': 'melee',
+};
+
+/** チャージの溜まり具合（0〜1）。溜めていなければ 0 */
+export function chargeRatio(world: SimWorld, kind: 'shot' | 'melee'): number {
+  const since = world.mech.chargeSince[kind];
+  if (since === null) return 0;
+  return Math.min(1, (world.time - since) / chargeTimeOf(unitById(world.unitId), kind));
+}
+
 /**
  * 解釈済みの入力（射撃・格闘・BD・同時押し・チャージなど）を受ける。
  * チャージ開始は行動ではなく「溜めている」状態として持つ。
  */
 export function applyInput(world: SimWorld, button: ButtonType): InputResult {
   const mech = world.mech;
-  if (button === 'shot-charge-start') {
-    mech.charging.shot = true;
-    return 'started';
+  const chargeKind = CHARGE_KIND[button];
+  if (chargeKind !== undefined) {
+    if (button.endsWith('-start')) {
+      mech.charging[chargeKind] = true;
+      mech.chargeSince[chargeKind] = world.time;
+      return 'started';
+    }
+    // 満タンになる前に離したら CS は出ない（溜めは捨てる）
+    const full = chargeRatio(world, chargeKind) >= 1;
+    mech.charging[chargeKind] = false;
+    mech.chargeSince[chargeKind] = null;
+    if (!full) {
+      pushEvent(world, 'reject', 'チャージ不足');
+      return 'rejected';
+    }
   }
-  if (button === 'melee-charge-start') {
-    mech.charging.melee = true;
-    return 'started';
-  }
-  if (button === 'shot-charge-end') mech.charging.shot = false;
-  if (button === 'melee-charge-end') mech.charging.melee = false;
 
   const kind = INPUT_TO_SLOT[button];
   if (kind === undefined) return 'rejected';

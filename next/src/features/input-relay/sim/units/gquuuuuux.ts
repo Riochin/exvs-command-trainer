@@ -353,4 +353,11 @@ export const GQUUUUUUX: UnitDef = {
     { input: '格闘', name: 'N格・横格・前格・BD格', note: '追加入力で次の段、前で蹴り抜け、後ろで巴投げ' },
     { input: '格闘長押し', name: 'オメガ・サイコミュ解放（17 秒）', note: '特格が鞭（2 発、当たる前に特格で突撃掴み）に、前派生が連続斬り抜けに' },
   ],
+  weapons: [
+    { ammo: 'main', buttons: ['shot'], charge: 'shot' },
+    { ammo: 'sub', buttons: ['shot', 'melee'] },
+    { ammo: 'gfred', buttons: ['shot', 'jump'] },
+    { ammo: 'whip', buttons: ['melee', 'jump'], onlyInSeed: true },
+    { buttons: ['melee'], charge: 'melee' },
+  ],
 };

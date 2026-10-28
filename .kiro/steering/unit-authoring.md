@@ -118,6 +118,22 @@ wiki の各武装のリロード表を写す。キーは技の `ammo` に書く�
 | アシストが消えてからリロード（「アシスト消滅 7 秒」など） | `waitsForAssists: ['<AssistKind>', …]` |
 | 弾数「-」（無限）、CS | `ammo` を書かない |
 
+### 右下の武装パネル（`weapons`）とチャージ時間（`chargeTime`）
+
+画面右下に、上から 1 行ずつ出す。行の左に押すボタン（射撃・格闘・ジャンプ）が並び、`buttons` に書いたものだけ光る。パネルの名前は武装の固有名ではなく、押し方から決まる呼び名（ビームライフル・サブ射撃・特殊射撃・特殊格闘・後格闘・格闘チャージ）で統一している（`weaponPanelName`）。
+
+| 武装 | `WeaponPanelDef` |
+|------|------|
+| メイン（射撃 CS あり） | `{ ammo: 'main', buttons: ['shot'], charge: 'shot' }`（CHARGE ゲージがメインの行の 2 段目に出る） |
+| サブ | `{ ammo: 'sub', buttons: ['shot', 'melee'] }` |
+| 特射 / 特格 | `buttons: ['shot', 'jump']` / `['melee', 'jump']` |
+| 後格など、レバーが要る技 | `buttons: ['melee'], lever: 'back'` |
+| 格闘 CS（弾なし） | `{ buttons: ['melee'], charge: 'melee' }`（コマンドの上に CHARGE!。時限強化中は残り秒数） |
+| 時限強化中だけ使える武装（オメガ中の鞭など） | `onlyInSeed: true` |
+
+- `ammo` のキーはどれも 1 行ずつ `weapons` に入れる（契約テストで確かめる）。弾もチャージもない技（弾数「-」の特格など）は入れない。
+- CS は満タンになってから離したときだけ出る。満タンまでの秒数（チャージ開始から）は `chargeTime: { shot, melee }`。wiki に「チャージ 2 秒」などがあれば写し、無ければ省いて標準の 2 秒にする。
+
 ### BD 回数（`boostScale`）
 
 汎用機の BD 回数をおよそ 4 回として、`boostScale = 4 / BD回数`。時限強化中に BD 回数が増える機体は `seedBoostScale = 4 / 強化中のBD回数`。
@@ -182,6 +198,7 @@ wiki に「アメキャン対応」「メインでキャンセルすると落下
 - [ ] 弾数・リロード方式（常時 / 撃ち切り）・時限強化中のリロード
 - [ ] `boostScale = 4 / BD回数`（強化中は `seedBoostScale`）
 - [ ] `look`（配色 4 色・背中の装備・格闘武器）と `commands`
+- [ ] `weapons`（右下の武装パネル。弾ごとの行・押すボタン・チャージ）と、wiki にあれば `chargeTime`
 - [ ] `units/index.ts` の export と `UNITS`
 - [ ] `units/<機体id>.test.ts`
 - [ ] `pnpm test`・`pnpm typecheck`・`pnpm lint` が通る

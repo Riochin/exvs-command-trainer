@@ -25,6 +25,7 @@ argument-hint: <EXVS2IB wiki の機体ページ URL または機体名>
 3. **sim 本体を触る必要があるか判断する**: 既存の `AssistKind`・`ProjectileKind`・`buff: 'seed'`・`BackpackKind`・`MeleeWeaponKind` で表せない武装がある場合、どこに何を足すかを `unit-authoring.md`「新しい種類のアシスト・弾・時限強化が要るとき」で確かめる。大きな追加（新しいアシストの動きなど）はユーザーに方針を一言伝えてから進める。
 4. **機体データ**: `_template.ts` を `sim/units/<機体id>.ts` にコピーして書く。先頭に wiki の URL・作品版・確認日。
 5. **見た目**: `look` を書く。新しい装備が要れば `viewer/parts/equipment.tsx` に足す。
+   右下の武装パネル `weapons`（弾ごとの行・押すボタン・射撃／格闘チャージ）と、wiki にチャージ時間があれば `chargeTime` も書く（`unit-authoring.md`「右下の武装パネル」）。
 6. **登録**: `sim/units/index.ts` の export と `UNITS`。
 7. **テスト**: `_template.test.ts` をコピーして `__tests__/features/input-relay/sim/units/<機体id>.test.ts`。world を動かすテスト（弾数・キャンセル・アメキャン・時限強化）は `rouge.test.ts` を見本に。
 8. **確かめる**: `next/` で `pnpm test`・`pnpm typecheck`・`pnpm lint`。可能なら `pnpm dev` で `/3d` を開いて選び、主な技を出してみる。

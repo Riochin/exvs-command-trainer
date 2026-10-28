@@ -73,7 +73,7 @@
 /* 上端中央の小さな帯。接続状態と、機体選択・設定の入口 */
 .toolbar {
   position: absolute;
-  top: 0.5rem;
+  top: calc(0.5rem + env(safe-area-inset-top));
   left: 50%;
   display: flex;
   align-items: center;
@@ -135,7 +135,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
+  padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
+    max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
   background: rgba(0, 0, 0, 0.6);
 }
 
@@ -274,7 +275,7 @@
 .connect {
   position: absolute;
   /* 機体に被らないよう上に寄せる（上端の帯の下） */
-  top: 3rem;
+  top: calc(3rem + env(safe-area-inset-top));
   left: 50%;
   display: flex;
   flex-wrap: wrap;
@@ -499,7 +500,7 @@
 .touchStick {
   position: absolute;
   left: max(0.75rem, env(safe-area-inset-left));
-  bottom: 1rem;
+  bottom: calc(1rem + env(safe-area-inset-bottom));
 }
 
 /*
@@ -510,7 +511,8 @@
   position: absolute;
   right: max(0.25rem, env(safe-area-inset-right));
   /* いちばん低い射撃ボタンが半分ほど見える深さ */
-  bottom: calc(min(42vh, 165px) * -0.53);
+  /* ホームバーの分は上げる（バーの上で指を滑らせるとホームに戻ってしまう） */
+  bottom: calc(min(42vh, 165px) * -0.53 + env(safe-area-inset-bottom));
 }
 
 /* 縦向きはボタンの列が左下のスティックの上まで届くので、スティックより上に置く */

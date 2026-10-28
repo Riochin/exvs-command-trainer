@@ -79,7 +79,8 @@
 
 /* 三角に並べる: 射撃は右下、格闘は左下、ジャンプは上。親指で 2 つを同時に押せる間隔 */
 .touchController {
-  --touch-size: clamp(3.2rem, 13vmin, 5rem);
+  /* 練習画面のアケコン（--btn-size）と同じ大きさ */
+  --touch-size: min(24vw, 120px);
   position: relative;
   width: calc(var(--touch-size) * 2.3);
   height: calc(var(--touch-size) * 2.1);

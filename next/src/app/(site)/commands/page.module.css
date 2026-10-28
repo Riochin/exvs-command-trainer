@@ -10,7 +10,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 24px;
+  /* 右上に固定のメニューボタンが重なるので、その分だけ右を空ける */
+  padding: var(--space-4) 4rem var(--space-4) var(--space-5);
   background: var(--glass);
   border-bottom: 1px solid var(--line);
   box-shadow: var(--shadow-drop-md);
@@ -19,9 +20,9 @@
 .header h1 {
   font-family: var(--font-body);
   font-size: 1.25rem;
-  font-weight: 900;
-  letter-spacing: var(--letter-spacing-body);
-  color: var(--color-text);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--text);
   margin: 0;
 }
 

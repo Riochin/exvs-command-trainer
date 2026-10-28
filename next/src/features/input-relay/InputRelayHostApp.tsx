@@ -76,14 +76,21 @@ function describeEntry(entry: RelayLogEntry): string {
 }
 
 const noopSubscribe = () => () => {};
-/** 指で操作する端末（スマホ・タブレット）か。タッチ操作の初期値に使う */
-const COARSE_POINTER = '(pointer: coarse)';
+/**
+ * 指で操作する端末（スマホ・タブレット）か。タッチ操作の初期値に使う。
+ * 主な入力が指か、マウスのホバーがない端末なら指とみなす
+ */
+const COARSE_POINTER = '(pointer: coarse), (hover: none)';
+/** 「PC 版サイトを表示」にしたスマホでも指とみなす（画面の短い辺がこれ以下でタッチできる端末） */
+const PHONE_SHORT_SIDE_PX = 600;
 const subscribeCoarsePointer = (onChange: () => void) => {
   const query = window.matchMedia(COARSE_POINTER);
   query.addEventListener('change', onChange);
   return () => query.removeEventListener('change', onChange);
 };
-const readCoarsePointer = () => window.matchMedia(COARSE_POINTER).matches;
+const readCoarsePointer = () =>
+  window.matchMedia(COARSE_POINTER).matches ||
+  (navigator.maxTouchPoints > 0 && Math.min(window.screen.width, window.screen.height) <= PHONE_SHORT_SIDE_PX);
 const readServerCoarsePointer = () => false;
 /** タッチ用ボタンはキーボードに反応させない（キーボードは隠したコントローラが受け持つ） */
 const NO_KEYS: Readonly<Record<string, ArcadePhysicalButton>> = {};
@@ -228,7 +235,7 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
 
       <div className={styles.stage}>
         <MechViewer worldRef={worldRef} unitId={unitId} />
-        <MechHud worldRef={worldRef} showLever={!showStick} touchButtons={showTouchButtons} />
+        <MechHud worldRef={worldRef} showLever={!showStick} compact={touchControls} />
 
         {/* タッチ操作: スティックは左下、ボタンは右下に半透明で重ねる（左右の親指で持つ配置） */}
         {showStick && (

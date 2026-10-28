@@ -128,31 +128,6 @@ function Sky() {
   );
 }
 
-/** 奥行きの目安になる建物。毎回同じ配置になるよう、乱数の代わりに角度から決める */
-function Buildings() {
-  const blocks = useMemo(
-    () =>
-      Array.from({ length: 28 }, (_, i) => {
-        const angle = (i / 28) * Math.PI * 2;
-        const radius = 85 + ((i * 37) % 40);
-        const height = 8 + ((i * 53) % 22);
-        const width = 6 + ((i * 29) % 8);
-        return { x: Math.sin(angle) * radius, z: Math.cos(angle) * radius - 20, height, width };
-      }),
-    [],
-  );
-  return (
-    <group>
-      {blocks.map((b, i) => (
-        <mesh key={i} position={[b.x, b.height / 2, b.z]} castShadow receiveShadow>
-          <boxGeometry args={[b.width, b.height, b.width]} />
-          <meshStandardMaterial color={i % 3 === 0 ? '#8e96a3' : '#a7adb7'} roughness={0.9} />
-        </mesh>
-      ))}
-    </group>
-  );
-}
-
 export function MechViewer({ worldRef, unitId }: { worldRef: RefObject<SimWorld>; unitId: string }) {
   const look = unitById(unitId).look;
   return (
@@ -167,8 +142,7 @@ export function MechViewer({ worldRef, unitId }: { worldRef: RefObject<SimWorld>
         <planeGeometry args={[900, 900]} />
         <meshStandardMaterial color={GROUND} roughness={1} />
       </mesh>
-      <gridHelper args={[900, 180, '#4b5747', '#55614f']} position={[0, 0.01, 0]} />
-      <Buildings />
+      <gridHelper args={[900, 180, '#36412f', '#414c3b']} position={[0, 0.01, 0]} />
       <MechModel key={unitId} worldRef={worldRef} look={look} />
       <Assists worldRef={worldRef} />
       <EnemyDummy worldRef={worldRef} />

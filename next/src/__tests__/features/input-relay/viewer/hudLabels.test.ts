@@ -6,7 +6,7 @@ const route = (label: string): SimEvent => ({ id: 1, kind: 'route', label, time:
 const reject = (label: string): SimEvent => ({ id: 1, kind: 'reject', label, time: 0 });
 
 describe('hudLabel', () => {
-  it.each(['ズンダ', 'ズンダ 3発', '慣性ジャンプ', '慣性ジャンプ（入れっぱ）', 'フワステ', '振り向き撃ち', 'アメキャン', 'ステBD'])(
+  it.each(['ズンダ', 'ズンダ 3発', '慣性ジャンプ', '慣性ジャンプ（入れっぱ）', '振り向き撃ち', 'アメキャン', 'ステBD'])(
     'ルート「%s」はそのまま出す',
     (label) => {
       expect(hudLabel(route(label))).toBe(label);
@@ -21,6 +21,7 @@ describe('hudLabel', () => {
     'ステズンダ',
     'ステズンダ 3発',
     '誘導切り',
+    'フワステ',
     '滑り特射',
     'アサキャン',
     'BDC',

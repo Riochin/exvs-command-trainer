@@ -10,7 +10,6 @@ import type { SimEvent } from '../sim/types';
 const ROUTE_LABELS: ReadonlyMap<string, string> = new Map([
   ['慣性ジャンプ', '慣性ジャンプ'],
   ['慣性ジャンプ（入れっぱ）', '慣性ジャンプ（入れっぱ）'],
-  ['フワステ', 'フワステ'],
   ['振り向き撃ち', '振り向き撃ち'],
   ['アメキャン', 'アメキャン'],
   ['ステBD', 'ステBD'],

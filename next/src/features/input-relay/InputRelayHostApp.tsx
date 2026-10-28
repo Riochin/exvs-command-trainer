@@ -118,6 +118,11 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
   const coarsePointer = useSyncExternalStore(subscribeCoarsePointer, readCoarsePointer, readServerCoarsePointer);
   const [touchOverride, setTouchOverride] = useState<boolean | null>(null);
   const touchControls = touchOverride ?? coarsePointer;
+  // タッチ操作の中で、レバー（スティック）とボタンは別々に出し分けられる
+  const [touchLever, setTouchLever] = useState(true);
+  const [touchButtons, setTouchButtons] = useState(true);
+  const showStick = touchControls && touchLever;
+  const showTouchButtons = touchControls && touchButtons;
   const handleStickLever = useCallback((direction: LeverDirection, pressed: boolean) => {
     setLever(worldRef.current, direction, pressed);
   }, []);
@@ -223,20 +228,22 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
 
       <div className={styles.stage}>
         <MechViewer worldRef={worldRef} unitId={unitId} />
-        <MechHud worldRef={worldRef} showLever={!touchControls} />
+        <MechHud worldRef={worldRef} showLever={!showStick} touchButtons={showTouchButtons} />
 
-        {/* タッチ操作: 画面左側に、スティック（下）とボタン（その上）を半透明で重ねる */}
-        {touchControls && (
-          <div className={styles.touchLayer} data-testid="touch-controls">
-            <div className={styles.touchButtons}>
-              <ArcadeController
-                variant="touch"
-                onButtonPress={handleKeyboardInput}
-                onRawInput={handleKeyboardRaw}
-                keyboardKeys={NO_KEYS}
-              />
-            </div>
+        {/* タッチ操作: スティックは左下、ボタンは右下に半透明で重ねる（左右の親指で持つ配置） */}
+        {showStick && (
+          <div className={styles.touchStick} data-testid="touch-stick">
             <VirtualStick onLever={handleStickLever} />
+          </div>
+        )}
+        {showTouchButtons && (
+          <div className={styles.touchButtons} data-testid="touch-buttons">
+            <ArcadeController
+              variant="touch"
+              onButtonPress={handleKeyboardInput}
+              onRawInput={handleKeyboardRaw}
+              keyboardKeys={NO_KEYS}
+            />
           </div>
         )}
 
@@ -345,8 +352,28 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
                     タッチ操作: {touchControls ? 'ON' : 'OFF'}
                   </button>
                 </div>
+                <div className={styles.subToggles}>
+                  <button
+                    type="button"
+                    className={styles.restart}
+                    onClick={() => setTouchLever(!touchLever)}
+                    aria-pressed={showStick}
+                    disabled={!touchControls}
+                  >
+                    レバー: {showStick ? 'ON' : 'OFF'}
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.restart}
+                    onClick={() => setTouchButtons(!touchButtons)}
+                    aria-pressed={showTouchButtons}
+                    disabled={!touchControls}
+                  >
+                    ボタン: {showTouchButtons ? 'ON' : 'OFF'}
+                  </button>
+                </div>
                 <p className={styles.note}>
-                  タッチ操作は、この画面をスマホで開いて操作するとき用。画面左側にスティックと射撃・格闘・ジャンプのボタンが出ます
+                  タッチ操作は、この画面をスマホで開いて操作するとき用。左下にスティック、右下に射撃・格闘・ジャンプのボタンが出ます（別々に消せます）
                 </p>
                 <h4 className={styles.subHeading}>キーボード操作</h4>
                 <dl className={styles.keyList}>

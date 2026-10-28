@@ -477,21 +477,36 @@
   text-align: right;
 }
 
-/* タッチ操作のレイヤー。画面左側だけに置き、ほかの場所のタップは 3D ビューに通す */
-.touchLayer {
+/* タッチ操作。スティックは左下、ボタンは右下。置いた場所以外のタップは 3D ビューに通す */
+.touchStick {
   position: absolute;
   left: max(0.75rem, env(safe-area-inset-left));
   bottom: 1rem;
-  display: grid;
-  justify-items: center;
-  gap: 0.75rem;
-  pointer-events: none;
-}
-
-.touchLayer > * {
-  pointer-events: auto;
 }
 
 .touchButtons {
-  margin-bottom: 0.25rem;
+  position: absolute;
+  right: max(0.5rem, env(safe-area-inset-right));
+  bottom: 0.5rem;
+}
+
+/* 縦向きは画面が細いので、中央下のブーストゲージより上に上げる */
+@media (orientation: portrait) {
+  .touchButtons {
+    bottom: 4.5rem;
+  }
+}
+
+/* タッチ操作の中のレバー・ボタンの切り替え（親の ON/OFF の下に一段下げて並べる） */
+.subToggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding-left: 1rem;
+  border-left: 2px solid var(--surface-plate-edge);
+}
+
+.subToggles button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }

@@ -482,21 +482,44 @@
   }
 }
 
+/* HIT・ブースト・時限強化・武装のまとまり。ふだんは箱を作らず、中身はそれぞれの場所に置く */
+.corner {
+  display: contents;
+}
+
 /*
  * タッチ操作中の小さな HUD（data-compact）。指とボタンのために画面を空け、残弾とブーストだけ最低限見せる。
- * ブーストゲージは左上（HIT の下）に細く、武装パネルは右上に縦に並べて縮める。機体名と押し方の表示は省く
+ * HIT・ブースト・時限強化・武装を 3D 画面の右上にまとめて縦に積む。機体名と押し方の表示は省く
  */
+.hud[data-compact='true'] .corner {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.3rem;
+}
+
+.hud[data-compact='true'] .corner > * {
+  position: static;
+}
+
+/* 縦向きは上の帯（接続状態・機体・設定）が右上まで届くので、その下から積む */
+@media (orientation: portrait) {
+  .hud[data-compact='true'] .corner {
+    top: 3.2rem;
+  }
+}
+
 .hud[data-compact='true'] .unitName {
   display: none;
 }
 
 .hud[data-compact='true'] .boost {
-  top: 2.6rem;
-  bottom: auto;
-  left: 0.75rem;
-  justify-items: start;
+  justify-items: end;
   gap: 0.1rem;
-  width: min(9rem, 32%);
+  width: 9rem;
   transform: none;
 }
 
@@ -515,10 +538,6 @@
 }
 
 .hud[data-compact='true'] .weapons {
-  /* zoom は top / right にもかかるので、縮めたあとの位置で右上（SEED 表示の下）にそろう値にしている */
-  top: 5rem;
-  right: 1.5rem;
-  bottom: auto;
   gap: 0.2rem;
   zoom: 0.5;
 }

@@ -167,11 +167,81 @@ export function MechHud({ worldRef, showLever = true, compact = false }: MechHud
 
   return (
     <div className={styles.hud} data-testid="mech-hud" data-compact={compact}>
-      <div className={styles.topLeft}>
-        <span className={styles.caption}>HIT</span>
-        <span className={styles.hits}>{hud.hitCount}</span>
-        <span className={styles.caption}>被弾</span>
-        <span className={styles.damage}>{hud.mechHits}</span>
+      {/*
+        HIT・ブースト・時限強化・武装。ふだんは画面の各所に置き（display: contents）、
+        タッチ操作中（compact）は 3D 画面の右上にまとめて縦に積む
+      */}
+      <div className={styles.corner}>
+        <div className={styles.topLeft}>
+          <span className={styles.caption}>HIT</span>
+          <span className={styles.hits}>{hud.hitCount}</span>
+          <span className={styles.caption}>被弾</span>
+          <span className={styles.damage}>{hud.mechHits}</span>
+        </div>
+        {/* ブーストゲージは EXVS と同じく画面中央下。斜めに切った横長のゲージ */}
+        <div className={styles.boost}>
+          {status && (
+            <span className={styles.status} data-status={status}>
+              {status}
+            </span>
+          )}
+          <div className={styles.gauge}>
+            <div className={styles.fill} data-overheat={hud.overheat} style={{ transform: `scaleX(${ratio})` }} />
+          </div>
+          <span className={styles.boostLabel}>
+            BOOST <span className={styles.uses} data-heavy={hud.airBoostUses > 3}>×{hud.airBoostUses}</span>
+          </span>
+        </div>
+        <div className={styles.unit}>
+          <span className={styles.unitName}>{hud.unitName}</span>
+          {hud.seed !== null && (
+            <div className={styles.seed}>
+              SEED <span className={styles.seedBar}><span style={{ transform: `scaleX(${hud.seed})` }} /></span>
+            </div>
+          )}
+          {hud.seed === null && hud.seedCooldown > 0 && (
+            <div className={styles.seedWait}>SEED まで {Math.ceil(hud.seedCooldown)}s</div>
+          )}
+        </div>
+        {/* 残弾は EXVS と同じく画面右下。左に押すボタン、右に残弾とゲージ。チャージのある行はゲージが 2 段 */}
+        {hud.weapons.length > 0 && (
+          <ul className={styles.weapons} aria-label="武装">
+            {hud.weapons.map((w) => (
+              <li
+                key={w.key}
+                className={styles.weapon}
+                data-empty={w.empty}
+                data-full={w.charge === 1}
+                aria-label={`${w.name}（${[w.lever ? `${w.lever}レバー` : '', ...w.buttons.map((b) => BUTTON_NAMES[b])].filter(Boolean).join('＋')}${w.chargeTag ? '長押し' : ''}）`}
+              >
+                <span className={styles.command}>
+                  {w.chargeTag && <span className={styles.chargeTag}>CHARGE!</span>}
+                  <span className={styles.buttons}>
+                    {w.lever && <span className={styles.leverChip}>{w.lever}</span>}
+                    {BUTTON_ORDER.map((b) => (
+                      <span key={b} className={styles.button} data-button={b} data-on={w.buttons.includes(b)} />
+                    ))}
+                  </span>
+                </span>
+                <span className={styles.panel}>
+                  <span className={styles.weaponCount}>{w.count}</span>
+                  <span className={styles.weaponName}>{w.name}</span>
+                  <span className={styles.gauges}>
+                    <span className={styles.ammoGauge}>
+                      <span style={{ transform: `scaleX(${w.gauge})` }} />
+                    </span>
+                    {w.charge !== null && (
+                      <span className={styles.chargeGauge} data-testid="charge-gauge" data-ratio={w.charge.toFixed(2)}>
+                        <span style={{ transform: `scaleX(${w.charge})` }} />
+                        <b>CHARGE!</b>
+                      </span>
+                    )}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
       <div className={styles.action} key={hud.action}>
         {hud.action}
@@ -187,17 +257,6 @@ export function MechHud({ worldRef, showLever = true, compact = false }: MechHud
         </div>
       )}
       {hud.chain.length > 1 && <div className={styles.chain}>{hud.chain.join(' › ')}</div>}
-      <div className={styles.unit}>
-        <span className={styles.unitName}>{hud.unitName}</span>
-        {hud.seed !== null && (
-          <div className={styles.seed}>
-            SEED <span className={styles.seedBar}><span style={{ transform: `scaleX(${hud.seed})` }} /></span>
-          </div>
-        )}
-        {hud.seed === null && hud.seedCooldown > 0 && (
-          <div className={styles.seedWait}>SEED まで {Math.ceil(hud.seedCooldown)}s</div>
-        )}
-      </div>
       {/* タッチ操作中はスティックが同じ場所に出るので隠す */}
       {showLever && (
         <div className={styles.lever} aria-label="レバー">
@@ -207,59 +266,6 @@ export function MechHud({ worldRef, showLever = true, compact = false }: MechHud
             </span>
           ))}
         </div>
-      )}
-      {/* ブーストゲージは EXVS と同じく画面中央下。斜めに切った横長のゲージ */}
-      <div className={styles.boost}>
-        {status && (
-          <span className={styles.status} data-status={status}>
-            {status}
-          </span>
-        )}
-        <div className={styles.gauge}>
-          <div className={styles.fill} data-overheat={hud.overheat} style={{ transform: `scaleX(${ratio})` }} />
-        </div>
-        <span className={styles.boostLabel}>
-          BOOST <span className={styles.uses} data-heavy={hud.airBoostUses > 3}>×{hud.airBoostUses}</span>
-        </span>
-      </div>
-      {/* 残弾は EXVS と同じく画面右下。左に押すボタン、右に残弾とゲージ。チャージのある行はゲージが 2 段 */}
-      {hud.weapons.length > 0 && (
-        <ul className={styles.weapons} aria-label="武装">
-          {hud.weapons.map((w) => (
-            <li
-              key={w.key}
-              className={styles.weapon}
-              data-empty={w.empty}
-              data-full={w.charge === 1}
-              aria-label={`${w.name}（${[w.lever ? `${w.lever}レバー` : '', ...w.buttons.map((b) => BUTTON_NAMES[b])].filter(Boolean).join('＋')}${w.chargeTag ? '長押し' : ''}）`}
-            >
-              <span className={styles.command}>
-                {w.chargeTag && <span className={styles.chargeTag}>CHARGE!</span>}
-                <span className={styles.buttons}>
-                  {w.lever && <span className={styles.leverChip}>{w.lever}</span>}
-                  {BUTTON_ORDER.map((b) => (
-                    <span key={b} className={styles.button} data-button={b} data-on={w.buttons.includes(b)} />
-                  ))}
-                </span>
-              </span>
-              <span className={styles.panel}>
-                <span className={styles.weaponCount}>{w.count}</span>
-                <span className={styles.weaponName}>{w.name}</span>
-                <span className={styles.gauges}>
-                  <span className={styles.ammoGauge}>
-                    <span style={{ transform: `scaleX(${w.gauge})` }} />
-                  </span>
-                  {w.charge !== null && (
-                    <span className={styles.chargeGauge} data-testid="charge-gauge" data-ratio={w.charge.toFixed(2)}>
-                      <span style={{ transform: `scaleX(${w.charge})` }} />
-                      <b>CHARGE!</b>
-                    </span>
-                  )}
-                </span>
-              </span>
-            </li>
-          ))}
-        </ul>
       )}
     </div>
   );

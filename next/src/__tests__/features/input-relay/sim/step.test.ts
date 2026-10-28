@@ -5,6 +5,7 @@ import {
   INERTIA_LEVER_WINDOW_S,
   LANDING_LAG_MAX_S,
   LANDING_LAG_S,
+  JUMP_HOLD_S,
   STEP_TAP_WINDOW_S,
   WALK_SPEED,
 } from '@/features/input-relay/sim/actions';
@@ -28,15 +29,17 @@ function distanceToEnemy(world: SimWorld) {
   return Math.hypot(world.enemy.pos.x - world.mech.pos.x, world.enemy.pos.z - world.mech.pos.z);
 }
 
+/** ジャンプボタンを押し、ジャンプが始まるまで（JUMP_HOLD_S）押し続ける */
 function jumpDown(world: SimWorld) {
-  return applyRawInput(world, { button: 'jump', phase: 'down' });
+  applyRawInput(world, { button: 'jump', phase: 'down' });
+  run(world, JUMP_HOLD_S);
 }
 
 function jumpUp(world: SimWorld) {
   applyRawInput(world, { button: 'jump', phase: 'up' });
 }
 
-/** ジャンプを押してから離すまで seconds 秒 */
+/** ジャンプを始めてから離すまで seconds 秒 */
 function holdJump(world: SimWorld, seconds: number) {
   jumpDown(world);
   run(world, seconds);
@@ -45,7 +48,7 @@ function holdJump(world: SimWorld, seconds: number) {
 
 /** アケコンと同じく、2 回目のジャンプ押下で BD が届く。ボタンは押したまま */
 function startBd(world: SimWorld) {
-  jumpDown(world);
+  applyRawInput(world, { button: 'jump', phase: 'down' });
   return applyInput(world, 'bd');
 }
 
@@ -90,9 +93,10 @@ describe('sim', () => {
   });
 
   describe('ジャンプ', () => {
-    it('押した瞬間に上昇を始め、離すと落ちて着地し、硬直のあとにブーストが全回復する', () => {
+    it('少し押し続けると上昇を始め、離すと落ちて着地し、硬直のあとにブーストが全回復する', () => {
       const world = createWorld();
-      expect(jumpDown(world)).toBe('started');
+      jumpDown(world);
+      expect(world.mech.action).toBe('jump');
       run(world, 0.3);
       expect(world.mech.pos.y).toBeGreaterThan(3);
       jumpUp(world);
@@ -118,7 +122,41 @@ describe('sim', () => {
       expect(world.mech.action).toBe('idle');
     });
 
-    it('解釈済みの jump は使わない（生入力で扱う）', () => {
+    it('押した瞬間には飛ばない（BD の 1 回目の押下かもしれない）', () => {
+      const world = createWorld();
+      applyRawInput(world, { button: 'jump', phase: 'down' });
+      run(world, JUMP_HOLD_S / 2);
+      expect(world.mech.action).toBe('idle');
+      expect(world.mech.pos.y).toBe(0);
+    });
+
+    it('短く押して BD にならなかったら、アケコンの jump で小ジャンプする', () => {
+      const world = createWorld();
+      applyRawInput(world, { button: 'jump', phase: 'down' });
+      run(world, 0.04);
+      applyRawInput(world, { button: 'jump', phase: 'up' });
+      run(world, 0.2);
+      expect(world.mech.action).toBe('idle');
+      expect(applyInput(world, 'jump')).toBe('started');
+      run(world, 0.1);
+      expect(world.mech.pos.y).toBeGreaterThan(0.3);
+    });
+
+    it('長押しで飛んだあとに届くアケコンの jump では、もう一度飛ばない', () => {
+      const world = createWorld();
+      jumpDown(world);
+      expect(applyInput(world, 'jump')).toBe('rejected');
+    });
+
+    it('2 回目の押下で BD が届いたら、その押下は長押ししてもジャンプにならない', () => {
+      const world = createWorld();
+      startBd(world);
+      run(world, 0.3);
+      expect(world.mech.action).toBe('bd');
+      expect(world.events.map((e) => e.label)).not.toContain('ふわふわ');
+    });
+
+    it('ジャンプボタンを押していないときの解釈済み jump は使わない', () => {
       const world = createWorld();
       expect(applyInput(world, 'jump')).toBe('rejected');
       expect(world.events).toHaveLength(0);
@@ -295,7 +333,7 @@ describe('sim', () => {
     it('BD の 1 回目のジャンプ押下は、射撃中に出せなくても理由を出さない', () => {
       const world = createWorld();
       fireShot(world);
-      expect(jumpDown(world)).toBe('rejected');
+      jumpDown(world);
       expect(world.events).toHaveLength(0);
       expect(world.mech.action).toBe('shot');
     });
@@ -326,7 +364,7 @@ describe('sim', () => {
       const world = createWorld();
       applyInput(world, 'shot');
       run(world, 0.05);
-      jumpDown(world);
+      applyRawInput(world, { button: 'jump', phase: 'down' });
       expect(applyInput(world, 'bd')).toBe('buffered');
       expect(world.mech.action).toBe('shot');
       run(world, ACTIONS.shot.fireAt!);
@@ -640,7 +678,7 @@ describe('EXVS のテクニック', () => {
     tapLever(world, 'left');
     tapLever(world, 'left');
     run(world, 0.1);
-    expect(jumpDown(world)).toBe('canceled');
+    jumpDown(world);
     expect(lastRoute(world)).toBe('フワステ');
     run(world, 0.1);
     jumpUp(world);

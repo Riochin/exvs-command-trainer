@@ -69,6 +69,46 @@ function labels() {
   return world.events.map((e) => e.label);
 }
 
+describe('キーボードのジャンプボタン', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    carry = 0;
+    setup();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('2 回続けて押すと BD になり、1 回目の押下で機体は浮かない', () => {
+    down('[');
+    wait(40);
+    expect(world.mech.pos.y).toBe(0);
+    up('[');
+    wait(50);
+    expect(world.mech.action).toBe('idle');
+    down('[');
+    wait(100);
+    expect(world.mech.action).toBe('bd');
+    up('[');
+  });
+
+  it('少し長押しするとジャンプになる', () => {
+    down('[');
+    wait(200);
+    expect(world.mech.action).toBe('jump');
+    expect(world.mech.pos.y).toBeGreaterThan(0.3);
+    up('[');
+  });
+
+  it('短く 1 回だけ押したら、BD の 2 回目を待ってから小ジャンプする', () => {
+    tap('[', 40);
+    wait(300);
+    expect(world.mech.action).not.toBe('bd');
+    expect(world.mech.pos.y).toBeGreaterThan(0.3);
+  });
+});
+
 describe('キーボードで打つズンダ', () => {
   beforeEach(() => {
     vi.useFakeTimers();

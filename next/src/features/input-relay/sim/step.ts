@@ -15,6 +15,7 @@ import {
   INERTIA_LEVER_ACCEL,
   INERTIA_LEVER_WINDOW_S,
   CHAIN_GRACE_S,
+  JUMP_HOLD_S,
   BD_FROM_JUMP_WINDOW_S,
   INERTIA_MAX_SPEED,
   LANDING_LAG_MAX_S,
@@ -147,6 +148,7 @@ export function createWorld({
       inertiaPending: null,
       inertiaFlight: false,
       chainGraceUntil: null,
+      jumpPress: null,
     },
     enemy: {
       pos: { ...ENEMY_BASE },
@@ -311,7 +313,7 @@ function finishAction(world: SimWorld): void {
 function endAction(mech: MechState): void {
   if (mech.action === 'bd' || mech.action === 'step') {
     mech.inertiaAvailable = true;
-    if (mech.action === 'bd') mech.leverNeutralSinceBd = mech.leverHeld.length === 0;
+    if (mech.action === 'bd') mech.leverNeutralSinceBd ||= mech.leverHeld.length === 0;
   }
   mech.action = 'idle';
   mech.move = null;
@@ -415,7 +417,7 @@ function startAction(world: SimWorld, kind: MechAction, def: ActionDef, canceled
   // 前の行動の名残を消してから、今の行動の準備をする
   if (previous === 'bd' || previous === 'step') {
     mech.inertiaAvailable = true;
-    if (previous === 'bd') mech.leverNeutralSinceBd = mech.leverHeld.length === 0;
+    if (previous === 'bd') mech.leverNeutralSinceBd ||= mech.leverHeld.length === 0;
   }
   mech.action = kind;
   mech.move = def;
@@ -600,14 +602,24 @@ export function applyInput(world: SimWorld, button: ButtonType): InputResult {
   if (button === 'shot-charge-end') mech.charging.shot = false;
   if (button === 'melee-charge-end') mech.charging.melee = false;
 
+  if (button === 'jump') {
+    // 短く 1 回だけ押したジャンプ。長押しでもう飛んでいれば何もしない
+    const press = mech.jumpPress;
+    if (press === null || press.started) return 'rejected';
+    press.started = true;
+    return requestAction(world, 'jump', true);
+  }
+  // BD になった押下は、もうジャンプにしない
+  if (button === 'bd') mech.jumpPress = null;
+
   const kind = INPUT_TO_SLOT[button];
   if (kind === undefined) return 'rejected';
   return requestAction(world, kind);
 }
 
 /**
- * ボタンの生の押下・解放を受ける。ジャンプは押した瞬間に上昇を始め、押している間だけ続く。
- * BD の 1 回目の押下としても来るので、出せなくても理由は出さない。
+ * ボタンの生の押下・解放を受ける。ジャンプは少し押し続けたら上昇を始め（JUMP_HOLD_S）、押している間だけ続く。
+ * 短い押下は BD の 1 回目かもしれないので、押した瞬間には飛ばない。
  */
 export function applyRawInput(world: SimWorld, input: ArcadeRawInput): InputResult | null {
   if (input.button !== 'jump') return null;
@@ -617,7 +629,19 @@ export function applyRawInput(world: SimWorld, input: ArcadeRawInput): InputResu
     return null;
   }
   mech.jumpHeld = true;
-  return requestAction(world, 'jump', true);
+  mech.jumpPress = { at: world.time, started: false };
+  return null;
+}
+
+/** ジャンプボタンを押し続けていたら、ジャンプを始める */
+function stepJumpPress(world: SimWorld): void {
+  const mech = world.mech;
+  const press = mech.jumpPress;
+  if (press === null || press.started || !mech.jumpHeld) return;
+  if (world.time - press.at < JUMP_HOLD_S) return;
+  press.started = true;
+  // BD の 1 回目の押下と同じく、出せなくても理由は出さない
+  requestAction(world, 'jump', true);
 }
 
 /**
@@ -627,7 +651,8 @@ export function setLever(world: SimWorld, direction: LeverDirection, pressed: bo
   const mech = world.mech;
   if (!pressed) {
     mech.leverHeld = mech.leverHeld.filter((d) => d !== direction);
-    if (mech.leverHeld.length === 0 && mech.inertiaAvailable) mech.leverNeutralSinceBd = true;
+    // BD 中に戻しても数える。ジャンプは少し押し続けてから出るので、そのあいだに BD が終わることがある
+    if (mech.leverHeld.length === 0 && (mech.inertiaAvailable || mech.action === 'bd')) mech.leverNeutralSinceBd = true;
     return null;
   }
   if (mech.leverHeld.includes(direction)) return null;
@@ -1189,6 +1214,7 @@ export function stepWorld(world: SimWorld, dt: number): void {
   stepEffects(world, dt);
   stepEnemy(world, dt);
   stepAmmo(world, dt);
+  stepJumpPress(world);
   stepAction(world, dt);
   stepMechPhysics(world, dt);
   stepAssists(world, dt);

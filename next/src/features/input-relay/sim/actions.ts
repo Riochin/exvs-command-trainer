@@ -37,6 +37,11 @@ export const INERTIA_LEVER_WINDOW_S = 0.7;
 export const BD_FROM_JUMP_WINDOW_S = 0.3;
 /** BD・ステップが終わってから、次の行動をまだ連携（ズンダなど）としてつなげる時間 */
 export const CHAIN_GRACE_S = 0.2;
+/**
+ * ジャンプボタンをこの時間押し続けたらジャンプを始める。それより短い押下は BD（2 回押し）の 1 回目かもしれないので、
+ * 押しただけでは飛ばない。短く 1 回だけ押したときは、アケコンが BD ではないと決めた時点（'jump'）で小ジャンプする
+ */
+export const JUMP_HOLD_S = 0.12;
 /** レバーを戻さず入れっぱなしで出した慣性ジャンプは、飛距離が少し短い（速さの倍率） */
 export const INERTIA_HELD_SCALE = 0.75;
 /** 慣性ジャンプが成立したときの横の初速（BD は 30。普通のジャンプの横流れは 7） */

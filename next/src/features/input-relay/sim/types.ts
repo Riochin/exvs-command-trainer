@@ -164,7 +164,7 @@ export type MechState = {
   curveSign: number;
   /** BD 中に倒していたレバーの方向。慣性ジャンプはこの方向に入れ直すと成立する */
   bdLever: LeverDirection | null;
-  /** BD のあとレバーを一度ニュートラルに戻したか */
+  /** BD 中かそのあとに、レバーを一度ニュートラルに戻したか */
   leverNeutralSinceBd: boolean;
   /** 最後にレバーを倒した方向と時刻 */
   lastLeverPress: { direction: LeverDirection; at: number } | null;
@@ -174,6 +174,8 @@ export type MechState = {
   inertiaFlight: boolean;
   /** BD・ステップが終わったあと、次の行動を連携としてつなげる期限（world.time）。なければ null */
   chainGraceUntil: number | null;
+  /** 今のジャンプボタンの押下。押した時刻と、その押下でもうジャンプを始めたか。BD になったら null */
+  jumpPress: { at: number; started: boolean } | null;
 };
 
 export type EnemyState = {

@@ -90,6 +90,11 @@ export interface ArcadeControllerProps {
   buttonStateOverride?: import('./ControllerButton').ControllerButtonState;
   /** 物理ボタンの押下・解放を解釈前にそのまま通知する（入力リレー等の外部送信用） */
   onRawInput?: (input: ArcadeRawInput) => void;
+  /**
+   * 見た目。arcade は筐体ボタン、touch は 3D 画面に重ねる半透明のタッチ用ボタン。
+   * 判定（同時押し・チャージ・BD）はどちらも同じ
+   */
+  variant?: 'arcade' | 'touch';
   /** キーボードで押せるキーの割り当て（小文字のキー → 物理ボタン）。省略時は f / y / i */
   keyboardKeys?: Readonly<Record<string, ArcadePhysicalButton>>;
 }
@@ -102,6 +107,7 @@ export function ArcadeController({
   buttonStateOverride,
   onRawInput,
   keyboardKeys = DEFAULT_KEYBOARD_KEYS,
+  variant = 'arcade',
 }: ArcadeControllerProps) {
   const { activeButtons, getButtonHandlers, setOnButtonPress, getHeldButtonsSync } = useControllerInput();
   const {
@@ -407,16 +413,25 @@ export function ArcadeController({
   const physicalHighlights = resolveHighlightedPhysical(highlightedPhysicalButtons, highlightedButton);
 
   return (
-    <div data-testid="arcade-controller" className={styles.controller}>
+    <div
+      data-testid="arcade-controller"
+      data-variant={variant}
+      className={variant === 'touch' ? styles.touchController : styles.controller}
+    >
       {BUTTONS.map((button) => (
         // 台座（ベゼル・黒い台・ステッカー風ラベル）。ラベルは CSS の attr() で描き、DOM テキストは button 側だけに置く
-        <div key={button} className={`${styles.seat} ${styles[`btn-${button}`]}`} data-label={BUTTON_LABELS[button]}>
+        <div
+          key={button}
+          className={variant === 'touch' ? `${styles.touchSeat} ${styles[`touch-${button}`]}` : `${styles.seat} ${styles[`btn-${button}`]}`}
+          data-label={BUTTON_LABELS[button]}
+        >
           <ControllerButton
             button={button}
             isActive={isButtonActive(button)}
             highlighted={physicalHighlights.includes(button)}
             state={buttonStateOverride}
             handlers={getHandlers(button)}
+            className={variant === 'touch' ? styles.touchButton : undefined}
           />
         </div>
       ))}

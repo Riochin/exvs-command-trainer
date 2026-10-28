@@ -5,8 +5,9 @@
  */
 import { useEffect, useState, type RefObject } from 'react';
 import { BOOST_MAX } from '../sim/actions';
+import { chargeRatio } from '../sim/step';
 import type { LeverDirection, SimEvent, SimWorld } from '../sim/types';
-import { unitById } from '../sim/units';
+import { unitById, weaponPanelName, type WeaponButton, type WeaponPanelDef } from '../sim/units';
 import styles from './MechHud.module.css';
 
 const HUD_INTERVAL_MS = 50;
@@ -19,8 +20,6 @@ type HudSnapshot = {
   landing: boolean;
   grounded: boolean;
   action: string;
-  chargingShot: boolean;
-  chargingMelee: boolean;
   hitCount: number;
   mechHits: number;
   airBoostUses: number;
@@ -30,12 +29,32 @@ type HudSnapshot = {
   reject: SimEvent | null;
   lever: LeverDirection[];
   unitName: string;
-  ammo: Array<{ key: string; label: string; count: number; max: number; reloadRatio: number }>;
+  weapons: WeaponRow[];
   /** 時限強化の残り（0〜1）。強化がない機体・使っていないときは null */
   seed: number | null;
   seedCooldown: number;
-  packOut: boolean;
 };
+
+/** 右下の武装パネル 1 行ぶん */
+type WeaponRow = {
+  key: string;
+  name: string;
+  buttons: ReadonlyArray<WeaponButton>;
+  lever: string | null;
+  /** 大きく出す数字。弾がない行や射出中は '–'、時限強化中は残り秒数 */
+  count: string;
+  /** 上のゲージ（残弾・リロード・強化の残り）0〜1 */
+  gauge: number;
+  empty: boolean;
+  /** チャージのゲージ（0〜1）。チャージのない行は null */
+  charge: number | null;
+  /** 格闘 CS の行。コマンドの上に CHARGE! を出す */
+  chargeTag: boolean;
+};
+
+const BUTTON_ORDER: ReadonlyArray<WeaponButton> = ['shot', 'melee', 'jump'];
+const BUTTON_NAMES: Record<WeaponButton, string> = { shot: '射撃', melee: '格闘', jump: 'ジャンプ' };
+const LEVER_NAMES = { front: '前', side: '横', back: '後' } as const;
 
 const LEVER_ARROWS: ReadonlyArray<{ direction: LeverDirection; glyph: string }> = [
   { direction: 'forward', glyph: '▲' },
@@ -53,19 +72,49 @@ function latest(world: SimWorld, kind: SimEvent['kind']): SimEvent | null {
   return null;
 }
 
-function unitSnapshot(world: SimWorld): Pick<HudSnapshot, 'unitName' | 'ammo' | 'seed' | 'seedCooldown' | 'packOut'> {
+function weaponRow(world: SimWorld, panel: WeaponPanelDef, index: number): WeaponRow {
+  const unit = unitById(world.unitId);
+  const { mech } = world;
+  const charge = panel.charge ? chargeRatio(world, panel.charge) : null;
+  const base = {
+    key: `${index}-${panel.ammo ?? panel.charge}`,
+    name: weaponPanelName(panel),
+    buttons: panel.buttons,
+    lever: panel.lever ? LEVER_NAMES[panel.lever] : null,
+    charge,
+    chargeTag: panel.charge === 'melee' && !panel.ammo,
+  };
+  const def = panel.ammo ? unit.ammo[panel.ammo] : undefined;
+  if (def && panel.ammo) {
+    const state = mech.ammo[panel.ammo] ?? { count: def.max, timer: 0 };
+    const reload = mech.seedTime > 0 ? (def.seedReload ?? def.reload) : def.reload;
+    const reloadRatio = Math.min(1, state.timer / reload);
+    const packOut = def.waitsForPack === true && mech.packOut;
+    return {
+      ...base,
+      count: packOut ? '–' : String(state.count),
+      gauge: state.count < def.max ? reloadRatio : 1,
+      empty: state.count === 0,
+    };
+  }
+  // 弾のない格闘 CS の行。時限強化があれば残り秒数と、終わってからの待ちを出す
+  if (mech.seedTime > 0 && unit.seedDuration) {
+    return { ...base, count: String(Math.ceil(mech.seedTime)), gauge: mech.seedTime / unit.seedDuration, empty: false };
+  }
+  if (mech.seedCooldown > 0 && unit.seedCooldown) {
+    return { ...base, count: '–', gauge: 1 - mech.seedCooldown / unit.seedCooldown, empty: true };
+  }
+  return { ...base, count: '–', gauge: 1, empty: false };
+}
+
+function unitSnapshot(world: SimWorld): Pick<HudSnapshot, 'unitName' | 'weapons' | 'seed' | 'seedCooldown'> {
   const unit = unitById(world.unitId);
   const { mech } = world;
   return {
     unitName: unit.name,
-    ammo: Object.entries(unit.ammo).map(([key, def]) => {
-      const state = mech.ammo[key] ?? { count: def.max, timer: 0 };
-      const reload = mech.seedTime > 0 ? (def.seedReload ?? def.reload) : def.reload;
-      return { key, label: def.label, count: state.count, max: def.max, reloadRatio: Math.min(1, state.timer / reload) };
-    }),
+    weapons: unit.weapons.flatMap((panel, i) => (panel.onlyInSeed && mech.seedTime <= 0 ? [] : [weaponRow(world, panel, i)])),
     seed: mech.seedTime > 0 && unit.seedDuration ? mech.seedTime / unit.seedDuration : null,
     seedCooldown: mech.seedCooldown,
-    packOut: mech.packOut,
   };
 }
 
@@ -77,8 +126,6 @@ function snapshot(world: SimWorld): HudSnapshot {
     landing: mech.landingLag > 0,
     grounded: mech.grounded,
     action: mech.move?.label ?? '',
-    chargingShot: mech.charging.shot,
-    chargingMelee: mech.charging.melee,
     hitCount: world.enemy.hitCount,
     mechHits: world.mechHits,
     airBoostUses: mech.airBoostUses,
@@ -90,7 +137,7 @@ function snapshot(world: SimWorld): HudSnapshot {
   };
 }
 
-export function MechHud({ worldRef }: { worldRef: RefObject<SimWorld> }) {
+export function MechHud({ worldRef, showLever = true }: { worldRef: RefObject<SimWorld>; showLever?: boolean }) {
   const [hud, setHud] = useState<HudSnapshot | null>(null);
 
   useEffect(() => {
@@ -124,10 +171,6 @@ export function MechHud({ worldRef }: { worldRef: RefObject<SimWorld> }) {
         </div>
       )}
       {hud.chain.length > 1 && <div className={styles.chain}>{hud.chain.join(' › ')}</div>}
-      <div className={styles.charge}>
-        {hud.chargingShot && <span className={styles.chargeShot}>射CS チャージ中</span>}
-        {hud.chargingMelee && <span className={styles.chargeMelee}>格CS チャージ中</span>}
-      </div>
       <div className={styles.unit}>
         <span className={styles.unitName}>{hud.unitName}</span>
         {hud.seed !== null && (
@@ -139,13 +182,16 @@ export function MechHud({ worldRef }: { worldRef: RefObject<SimWorld> }) {
           <div className={styles.seedWait}>SEED まで {Math.ceil(hud.seedCooldown)}s</div>
         )}
       </div>
-      <div className={styles.lever} aria-label="レバー">
-        {LEVER_ARROWS.map(({ direction, glyph }) => (
-          <span key={direction} className={styles.arrow} data-direction={direction} data-on={hud.lever.includes(direction)}>
-            {glyph}
-          </span>
-        ))}
-      </div>
+      {/* タッチ操作中はスティックが同じ場所に出るので隠す */}
+      {showLever && (
+        <div className={styles.lever} aria-label="レバー">
+          {LEVER_ARROWS.map(({ direction, glyph }) => (
+            <span key={direction} className={styles.arrow} data-direction={direction} data-on={hud.lever.includes(direction)}>
+              {glyph}
+            </span>
+          ))}
+        </div>
+      )}
       {/* ブーストゲージは EXVS と同じく画面中央下。斜めに切った横長のゲージ */}
       <div className={styles.boost}>
         {status && (
@@ -160,18 +206,40 @@ export function MechHud({ worldRef }: { worldRef: RefObject<SimWorld> }) {
           BOOST <span className={styles.uses} data-heavy={hud.airBoostUses > 3}>×{hud.airBoostUses}</span>
         </span>
       </div>
-      {/* 残弾は EXVS と同じく画面右下に、武装ごとの札を縦に積む */}
-      {hud.ammo.length > 0 && (
-        <ul className={styles.weapons} aria-label="残弾">
-          {hud.ammo.map((a) => (
-            <li key={a.key} className={styles.weapon} data-empty={a.count === 0}>
-              <span className={styles.weaponCount}>{a.key === 'ootori' && hud.packOut ? '–' : a.count}</span>
-              <span className={styles.weaponBody}>
-                <span className={styles.weaponName}>{a.key === 'ootori' && hud.packOut ? `${a.label}（射出中）` : a.label}</span>
-                <span className={styles.weaponReload}>
-                  <span style={{ transform: `scaleX(${a.count < a.max ? a.reloadRatio : 1})` }} />
+      {/* 残弾は EXVS と同じく画面右下。左に押すボタン、右に残弾とゲージ。チャージのある行はゲージが 2 段 */}
+      {hud.weapons.length > 0 && (
+        <ul className={styles.weapons} aria-label="武装">
+          {hud.weapons.map((w) => (
+            <li
+              key={w.key}
+              className={styles.weapon}
+              data-empty={w.empty}
+              data-full={w.charge === 1}
+              aria-label={`${w.name}（${[w.lever ? `${w.lever}レバー` : '', ...w.buttons.map((b) => BUTTON_NAMES[b])].filter(Boolean).join('＋')}${w.chargeTag ? '長押し' : ''}）`}
+            >
+              <span className={styles.command}>
+                {w.chargeTag && <span className={styles.chargeTag}>CHARGE!</span>}
+                <span className={styles.buttons}>
+                  {w.lever && <span className={styles.leverChip}>{w.lever}</span>}
+                  {BUTTON_ORDER.map((b) => (
+                    <span key={b} className={styles.button} data-button={b} data-on={w.buttons.includes(b)} />
+                  ))}
                 </span>
-                <span className={styles.weaponCaption}>WEAPON</span>
+              </span>
+              <span className={styles.panel}>
+                <span className={styles.weaponCount}>{w.count}</span>
+                <span className={styles.weaponName}>{w.name}</span>
+                <span className={styles.gauges}>
+                  <span className={styles.ammoGauge}>
+                    <span style={{ transform: `scaleX(${w.gauge})` }} />
+                  </span>
+                  {w.charge !== null && (
+                    <span className={styles.chargeGauge} data-testid="charge-gauge" data-ratio={w.charge.toFixed(2)}>
+                      <span style={{ transform: `scaleX(${w.charge})` }} />
+                      <b>CHARGE!</b>
+                    </span>
+                  )}
+                </span>
               </span>
             </li>
           ))}

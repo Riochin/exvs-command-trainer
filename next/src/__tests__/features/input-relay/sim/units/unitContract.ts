@@ -1,4 +1,4 @@
-import type { ActionDef } from '@/features/input-relay/sim/actions';
+import type { ActionDef, AssistKind } from '@/features/input-relay/sim/actions';
 import type { ActionKind, MechAction } from '@/features/input-relay/sim/types';
 import { isRejection, type LeverKind, type ResolveContext, type UnitDef } from '@/features/input-relay/sim/units';
 
@@ -21,6 +21,11 @@ export const SLOTS: ReadonlyArray<MechAction> = [
 ];
 const LEVERS: ReadonlyArray<LeverKind> = ['N', 'front', 'side', 'back'];
 const FLAGS = [false, true] as const;
+/** 出ているアシストの組み合わせ。何も出ていないときと、1 種類ずつ出ているとき */
+const ASSIST_SETS: ReadonlyArray<ReadonlyArray<AssistKind>> = [
+  [],
+  ...(['murasame', 'freedom-shot', 'freedom-melee', 'ootori', 'esbit', 'gfred-shot', 'gfred-melee'] as const).map((k) => [k]),
+];
 
 /** resolve に渡しうる状況をひと通り作る（今出している技ごと） */
 function contexts(current: ActionDef | null, currentSlot: ActionKind): ResolveContext[] {
@@ -30,7 +35,8 @@ function contexts(current: ActionDef | null, currentSlot: ActionKind): ResolveCo
       for (const seed of FLAGS)
         for (const packOut of FLAGS)
           for (const seedCooldown of [0, 5])
-            list.push({ lever, inBd, seed, packOut, seedCooldown, current, currentSlot });
+            for (const assists of ASSIST_SETS)
+              list.push({ lever, inBd, seed, packOut, seedCooldown, assists, current, currentSlot });
   return list;
 }
 
@@ -67,6 +73,15 @@ export function unitProblems(unit: UnitDef): string[] {
   if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(unit.id)) problems.push(`id は kebab-case にする: ${unit.id}`);
   if (!(unit.boostScale > 0)) problems.push('boostScale は 0 より大きくする');
   if (unit.commands.length === 0) problems.push('技表 commands が空');
+  // 右下の武装パネル：弾はどれも 1 行ずつ出し、知らない弾のキーを書かない
+  const panelAmmo = unit.weapons.flatMap((w) => (w.ammo ? [w.ammo] : []));
+  for (const key of panelAmmo) if (!(key in unit.ammo)) problems.push(`weapons に知らない弾がある: ${key}`);
+  for (const key of Object.keys(unit.ammo))
+    if (!panelAmmo.includes(key)) problems.push(`弾 ${key} の行が weapons にない`);
+  for (const w of unit.weapons) {
+    if (w.buttons.length === 0) problems.push('weapons の行に押すボタンがない');
+    if (!w.ammo && !w.charge) problems.push('弾もチャージもない行は weapons に入れない');
+  }
   for (const [key, color] of Object.entries(unit.look)) {
     if ((key === 'frame' || key === 'chest' || key === 'accent' || key === 'trim') && !/^#[0-9a-f]{6}$/i.test(color))
       problems.push(`look.${key} は #rrggbb で書く: ${color}`);

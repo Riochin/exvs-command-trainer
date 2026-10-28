@@ -24,6 +24,7 @@ next/src/features/input-relay/
       index.ts          UNITS（機体選択に並ぶ機体）と unitById
       generic.ts        汎用機
       strike-rouge-ootori.ts   ストライクルージュ（オオトリ装備）。レバー入れ・派生・時限強化・アシストの実例
+      gquuuuuux.ts      GQuuuuuuX。追従アシストの再入力射撃・アシスト解除・特殊移動・鞭（長いリーチ）の実例
       _template.ts      新しい機体の雛形（UNITS には入れない）
   viewer/
     MechModel.tsx       機体モデル本体（姿勢とアニメーション）
@@ -34,6 +35,7 @@ next/src/features/input-relay/
 next/src/__tests__/features/input-relay/sim/
   rouge.test.ts         world を動かす機体テストの実例
   units/
+    gquuuuuux.test.ts   world を動かす機体テストの実例（アサキャン・特殊移動・鞭など）
     contract.test.ts    全機体に共通の約束ごと（UNITS に足せば自動で確かめる）
     unitContract.ts     約束ごとの中身（キャンセル先の id、ammo のキーなど）
     _template.test.ts   機体テストの雛形
@@ -93,6 +95,11 @@ next/src/__tests__/features/input-relay/sim/
 | 時限強化中だけ変わる技 | resolve で `ctx.seed` を見て別の技を返す（強化版は `{ ...base, label, projectiles }` で作ってよい） |
 | 時限強化をまた使えるまでの待ち | resolve で `ctx.seedCooldown > 0` なら `{ reject: '○○チャージ中' }` |
 | 背中の装備を射出（オオトリなど） | `assist: 'ootori'`。射出中は `ctx.packOut` が true |
+| 追従アシストを展開し、再入力でアシストだけ撃つ（エスビットなど） | 展開の技に `assist`。resolve で `ctx.assists.includes(…)` なら、弾を持たず `linkAssists: true` の技（`move: 'free'`）を返す |
+| アシストが出ているあいだは出せない | resolve で `ctx.assists` を見て `{ reject: '…' }` |
+| 追従アシストを投げつけて解除する | `dismissAssist: '<AssistKind>'`（fireAt で消える） |
+| 特殊移動（レバーで前・横・後ろへ動く） | `move: 'roll'`、`moveDir: 'front' \| 'side' \| 'back'`、`speed`。弾も判定も無くても `fireAt` を小さく書くと、そこからキャンセルが開く。連続入力できるなら `comboMax` を大きく |
+| 鞭・巨大サーベルのような長いリーチの格闘 | `reach`（m。省略時は 5） |
 | 投げる・構える姿勢 | `pose: 'throw'` など（`MovePose`）。省略するとスロットから決まる |
 
 弾（`ProjectileSpec`）は機体ファイルの先頭に定数で置く。`kind` は `sim/types.ts` の `ProjectileKind` から選び、見た目は `viewer/Projectiles.tsx` の `LOOKS`。
@@ -108,7 +115,24 @@ wiki の各武装のリロード表を写す。キーは技の `ammo` に書く�
 | 時限強化中はリロードが速い | `seedReload` |
 | 時限強化の発動で全回復 | `refillOnSeed: true` |
 | 射出した装備が戻るまでリロードしない | `waitsForPack: true` |
+| アシストが消えてからリロード（「アシスト消滅 7 秒」など） | `waitsForAssists: ['<AssistKind>', …]` |
 | 弾数「-」（無限）、CS | `ammo` を書かない |
+
+### 右下の武装パネル（`weapons`）とチャージ時間（`chargeTime`）
+
+画面右下に、上から 1 行ずつ出す。行の左に押すボタン（射撃・格闘・ジャンプ）が並び、`buttons` に書いたものだけ光る。パネルの名前は武装の固有名ではなく、押し方から決まる呼び名（ビームライフル・サブ射撃・特殊射撃・特殊格闘・後格闘・格闘チャージ）で統一している（`weaponPanelName`）。
+
+| 武装 | `WeaponPanelDef` |
+|------|------|
+| メイン（射撃 CS あり） | `{ ammo: 'main', buttons: ['shot'], charge: 'shot' }`（CHARGE ゲージがメインの行の 2 段目に出る） |
+| サブ | `{ ammo: 'sub', buttons: ['shot', 'melee'] }` |
+| 特射 / 特格 | `buttons: ['shot', 'jump']` / `['melee', 'jump']` |
+| 後格など、レバーが要る技 | `buttons: ['melee'], lever: 'back'` |
+| 格闘 CS（弾なし） | `{ buttons: ['melee'], charge: 'melee' }`（コマンドの上に CHARGE!。時限強化中は残り秒数） |
+| 時限強化中だけ使える武装（オメガ中の鞭など） | `onlyInSeed: true` |
+
+- `ammo` のキーはどれも 1 行ずつ `weapons` に入れる（契約テストで確かめる）。弾もチャージもない技（弾数「-」の特格など）は入れない。
+- CS は満タンになってから離したときだけ出る。満タンまでの秒数（チャージ開始から）は `chargeTime: { shot, melee }`。wiki に「チャージ 2 秒」などがあれば写し、無ければ省いて標準の 2 秒にする。
 
 ### BD 回数（`boostScale`）
 
@@ -133,6 +157,8 @@ wiki の各武装のリロード表を写す。キーは技の `ammo` に書く�
 
 wiki に「アメキャン対応」「メインでキャンセルすると落下」とある技に `fallCancel: true` を付け、`cancels.into` に `'shot'` を入れる。メインでキャンセルすると上昇を打ち消して落ち始める。HUD には、アシストかサブなら「アメキャン」、それ以外は「キャンセル落下」と出る。後格メインのような降りテクも同じ書き方（後格に `fallCancel`、`into` に `'shot'`）。
 
+メイン以外で落ちる技（追従アシストに撃たせるサブで降りる「アサキャン」など）は、落ちる側の技に `fallOnCancel: true` を付ける。キャンセル元の技の `fallCancel` と `cancels.into`（落ちる側の技の id かスロット名）が要るのはメインと同じ。HUD には「アサキャン」と出る。
+
 ## 技表（`commands`）と説明
 
 機体選択の画面に出す。1 行 1 武装で、`input` に入力（「サブ（射撃＋格闘）」「後格」）、`name` に武装名、`note` にキャンセルや降りテクなど練習で大事なことを短く書く。
@@ -145,7 +171,7 @@ wiki に「アメキャン対応」「メインでキャンセルすると落下
 
 | 足すもの | 場所 |
 |------|------|
-| アシスト | `sim/actions.ts` の `AssistKind` → `sim/step.ts` の `ASSIST_LIFE`・`spawnAssist`・`stepAssists`（動きと射撃）・`requestAction`（展開中は出せない、など）→ `viewer/Assists.tsx` の `POOL`・`MODELS` |
+| アシスト | `sim/actions.ts` の `AssistKind` → `sim/step.ts` の `ASSIST_LIFE`・`spawnAssist`・`stepAssists`（動きと射撃）・`LINKED_ASSIST_SHOTS`（`linkAssists` で撃つ追従アシストの弾）→ `viewer/Assists.tsx` の `POOL`・`MODELS`。展開中は出せない、などは resolve で `ctx.assists` を見て書く |
 | 弾の種類 | `sim/types.ts` の `ProjectileKind` → `viewer/Projectiles.tsx` の `LOOKS` |
 | 時限強化 | いまは `buff: 'seed'` だけ。別の名前の強化（トランザムなど）も、まず `seed` の仕組み（`seedTime`・`ctx.seed`・`seed*`）で書けないか考える。オーラの色は `viewer/parts/Part.tsx` の `SEED_AURA` 固定 |
 | 背中の装備・格闘武器 | `unit-modeling.md` |
@@ -161,6 +187,7 @@ wiki に「アメキャン対応」「メインでキャンセルすると落下
   - アメキャン対応の技 → メインで `vel.y <= 0` になり、HUD に「アメキャン」
   - 時限強化の発動・終了・再使用までの待ち、強化中のリロード
 - 弾が出るまで進めるには `for (…; !world.mech.actionFired; …) stepWorld(…)`。
+- 機体は原点、敵は z=-40 にいる（前レバー・敵へ向かう動きは z が減る）。距離を変えるときは `world.mech.pos.z` を書き換え、敵の左右の揺れを止めるなら `world.enemy.moves = false`。
 
 ## チェックリスト
 
@@ -171,6 +198,7 @@ wiki に「アメキャン対応」「メインでキャンセルすると落下
 - [ ] 弾数・リロード方式（常時 / 撃ち切り）・時限強化中のリロード
 - [ ] `boostScale = 4 / BD回数`（強化中は `seedBoostScale`）
 - [ ] `look`（配色 4 色・背中の装備・格闘武器）と `commands`
+- [ ] `weapons`（右下の武装パネル。弾ごとの行・押すボタン・チャージ）と、wiki にあれば `chargeTime`
 - [ ] `units/index.ts` の export と `UNITS`
 - [ ] `units/<機体id>.test.ts`
 - [ ] `pnpm test`・`pnpm typecheck`・`pnpm lint` が通る

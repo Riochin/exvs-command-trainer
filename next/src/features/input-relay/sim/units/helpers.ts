@@ -16,7 +16,7 @@ export const BOOST_STEP = ['bd', 'step'] as const;
  * act('sub-n', 'Nサブ ビームランチャー', { ... }); // id は 'rouge-sub-n'
  */
 export function actionMaker(prefix: string) {
-  return (id: string, label: string, def: Omit<ActionDef, 'id' | 'label'>): ActionDef => ({
+  return (id: string, label: string, def: Omit<ActionDef, 'id' | 'label'>): ActionDef & { id: string } => ({
     id: `${prefix}-${id}`,
     label,
     ...def,

@@ -25,6 +25,7 @@ import { GENERIC_UNIT, unitById } from './sim/units';
 import { CommandList, UnitSelect } from './UnitSelect';
 import { JoinQrCode } from './JoinQrCode';
 import { MechHud } from './viewer/MechHud';
+import { VirtualStick } from './VirtualStick';
 import styles from './InputRelayHostApp.module.css';
 
 // three は window を前提にするので、サーバーでは描画しない
@@ -76,6 +77,17 @@ function describeEntry(entry: RelayLogEntry): string {
 }
 
 const noopSubscribe = () => () => {};
+/** 指で操作する端末（スマホ・タブレット）か。タッチ操作の初期値に使う */
+const COARSE_POINTER = '(pointer: coarse)';
+const subscribeCoarsePointer = (onChange: () => void) => {
+  const query = window.matchMedia(COARSE_POINTER);
+  query.addEventListener('change', onChange);
+  return () => query.removeEventListener('change', onChange);
+};
+const readCoarsePointer = () => window.matchMedia(COARSE_POINTER).matches;
+const readServerCoarsePointer = () => false;
+/** タッチ用ボタンはキーボードに反応させない（キーボードは隠したコントローラが受け持つ） */
+const NO_KEYS: Readonly<Record<string, ArcadePhysicalButton>> = {};
 const readOrigin = () => window.location.origin;
 const readServerOrigin = () => null;
 
@@ -103,6 +115,13 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
   const [enemyFires, setEnemyFires] = useState(true);
   // 敵が左右に動くとカメラも回り込む。落ち着いて練習したいときは止められる
   const [enemyMoves, setEnemyMoves] = useState(true);
+  // PC 画面をスマホで開いたときのタッチ操作。指で操作する端末なら最初から出す
+  const coarsePointer = useSyncExternalStore(subscribeCoarsePointer, readCoarsePointer, readServerCoarsePointer);
+  const [touchOverride, setTouchOverride] = useState<boolean | null>(null);
+  const touchControls = touchOverride ?? coarsePointer;
+  const handleStickLever = useCallback((direction: LeverDirection, pressed: boolean) => {
+    setLever(worldRef.current, direction, pressed);
+  }, []);
   const [unitId, setUnitId] = useState(GENERIC_UNIT.id);
   // 開いたときは機体選択から始める
   const [selecting, setSelecting] = useState(true);
@@ -207,7 +226,22 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
 
       <div className={styles.stage}>
         <MechViewer worldRef={worldRef} unitId={unitId} />
-        <MechHud worldRef={worldRef} />
+        <MechHud worldRef={worldRef} showLever={!touchControls} />
+
+        {/* タッチ操作: 画面左側に、スティック（下）とボタン（その上）を半透明で重ねる */}
+        {touchControls && (
+          <div className={styles.touchLayer} data-testid="touch-controls">
+            <div className={styles.touchButtons}>
+              <ArcadeController
+                variant="touch"
+                onButtonPress={handleKeyboardInput}
+                onRawInput={handleKeyboardRaw}
+                keyboardKeys={NO_KEYS}
+              />
+            </div>
+            <VirtualStick onLever={handleStickLever} />
+          </div>
+        )}
 
         {/* 3D と HUD 以外は、この小さな帯と設定画面にまとめる */}
         <div className={styles.toolbar}>
@@ -305,7 +339,18 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
                   <button type="button" className={styles.restart} onClick={toggleEnemyMoves} aria-pressed={enemyMoves}>
                     敵の移動: {enemyMoves ? 'ON' : 'OFF'}
                   </button>
+                  <button
+                    type="button"
+                    className={styles.restart}
+                    onClick={() => setTouchOverride(!touchControls)}
+                    aria-pressed={touchControls}
+                  >
+                    タッチ操作: {touchControls ? 'ON' : 'OFF'}
+                  </button>
                 </div>
+                <p className={styles.note}>
+                  タッチ操作は、この画面をスマホで開いて操作するとき用。画面左側にスティックと射撃・格闘・ジャンプのボタンが出ます
+                </p>
                 <h4 className={styles.subHeading}>キーボード操作</h4>
                 <dl className={styles.keyList}>
                   <dt>W A S D ／ 十字キー</dt>

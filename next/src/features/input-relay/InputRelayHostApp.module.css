@@ -476,3 +476,22 @@
   color: var(--led-on);
   text-align: right;
 }
+
+/* タッチ操作のレイヤー。画面左側だけに置き、ほかの場所のタップは 3D ビューに通す */
+.touchLayer {
+  position: absolute;
+  left: max(0.75rem, env(safe-area-inset-left));
+  bottom: 1rem;
+  display: grid;
+  justify-items: center;
+  gap: 0.75rem;
+  pointer-events: none;
+}
+
+.touchLayer > * {
+  pointer-events: auto;
+}
+
+.touchButtons {
+  margin-bottom: 0.25rem;
+}

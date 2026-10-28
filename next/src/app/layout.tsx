@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { M_PLUS_1, M_PLUS_1_Code } from "next/font/google";
 import { Providers } from "@/components/Providers";
 import { AnalyticsPageViewTracker } from "@/features/analytics/AnalyticsPageViewTracker";
@@ -39,11 +39,27 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: "/favicon.ico",
+    // ホーム画面に追加したときのアイコン（iPhone）
+    apple: "/icons/apple-touch-icon.png",
+  },
+  // iPhone はホーム画面に追加して開いたときだけバーが消える。ステータスバーは 3D の上に透かして重ねる
+  appleWebApp: {
+    capable: true,
+    title: "EXVS道場",
+    statusBarStyle: "black-translucent",
   },
   other: {
     "google-site-verification":
     "thDPYfsByvt8fIWF72-54d59tsSdBF-oPTsN41Yp5Vs",
+    // Next は mobile-web-app-capable しか出さない。manifest を読まない古い iOS 向けに Apple 名義のものも出す
+    "apple-mobile-web-app-capable": "yes",
   },
+};
+
+// 切り欠きの裏まで描き、ボタンや HUD は env(safe-area-inset-*) で内側に寄せる
+export const viewport: Viewport = {
+  viewportFit: "cover",
+  themeColor: "#000000",
 };
 
 export default function RootLayout({

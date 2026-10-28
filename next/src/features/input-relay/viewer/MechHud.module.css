@@ -481,3 +481,53 @@
     border-color: #fff;
   }
 }
+
+/*
+ * タッチ操作中の小さな HUD（data-compact）。指とボタンのために画面を空け、残弾とブーストだけ最低限見せる。
+ * ブーストゲージは左上（HIT の下）に細く、武装パネルは右上に縦に並べて縮める。機体名と押し方の表示は省く
+ */
+.hud[data-compact='true'] .unitName {
+  display: none;
+}
+
+.hud[data-compact='true'] .boost {
+  top: 4.4rem;
+  bottom: auto;
+  left: 0.75rem;
+  justify-items: start;
+  gap: 0.1rem;
+  width: min(9rem, 32%);
+  transform: none;
+}
+
+.hud[data-compact='true'] .gauge {
+  height: 0.55rem;
+  padding: 1px;
+  border-width: 1px;
+}
+
+.hud[data-compact='true'] .boostLabel {
+  font-size: 0.5rem;
+}
+
+.hud[data-compact='true'] .status {
+  font-size: 0.6rem;
+}
+
+.hud[data-compact='true'] .weapons {
+  /* zoom は top / right にもかかるので、縮めたあとの位置で右上（SEED 表示の下）にそろう値にしている */
+  top: 10rem;
+  right: 1.5rem;
+  bottom: auto;
+  gap: 0.2rem;
+  zoom: 0.5;
+}
+
+/* 押し方の列を省き、パネルだけの 1 列にする */
+.hud[data-compact='true'] .weapon {
+  grid-template-columns: 11.5rem;
+}
+
+.hud[data-compact='true'] .command {
+  display: none;
+}

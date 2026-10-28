@@ -35,15 +35,37 @@ export function stickDirections(x: number, y: number, deadZone = STICK_DEAD_ZONE
   return table[sector] ?? [];
 }
 
+/**
+ * ステップ判定に使う、倒している 1 方向。上下左右を 90 度ずつ受け持ち、判定しない区間はない
+ * （斜め右上でも、ぎりぎり上寄りなら上）。移動は stickDirections の 8 方向のまま
+ */
+export function stickTapDirection(x: number, y: number, deadZone = STICK_DEAD_ZONE): LeverDirection | null {
+  if (Math.hypot(x, y) < deadZone) return null;
+  if (Math.abs(x) >= Math.abs(y)) return x > 0 ? 'right' : 'left';
+  return y > 0 ? 'forward' : 'back';
+}
+
+/**
+ * つまみがいちばん倒れたときに中心から動く距離（つまみの大きさに対する %）。
+ * つまみは台の 42% なので、65% 動くとつまみの縁が台の縁の近くまで届く
+ */
+const KNOB_TRAVEL_PCT = 65;
+
 export type VirtualStickProps = {
   /** レバーを倒した・戻した方向を 1 つずつ通知する */
   onLever: (direction: LeverDirection, pressed: boolean) => void;
+  /**
+   * レバーを 1 回倒したこと（ステップ判定用）を、上下左右の 1 方向で通知する。
+   * 中立から倒したときと、倒したまま受け持ちの方向が変わったときに呼ぶ
+   */
+  onTap?: (direction: LeverDirection) => void;
 };
 
-export function VirtualStick({ onLever }: VirtualStickProps) {
+export function VirtualStick({ onLever, onTap }: VirtualStickProps) {
   const baseRef = useRef<HTMLDivElement>(null);
   const pointerRef = useRef<number | null>(null);
   const heldRef = useRef<LeverDirection[]>([]);
+  const tapRef = useRef<LeverDirection | null>(null);
   const [knob, setKnob] = useState({ x: 0, y: 0 });
 
   const update = (held: LeverDirection[]) => {
@@ -65,10 +87,16 @@ export function VirtualStick({ onLever }: VirtualStickProps) {
     const scale = len > 1 ? 1 / len : 1;
     setKnob({ x: dx * scale, y: dy * scale });
     update(stickDirections(dx, dy));
+    const tap = stickTapDirection(dx, dy);
+    if (tap !== tapRef.current) {
+      tapRef.current = tap;
+      if (tap !== null) onTap?.(tap);
+    }
   };
 
   const release = () => {
     pointerRef.current = null;
+    tapRef.current = null;
     setKnob({ x: 0, y: 0 });
     update([]);
   };
@@ -103,7 +131,9 @@ export function VirtualStick({ onLever }: VirtualStickProps) {
     >
       <span
         className={styles.knob}
-        style={{ transform: `translate(calc(-50% + ${knob.x * 35}%), calc(-50% + ${-knob.y * 35}%))` }}
+        style={{
+          transform: `translate(calc(-50% + ${knob.x * KNOB_TRAVEL_PCT}%), calc(-50% + ${-knob.y * KNOB_TRAVEL_PCT}%))`,
+        }}
       />
     </div>
   );

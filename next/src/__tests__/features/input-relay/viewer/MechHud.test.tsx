@@ -78,6 +78,34 @@ describe('MechHud の武装パネル', () => {
   });
 });
 
+describe('MechHud のタッチ操作向けの出し分け', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  function renderHud(props: { showLever?: boolean; compact?: boolean }) {
+    render(<MechHud worldRef={{ current: createWorld() }} {...props} />);
+    act(() => vi.advanceTimersByTime(60));
+    return screen.getByTestId('mech-hud');
+  }
+
+  it('ふだんはレバー表示を出し、小さな HUD にはしない', () => {
+    const hud = renderHud({});
+    expect(screen.queryByLabelText('レバー')).not.toBeNull();
+    expect(hud.getAttribute('data-compact')).toBe('false');
+  });
+
+  it('タッチのスティックを出している間はレバー表示を消す', () => {
+    renderHud({ showLever: false });
+    expect(screen.queryByLabelText('レバー')).toBeNull();
+  });
+
+  it('タッチ操作中は小さな HUD の印を付ける（残弾とブーストは出したまま）', () => {
+    const hud = renderHud({ compact: true });
+    expect(hud.getAttribute('data-compact')).toBe('true');
+    expect(screen.getByText(/BOOST/)).not.toBeNull();
+  });
+});
+
 describe('MechHud の中央の表示', () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());

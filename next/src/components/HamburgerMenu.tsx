@@ -30,8 +30,8 @@ export function HamburgerMenu() {
         {open && (
           <nav className={styles.menu} aria-label="メインメニュー">
             <Link
-              href="/"
-              className={`${styles.item} ${pathname === '/' ? styles.active : ''}`}
+              href="/practice"
+              className={`${styles.item} ${pathname === '/practice' ? styles.active : ''}`}
               onClick={close}
             >
               フリー練習
@@ -50,11 +50,7 @@ export function HamburgerMenu() {
             >
               コマンドを練習する
             </Link>
-            <Link
-              href="/3d"
-              className={`${styles.item} ${pathname === '/3d' ? styles.active : ''}`}
-              onClick={close}
-            >
+            <Link href="/" className={styles.item} onClick={close}>
               3Dビュー（PC）
             </Link>
             <div className={styles.item}>

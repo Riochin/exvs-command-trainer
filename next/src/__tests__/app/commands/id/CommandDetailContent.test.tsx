@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { CommandDetailContent } from '@/app/commands/[id]/CommandDetailContent';
+import { CommandDetailContent } from '@/app/(site)/commands/[id]/CommandDetailContent';
 import type { Command } from '@/types';
 
 vi.mock('@/hooks/useCommandStore', () => ({

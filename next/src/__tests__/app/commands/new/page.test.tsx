@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import CommandNewPage from '@/app/commands/new/page';
+import CommandNewPage from '@/app/(site)/commands/new/page';
 import { flushChargeDeferredInput } from '@/__tests__/utils/flushChargeDeferredInput';
 
 vi.mock('@/hooks/useCommandStore', () => ({

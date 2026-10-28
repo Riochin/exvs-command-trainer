@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import CommandsPage from '@/app/commands/page';
+import CommandsPage from '@/app/(site)/commands/page';
 import type { Command } from '@/types';
 
 vi.mock('@/hooks/useCommandStore', () => ({

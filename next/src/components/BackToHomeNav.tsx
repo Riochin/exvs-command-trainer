@@ -6,7 +6,8 @@ import styles from './BackToHomeNav.module.css';
 
 export function BackToHomeNav() {
   const pathname = usePathname();
-  if (pathname === '/' || pathname === '/commands') {
+  // フリー練習とコマンド一覧そのものでは出さない
+  if (pathname === '/practice' || pathname === '/commands') {
     return null;
   }
   return (

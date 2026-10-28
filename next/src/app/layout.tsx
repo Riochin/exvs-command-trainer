@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import { Oswald, Share_Tech_Mono, Zen_Kaku_Gothic_New } from "next/font/google";
-import { BackToHomeNav } from "@/components/BackToHomeNav";
-import { HamburgerMenu } from "@/components/HamburgerMenu";
 import { Providers } from "@/components/Providers";
 import { AnalyticsPageViewTracker } from "@/features/analytics/AnalyticsPageViewTracker";
 import { GoogleAnalyticsScripts } from "@/features/analytics/GoogleAnalyticsScripts";
@@ -65,8 +63,6 @@ export default function RootLayout({
 
         <Providers>
           <AnalyticsPageViewTracker />
-          <HamburgerMenu />
-          <BackToHomeNav />
           {children}
         </Providers>
       </body>

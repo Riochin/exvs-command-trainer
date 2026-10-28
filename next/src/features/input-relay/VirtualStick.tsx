@@ -10,8 +10,20 @@ import { useRef, useState } from 'react';
 import type { LeverDirection } from './sim/types';
 import styles from './VirtualStick.module.css';
 
-/** 傾きがこの割合（半径比）未満なら中立 */
-export const STICK_DEAD_ZONE = 0.35;
+/** 中立からこの割合（半径比）以上傾けたら倒したことにする */
+export const STICK_DEAD_ZONE = 0.25;
+
+/**
+ * いったん倒したあとは、この割合未満まで戻したら中立に戻す。
+ * 倒す境目より少し内側に置き、境目で指が震えても倒す・戻すを繰り返さない（ステップの誤入力を防ぐ）
+ */
+export const STICK_RELEASE_ZONE = 0.18;
+
+/**
+ * 倒したまま上下左右の受け持ちを変えるには、新しい方向の成分が今の方向の成分のこの倍を超える必要がある。
+ * 45 度の境目に約 7 度の遊びを持たせ、斜めで指が震えても 2 回弾いた扱いにしない
+ */
+export const STICK_TAP_SWITCH_RATIO = 1.3;
 
 /**
  * 画面上の傾き（右が +x、上が +y）から、倒しているレバーの方向を求める。
@@ -35,14 +47,30 @@ export function stickDirections(x: number, y: number, deadZone = STICK_DEAD_ZONE
   return table[sector] ?? [];
 }
 
+const TAP_VECTORS: Record<LeverDirection, readonly [number, number]> = {
+  right: [1, 0],
+  left: [-1, 0],
+  forward: [0, 1],
+  back: [0, -1],
+};
+
 /**
  * ステップ判定に使う、倒している 1 方向。上下左右を 90 度ずつ受け持ち、判定しない区間はない
- * （斜め右上でも、ぎりぎり上寄りなら上）。移動は stickDirections の 8 方向のまま
+ * （斜め右上でも、ぎりぎり上寄りなら上）。移動は stickDirections の 8 方向のまま。
+ * current（今倒している方向）を渡すと、境目を少し越えただけでは受け持ちを変えない
  */
-export function stickTapDirection(x: number, y: number, deadZone = STICK_DEAD_ZONE): LeverDirection | null {
+export function stickTapDirection(
+  x: number,
+  y: number,
+  deadZone = STICK_DEAD_ZONE,
+  current: LeverDirection | null = null,
+): LeverDirection | null {
   if (Math.hypot(x, y) < deadZone) return null;
-  if (Math.abs(x) >= Math.abs(y)) return x > 0 ? 'right' : 'left';
-  return y > 0 ? 'forward' : 'back';
+  const next: LeverDirection = Math.abs(x) >= Math.abs(y) ? (x > 0 ? 'right' : 'left') : y > 0 ? 'forward' : 'back';
+  if (current === null || next === current) return next;
+  const along = (d: LeverDirection) => x * TAP_VECTORS[d][0] + y * TAP_VECTORS[d][1];
+  const held = along(current);
+  return held > 0 && along(next) < held * STICK_TAP_SWITCH_RATIO ? current : next;
 }
 
 /**
@@ -86,8 +114,10 @@ export function VirtualStick({ onLever, onTap }: VirtualStickProps) {
     const len = Math.hypot(dx, dy);
     const scale = len > 1 ? 1 / len : 1;
     setKnob({ x: dx * scale, y: dy * scale });
-    update(stickDirections(dx, dy));
-    const tap = stickTapDirection(dx, dy);
+    // 倒しているあいだは、中立に戻す境目を倒す境目より内側にする
+    const deadZone = tapRef.current === null ? STICK_DEAD_ZONE : STICK_RELEASE_ZONE;
+    update(stickDirections(dx, dy, deadZone));
+    const tap = stickTapDirection(dx, dy, deadZone, tapRef.current);
     if (tap !== tapRef.current) {
       tapRef.current = tap;
       if (tap !== null) onTap?.(tap);

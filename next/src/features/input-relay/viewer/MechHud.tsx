@@ -130,21 +130,6 @@ export function MechHud({ worldRef }: { worldRef: RefObject<SimWorld> }) {
       </div>
       <div className={styles.unit}>
         <span className={styles.unitName}>{hud.unitName}</span>
-        {hud.ammo.length > 0 && (
-          <ul className={styles.ammo}>
-            {hud.ammo.map((a) => (
-              <li key={a.key} className={styles.ammoRow} data-empty={a.count === 0}>
-                <span className={styles.ammoLabel}>{a.label}</span>
-                <span className={styles.ammoCount}>
-                  {a.key === 'ootori' && hud.packOut ? '射出中' : `${a.count}/${a.max}`}
-                </span>
-                <span className={styles.reload}>
-                  <span style={{ transform: `scaleX(${a.count < a.max ? a.reloadRatio : 0})` }} />
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
         {hud.seed !== null && (
           <div className={styles.seed}>
             SEED <span className={styles.seedBar}><span style={{ transform: `scaleX(${hud.seed})` }} /></span>
@@ -161,25 +146,37 @@ export function MechHud({ worldRef }: { worldRef: RefObject<SimWorld> }) {
           </span>
         ))}
       </div>
+      {/* ブーストゲージは EXVS と同じく画面中央下。斜めに切った横長のゲージ */}
       <div className={styles.boost}>
-        <div className={styles.boostHead}>
-          <span className={styles.caption}>
-            BOOST <span className={styles.uses} data-heavy={hud.airBoostUses > 3}>×{hud.airBoostUses}</span>
+        {status && (
+          <span className={styles.status} data-status={status}>
+            {status}
           </span>
-          {status && (
-            <span className={styles.status} data-status={status}>
-              {status}
-            </span>
-          )}
-        </div>
+        )}
         <div className={styles.gauge}>
-          <div
-            className={styles.fill}
-            data-overheat={hud.overheat}
-            style={{ transform: `scaleX(${ratio})` }}
-          />
+          <div className={styles.fill} data-overheat={hud.overheat} style={{ transform: `scaleX(${ratio})` }} />
         </div>
+        <span className={styles.boostLabel}>
+          BOOST <span className={styles.uses} data-heavy={hud.airBoostUses > 3}>×{hud.airBoostUses}</span>
+        </span>
       </div>
+      {/* 残弾は EXVS と同じく画面右下に、武装ごとの札を縦に積む */}
+      {hud.ammo.length > 0 && (
+        <ul className={styles.weapons} aria-label="残弾">
+          {hud.ammo.map((a) => (
+            <li key={a.key} className={styles.weapon} data-empty={a.count === 0}>
+              <span className={styles.weaponCount}>{a.key === 'ootori' && hud.packOut ? '–' : a.count}</span>
+              <span className={styles.weaponBody}>
+                <span className={styles.weaponName}>{a.key === 'ootori' && hud.packOut ? `${a.label}（射出中）` : a.label}</span>
+                <span className={styles.weaponReload}>
+                  <span style={{ transform: `scaleX(${a.count < a.max ? a.reloadRatio : 1})` }} />
+                </span>
+                <span className={styles.weaponCaption}>WEAPON</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

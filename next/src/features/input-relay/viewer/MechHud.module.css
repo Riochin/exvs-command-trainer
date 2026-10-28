@@ -163,7 +163,7 @@
 .chain {
   position: absolute;
   left: 50%;
-  bottom: 3.5rem;
+  bottom: 4.6rem;
   transform: translateX(-50%);
   white-space: nowrap;
   font-size: 0.9rem;
@@ -179,7 +179,7 @@
 
 .charge {
   position: absolute;
-  bottom: 5.5rem;
+  bottom: 6.5rem;
   left: 50%;
   display: flex;
   gap: 0.75rem;
@@ -236,16 +236,20 @@
 
 .boost {
   position: absolute;
-  right: 1rem;
-  bottom: 1rem;
-  width: min(22rem, 45%);
+  left: 50%;
+  bottom: 1.1rem;
+  display: grid;
+  justify-items: center;
+  gap: 0.2rem;
+  width: min(26rem, 42%);
+  transform: translateX(-50%);
 }
 
-.boostHead {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 0.25rem;
+.boostLabel {
+  font-family: var(--font-label);
+  font-size: 0.7rem;
+  letter-spacing: 0.25em;
+  color: rgba(255, 255, 255, 0.75);
 }
 
 .status {
@@ -270,20 +274,93 @@
 }
 
 .gauge {
-  height: 0.9rem;
-  background: rgba(0, 0, 0, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  border-radius: 2px;
+  width: 100%;
+  height: 1.1rem;
+  padding: 2px;
+  background: rgba(10, 14, 22, 0.75);
+  border: 2px solid rgba(200, 225, 255, 0.55);
+  border-radius: 3px;
+  /* EXVS のゲージのように斜めに切る */
+  transform: skewX(-24deg);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
   overflow: hidden;
 }
 
 .fill {
   height: 100%;
-  background: linear-gradient(to right, #3ee08f, #f2c21a);
+  background: linear-gradient(to bottom, #b9f6ff, #36c8f2 55%, #1b8fd1);
   transform-origin: left center;
   transition: transform 60ms linear;
 }
 
 .fill[data-overheat='true'] {
   background: var(--color-error);
+}
+
+/* 右下の残弾。大きな数字と、武装名・リロードの細いゲージを斜めの札に載せる */
+.weapons {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 1rem;
+  display: grid;
+  gap: 0.35rem;
+  list-style: none;
+}
+
+.weapon {
+  display: grid;
+  grid-template-columns: 2.6rem 9rem;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.6rem 0.25rem 0.8rem;
+  background: linear-gradient(to right, rgba(12, 18, 28, 0.35), rgba(12, 18, 28, 0.85));
+  border-right: 3px solid rgba(120, 200, 255, 0.7);
+  clip-path: polygon(0.9rem 0, 100% 0, 100% 100%, 0 100%);
+}
+
+.weaponCount {
+  font-family: var(--font-led);
+  font-size: 1.8rem;
+  line-height: 1;
+  color: #fff;
+  text-align: right;
+}
+
+.weapon[data-empty='true'] .weaponCount {
+  color: var(--color-error);
+}
+
+.weaponBody {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.weaponName {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.85);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.weaponReload {
+  display: block;
+  height: 0.3rem;
+  background: rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+}
+
+.weaponReload > span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(to right, #36c8f2, #b9f6ff);
+  transform-origin: left center;
+}
+
+.weaponCaption {
+  font-family: var(--font-label);
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: right;
 }

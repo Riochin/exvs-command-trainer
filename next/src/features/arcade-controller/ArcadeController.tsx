@@ -18,7 +18,10 @@ export type ArcadeRawInput = {
   phase: ArcadeRawInputPhase;
 };
 
-/** 同時押し判定用の短い遅延（ジャンプ単独／射撃・格闘の tap・charge を、相手ボタンが続く場合に誤発火しないため） */
+/**
+ * 同時押しの猶予。2 つのボタンの押下がこの時間内なら同時押し（サブ・特射・特格）とみなす。
+ * 単独の入力（ジャンプ単独／射撃・格闘の tap）も、相手ボタンが続くかを見るためにこの分だけ遅らせて出す
+ */
 export const SIMULTANEOUS_INPUT_DEFER_MS = 50;
 
 /** BD（ブーストダッシュ）判定ウィンドウ。この時間内に2回ジャンプを押すと 'bd' として検出する */
@@ -128,8 +131,18 @@ export function ArcadeController({
   const jumpChordConsumedRef = useRef(false);
   /** 遅延タイマーで既に jump を出したポインター（長押し後の離しで二重にしない） */
   const jumpSoloEmittedPointerIdsRef = useRef<Set<number>>(new Set());
+  /** ボタンごとの最後の押下時刻（Date.now）。同時押しかどうかを押下の時刻差で決める */
+  const pressedAtRef = useRef<Partial<Record<ArcadePhysicalButton, number>>>({});
   /** BD 判定中の保留タイマー — 非null なら1回目 jump が待機中 */
   const bdPendingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /** 2 つのボタンの押下が同時押しの猶予内か。片方を押したまま後からもう片方を押しても、遅ければ同時押しにしない */
+  const pressedTogether = useCallback((a: ArcadePhysicalButton, b: ArcadePhysicalButton) => {
+    const at = pressedAtRef.current;
+    const ta = at[a];
+    const tb = at[b];
+    return ta !== undefined && tb !== undefined && Math.abs(ta - tb) <= SIMULTANEOUS_INPUT_DEFER_MS;
+  }, []);
 
   const clearSoloJumpSchedule = useCallback(() => {
     if (soloJumpTimerRef.current !== null) {
@@ -173,9 +186,16 @@ export function ArcadeController({
     const cb = inputHandlerRef.current;
 
     // チャージ中のボタンを含むコードは検出しない
-    const subCombo = ch.has('shot') && ch.has('melee') && !charging.has('shot') && !charging.has('melee');
-    const specialShotCombo = ch.has('shot') && ctrl.has('jump') && !charging.has('shot');
-    const specialMeleeCombo = ch.has('melee') && ctrl.has('jump') && !charging.has('melee');
+    const subCombo =
+      ch.has('shot') &&
+      ch.has('melee') &&
+      !charging.has('shot') &&
+      !charging.has('melee') &&
+      pressedTogether('shot', 'melee');
+    const specialShotCombo =
+      ch.has('shot') && ctrl.has('jump') && !charging.has('shot') && pressedTogether('shot', 'jump');
+    const specialMeleeCombo =
+      ch.has('melee') && ctrl.has('jump') && !charging.has('melee') && pressedTogether('melee', 'jump');
 
     if (!cb) {
       subComboPrevRef.current = subCombo;
@@ -213,6 +233,7 @@ export function ArcadeController({
     getChargingSync,
     suppressChainedOutputForChargeableButton,
     cancelAllDeferredSoloEmits,
+    pressedTogether,
   ]);
 
   const wrapChargeHandlers = useCallback(
@@ -220,8 +241,9 @@ export function ArcadeController({
       const inner = getChargeHandlers(btn);
       return {
         onPointerDown(event: Parameters<typeof inner.onPointerDown>[0]) {
+          pressedAtRef.current[btn] = Date.now();
           clearSoloJumpSchedule();
-          cancelDeferredSoloEmitForChordPartner(btn);
+          cancelDeferredSoloEmitForChordPartner(btn, (partner) => pressedTogether(btn, partner));
           inner.onPointerDown(event);
           syncChordInputs();
         },
@@ -235,21 +257,28 @@ export function ArcadeController({
         },
       };
     },
-    [getChargeHandlers, syncChordInputs, clearSoloJumpSchedule, cancelDeferredSoloEmitForChordPartner],
+    [
+      getChargeHandlers,
+      syncChordInputs,
+      clearSoloJumpSchedule,
+      cancelDeferredSoloEmitForChordPartner,
+      pressedTogether,
+    ],
   );
 
   const wrapJumpHandlers = useCallback(() => {
     return {
       onPointerDown(event: React.PointerEvent<HTMLElement>) {
         jumpChordConsumedRef.current = false;
-        cancelDeferredSoloEmitForChordPartner('jump');
+        pressedAtRef.current.jump = Date.now();
+        cancelDeferredSoloEmitForChordPartner('jump', (partner) => pressedTogether('jump', partner));
         getButtonHandlers('jump', { suppressCallbackOnPointerDown: true }).onPointerDown(event);
         syncChordInputs();
 
         const charging = getChargingSync();
-        const shotHeld = getHeldChargeableSync().has('shot');
-        const meleeHeld = getHeldChargeableSync().has('melee');
-        // タップウィンドウ中（チャージ未確定）のボタンと同時押しになりうるときだけ solo timer をスキップ
+        const shotHeld = getHeldChargeableSync().has('shot') && pressedTogether('shot', 'jump');
+        const meleeHeld = getHeldChargeableSync().has('melee') && pressedTogether('melee', 'jump');
+        // 猶予内に押した、タップウィンドウ中（チャージ未確定）のボタンと同時押しになりうるときだけ solo timer をスキップ
         const chordPossible = (shotHeld && !charging.has('shot')) || (meleeHeld && !charging.has('melee'));
         if (chordPossible) {
           clearSoloJumpSchedule();
@@ -264,8 +293,8 @@ export function ArcadeController({
           const currentCharging = getChargingSync();
           const ctrl = getHeldButtonsSync();
           if (!inputHandlerRef.current || !ctrl.has('jump')) return;
-          // タップウィンドウ中のボタンがあれば chord を待つ（チャージ中は除く）
-          const uncharged = [...ch].filter((b) => !currentCharging.has(b));
+          // 猶予内に押したタップウィンドウ中のボタンがあれば chord を待つ（チャージ中は除く）
+          const uncharged = [...ch].filter((b) => !currentCharging.has(b) && pressedTogether(b, 'jump'));
           if (uncharged.length > 0) return;
           jumpSoloEmittedPointerIdsRef.current.add(pid);
           emitJumpOrBd();
@@ -306,6 +335,7 @@ export function ArcadeController({
     clearSoloJumpSchedule,
     cancelDeferredSoloEmitForChordPartner,
     emitJumpOrBd,
+    pressedTogether,
   ]);
 
   const onRawInputRef = useRef(onRawInput);

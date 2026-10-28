@@ -43,7 +43,11 @@ export interface UseChargeInputReturn {
    * melee 押下 → 射撃側の遅延を捨てる
    * jump 押下 → 射撃・格闘の遅延を両方捨てる（特射・特格用）
    */
-  cancelDeferredSoloEmitForChordPartner(physicalDown: 'shot' | 'melee' | 'jump'): void;
+  /** isPartner を渡すと、それが true を返すボタンの遅延発火だけを取り消す（同時押しとみなせる相手だけ） */
+  cancelDeferredSoloEmitForChordPartner(
+    physicalDown: 'shot' | 'melee' | 'jump',
+    isPartner?: (source: ChargeableButton) => boolean,
+  ): void;
   /** 遅延中の tap をすべてキャンセル（複合同時押し成立時など） */
   cancelAllDeferredSoloEmits(): void;
 }
@@ -90,22 +94,26 @@ export function useChargeInput(options?: UseChargeInputOptions): UseChargeInputR
     deferredSoloEmitsRef.current.clear();
   }, []);
 
-  const cancelDeferredSoloEmitForChordPartner = useCallback((physicalDown: 'shot' | 'melee' | 'jump') => {
-    const cancelIfSource = (source: ChargeableButton) => {
-      for (const [pointerId, meta] of [...deferredSoloEmitsRef.current.entries()]) {
-        if (meta.source === source) {
-          clearTimeout(meta.timer);
-          deferredSoloEmitsRef.current.delete(pointerId);
+  const cancelDeferredSoloEmitForChordPartner = useCallback(
+    (physicalDown: 'shot' | 'melee' | 'jump', isPartner?: (source: ChargeableButton) => boolean) => {
+      const cancelIfSource = (source: ChargeableButton) => {
+        if (isPartner && !isPartner(source)) return;
+        for (const [pointerId, meta] of [...deferredSoloEmitsRef.current.entries()]) {
+          if (meta.source === source) {
+            clearTimeout(meta.timer);
+            deferredSoloEmitsRef.current.delete(pointerId);
+          }
         }
+      };
+      if (physicalDown === 'shot') cancelIfSource('melee');
+      else if (physicalDown === 'melee') cancelIfSource('shot');
+      else {
+        cancelIfSource('shot');
+        cancelIfSource('melee');
       }
-    };
-    if (physicalDown === 'shot') cancelIfSource('melee');
-    else if (physicalDown === 'melee') cancelIfSource('shot');
-    else {
-      cancelIfSource('shot');
-      cancelIfSource('melee');
-    }
-  }, []);
+    },
+    [],
+  );
 
   useEffect(() => {
     return () => {

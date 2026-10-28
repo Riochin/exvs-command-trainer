@@ -90,7 +90,7 @@ function snapshot(world: SimWorld): HudSnapshot {
   };
 }
 
-export function MechHud({ worldRef }: { worldRef: RefObject<SimWorld> }) {
+export function MechHud({ worldRef, showLever = true }: { worldRef: RefObject<SimWorld>; showLever?: boolean }) {
   const [hud, setHud] = useState<HudSnapshot | null>(null);
 
   useEffect(() => {
@@ -139,13 +139,16 @@ export function MechHud({ worldRef }: { worldRef: RefObject<SimWorld> }) {
           <div className={styles.seedWait}>SEED まで {Math.ceil(hud.seedCooldown)}s</div>
         )}
       </div>
-      <div className={styles.lever} aria-label="レバー">
-        {LEVER_ARROWS.map(({ direction, glyph }) => (
-          <span key={direction} className={styles.arrow} data-direction={direction} data-on={hud.lever.includes(direction)}>
-            {glyph}
-          </span>
-        ))}
-      </div>
+      {/* タッチ操作中はスティックが同じ場所に出るので隠す */}
+      {showLever && (
+        <div className={styles.lever} aria-label="レバー">
+          {LEVER_ARROWS.map(({ direction, glyph }) => (
+            <span key={direction} className={styles.arrow} data-direction={direction} data-on={hud.lever.includes(direction)}>
+              {glyph}
+            </span>
+          ))}
+        </div>
+      )}
       {/* ブーストゲージは EXVS と同じく画面中央下。斜めに切った横長のゲージ */}
       <div className={styles.boost}>
         {status && (

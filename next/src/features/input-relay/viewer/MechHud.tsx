@@ -8,6 +8,7 @@ import { BOOST_MAX } from '../sim/actions';
 import { chargeRatio } from '../sim/step';
 import type { LeverDirection, SimEvent, SimWorld } from '../sim/types';
 import { unitById, weaponPanelName, type WeaponButton, type WeaponPanelDef } from '../sim/units';
+import { hudLabel } from './hudLabels';
 import styles from './MechHud.module.css';
 
 const HUD_INTERVAL_MS = 50;
@@ -63,11 +64,15 @@ const LEVER_ARROWS: ReadonlyArray<{ direction: LeverDirection; glyph: string }> 
   { direction: 'back', glyph: '▼' },
 ];
 
+/** 表示時間内でいちばん新しい、HUD に出す出来事。label は表示名に置き換える */
 function latest(world: SimWorld, kind: SimEvent['kind']): SimEvent | null {
   for (let i = world.events.length - 1; i >= 0; i--) {
     const e = world.events[i];
+    if (world.time - e.time > EVENT_SHOW_S) return null;
     if (e.kind !== kind) continue;
-    return world.time - e.time <= EVENT_SHOW_S ? e : null;
+    // 出さない出来事は飛ばして、その前の出す出来事を探す
+    const label = hudLabel(e);
+    if (label !== null) return { ...e, label };
   }
   return null;
 }

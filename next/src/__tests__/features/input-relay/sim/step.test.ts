@@ -11,6 +11,7 @@ import {
   advanceWorld,
   applyInput,
   applyRawInput,
+  chargeRatio,
   createWorld,
   ENEMY_FIRE_INTERVAL_S,
   FIXED_DT,
@@ -18,6 +19,7 @@ import {
   stepWorld,
 } from '@/features/input-relay/sim/step';
 import type { LeverDirection, SimWorld } from '@/features/input-relay/sim/types';
+import { chargeTimeOf, DEFAULT_CHARGE_TIME, GENERIC_UNIT } from '@/features/input-relay/sim/units';
 
 function run(world: SimWorld, seconds: number) {
   for (let t = 0; t < seconds; t += FIXED_DT) stepWorld(world, FIXED_DT);
@@ -247,11 +249,28 @@ describe('sim', () => {
       expect(world.projectiles.filter((p) => p.kind === 'missile')).toHaveLength(3);
     });
 
+    it('満タン前に離すと CS は出ず、溜めも捨てる', () => {
+      const world = createWorld();
+      applyInput(world, 'shot-charge-start');
+      run(world, 1);
+      expect(chargeRatio(world, 'shot')).toBeCloseTo(0.5, 1);
+      expect(applyInput(world, 'shot-charge-end')).toBe('rejected');
+      expect(world.mech.action).toBe('idle');
+      expect(world.events.at(-1)?.label).toBe('チャージ不足');
+      expect(chargeRatio(world, 'shot')).toBe(0);
+    });
+
+    it('チャージ時間は機体ごとに変えられ、省略時は 2 秒', () => {
+      expect(chargeTimeOf(GENERIC_UNIT, 'shot')).toBe(DEFAULT_CHARGE_TIME);
+      expect(chargeTimeOf({ ...GENERIC_UNIT, chargeTime: { melee: 1.5 } }, 'melee')).toBe(1.5);
+    });
+
     it('射チャージは開始で溜め状態になり、終わりで射CSを撃つ', () => {
       const world = createWorld();
       applyInput(world, 'shot-charge-start');
       expect(world.mech.charging.shot).toBe(true);
       expect(world.mech.action).toBe('idle');
+      run(world, 2 + FIXED_DT);
       applyInput(world, 'shot-charge-end');
       expect(world.mech.charging.shot).toBe(false);
       expect(world.mech.action).toBe('shot-cs');

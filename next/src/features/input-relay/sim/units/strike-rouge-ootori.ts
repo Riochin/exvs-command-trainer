@@ -283,4 +283,11 @@ export const STRIKE_ROUGE_OOTORI: UnitDef = {
     { input: '特格（格闘＋ジャンプ）', name: 'N特格 対艦刀突き', note: '後で投擲（格闘派生あり）、SEED 中の横で斬り抜け' },
     { input: '格闘長押し', name: 'SEED 発現（20 秒）', note: 'サブ強化・機動力アップ。発現中はミサイル' },
   ],
+  weapons: [
+    { ammo: 'main', buttons: ['shot'], charge: 'shot' },
+    { ammo: 'sub', buttons: ['shot', 'melee'] },
+    { ammo: 'freedom', buttons: ['shot', 'jump'] },
+    { ammo: 'ootori', buttons: ['melee'], lever: 'back' },
+    { buttons: ['melee'], charge: 'melee' },
+  ],
 };

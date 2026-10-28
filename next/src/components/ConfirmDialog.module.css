@@ -1,72 +1,95 @@
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(3, 6, 10, 0.62);
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: var(--space-5);
   z-index: 100;
 }
 
+/* モーダルの型：斜めカット、左上に水色の短い線 */
 .dialog {
-  background: var(--surface-card);
-  border-radius: 0.5rem;
-  overflow: hidden;
-  box-shadow: var(--shadow-drop-lg);
-  border-top: 6px solid var(--ink);
-  padding: 1.5rem 2rem;
+  --c: var(--cut-lg);
+
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--space-4);
   min-width: 18rem;
+  max-width: 28rem;
+  padding: var(--space-5);
+  background: linear-gradient(to bottom, #0d1622, var(--ink-1));
+  box-shadow: var(--drop-modal);
+  clip-path: polygon(var(--c) 0, 100% 0, 100% calc(100% - var(--c)), calc(100% - var(--c)) 100%, 0 100%, 0 var(--c));
+}
+
+.dialog::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--cyan), var(--cyan)) top left / 3.5rem 2px no-repeat,
+    linear-gradient(var(--line), var(--line)) top / 100% 1px no-repeat,
+    linear-gradient(var(--line), var(--line)) bottom / 100% 1px no-repeat,
+    linear-gradient(var(--line), var(--line)) left / 1px 100% no-repeat,
+    linear-gradient(var(--line), var(--line)) right / 1px 100% no-repeat;
 }
 
 .message {
-  font-family: var(--font-body);
-  font-weight: 700;
-  color: var(--ink);
-  letter-spacing: var(--letter-spacing-body);
   margin: 0;
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--text);
 }
 
 .actions {
   display: flex;
-  gap: 0.75rem;
+  gap: var(--space-3);
   justify-content: flex-end;
 }
 
 .confirmButton,
 .cancelButton {
-  --c: var(--btn-red);
-  --c-side: color-mix(in oklab, var(--c), black 55%);
+  --c: var(--cut-sm);
+
+  padding: var(--space-2) var(--space-4);
+  border: 0;
   font-family: var(--font-body);
   font-size: 0.875rem;
-  font-weight: 900;
-  letter-spacing: var(--letter-spacing-body);
-  color: #fff;
-  background: linear-gradient(to bottom, color-mix(in oklab, var(--c), white 30%), var(--c) 55%, color-mix(in oklab, var(--c), black 12%));
-  border: 0;
-  border-radius: 9999px;
-  padding: 0.4rem 1rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
   cursor: pointer;
-  box-shadow: 0 3px 0 var(--c-side), 0 5px 6px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.5);
-  transform: translateY(-1px);
-  transition: transform var(--transition-press), box-shadow var(--transition-press);
+  clip-path: polygon(var(--c) 0, 100% 0, 100% calc(100% - var(--c)), calc(100% - var(--c)) 100%, 0 100%, 0 var(--c));
+  transition: background var(--transition-fast), transform var(--transition-press);
+}
+
+/* 削除は取り消せないので赤い枠 */
+.confirmButton {
+  background: transparent;
+  color: var(--danger);
+  box-shadow: inset 0 0 0 1px var(--danger);
+}
+
+.confirmButton:hover {
+  background: rgba(255, 75, 75, 0.1);
 }
 
 .cancelButton {
-  --c: #2b2b30;
-  color: var(--color-text);
+  background: var(--ink-2);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
 }
 
-.confirmButton:focus-visible,
-.cancelButton:focus-visible {
-  outline: 2px solid var(--ink);
-  outline-offset: 3px;
+.cancelButton:hover {
+  background: var(--ink-3);
 }
 
 .confirmButton:active,
 .cancelButton:active {
-  transform: translateY(2px);
-  box-shadow: 0 0 0 var(--c-side), 0 1px 2px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transform: translateY(1px);
 }

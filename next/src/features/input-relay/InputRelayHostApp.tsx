@@ -15,6 +15,7 @@ import {
   type ArcadeRawInput,
 } from '@/features/arcade-controller/ArcadeController';
 import { AuthButton } from '@/components/AuthButton';
+import { Toggle } from '@/components/Toggle';
 import type { ButtonType } from '@/types';
 import { inputLabel, phaseLabel } from './inputLabels';
 import { summarize, type LatencySummary } from './latencyStats';
@@ -37,6 +38,17 @@ export type InputRelayHostAppProps = {
   /** スマホから開く PC の URL 候補（開発サーバーが LAN IP から求めたもの）。本番では空 */
   readonly lanOrigins: ReadonlyArray<string>;
 };
+
+/** 設定画面の左の目次 */
+const SETTINGS_TABS = [
+  { id: 'link', label: 'スマホと接続', en: 'LINK' },
+  { id: 'unit', label: '機体と練習', en: 'UNIT' },
+  { id: 'input', label: '操作', en: 'INPUT' },
+  { id: 'log', label: '遅延とログ', en: 'LOG' },
+  { id: 'pages', label: 'ほかの画面', en: 'PAGES' },
+] as const;
+
+type SettingsTab = (typeof SETTINGS_TABS)[number]['id'];
 
 const CONNECTION_LABELS: Readonly<Record<RelayConnectionState, string>> = {
   idle: '準備中',
@@ -158,6 +170,7 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
   const [guideHidden, setGuideHidden] = useState(false);
   // 3D と HUD 以外（接続・機体・遅延・ログ・技表など）は設定画面にまとめる
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<SettingsTab>('link');
   useEffect(() => {
     if (!settingsOpen) return;
     const onKey = (e: KeyboardEvent) => {
@@ -274,7 +287,7 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
             機体
           </button>
           <button type="button" className={styles.toolbarButton} onClick={() => setSettingsOpen(true)}>
-            設定・メニュー
+            設定
           </button>
         </div>
 
@@ -311,157 +324,169 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
           >
             <div className={styles.modalHead}>
               <h2 id="relay-settings-title" className={styles.modalTitle}>
-                設定
+                SETTINGS<small>設定</small>
               </h2>
-              <button type="button" className={styles.restart} onClick={() => setSettingsOpen(false)}>
-                閉じる（Esc）
+              <span className={styles.connChip} data-state={host.connection}>
+                <span className={styles.connDot} data-state={host.connection} aria-hidden="true" />
+                {CONNECTION_LABELS[host.connection]}
+                {host.room && ` · ${host.room}`}
+              </span>
+              <button type="button" className={styles.closeButton} onClick={() => setSettingsOpen(false)}>
+                閉じる <kbd className={styles.key}>Esc</kbd>
               </button>
             </div>
 
-            <div className={styles.modalGrid}>
-              {/* 3D ビューはヘッダーを出さないので、ほかの画面へはここから移る */}
-              <nav aria-label="ほかの画面" className={styles.modalSection}>
-                <h3 className={styles.heading}>ほかの画面</h3>
-                <div className={styles.navList}>
-                  <Link href="/practice" className={styles.navLink}>
-                    フリー練習（スマホ）
-                  </Link>
-                  <Link href="/commands" className={styles.navLink}>
-                    コマンド一覧・練習
-                  </Link>
-                  <Link href="/commands/new" className={styles.navLink}>
-                    コマンドを登録する
-                  </Link>
-                </div>
-                <AuthButton />
+            <div className={styles.modalBody}>
+              {/* 項目が多いので 1 画面に詰めず、左の目次で分ける */}
+              <nav className={styles.sideNav} aria-label="設定の項目">
+                {SETTINGS_TABS.map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    className={styles.sideNavItem}
+                    aria-current={settingsTab === tab.id ? 'page' : undefined}
+                    onClick={() => setSettingsTab(tab.id)}
+                  >
+                    {tab.label}
+                    <span className={styles.sideNavEn}>{tab.en}</span>
+                  </button>
+                ))}
               </nav>
 
-              <section aria-label="スマホとの接続" className={styles.modalSection}>
-                <h3 className={styles.heading}>スマホとの接続</h3>
-                <div className={styles.connectRow}>
-                  <JoinQrCode origin={siteOrigin} room={host.room} />
-                  <div className={styles.connectBody}>
-                    <div className={styles.roomInline}>
-                      <span className={styles.caption}>ROOM</span>
-                      <span className={styles.roomSmall}>{host.room ?? '----'}</span>
+              <div className={styles.pane}>
+                {settingsTab === 'link' && (
+                  <section aria-label="スマホとの接続" className={styles.modalSection}>
+                    <div className={styles.connectRow}>
+                      <JoinQrCode origin={siteOrigin} room={host.room} />
+                      <div className={styles.connectBody}>
+                        <div className={styles.roomInline}>
+                          <span className={styles.caption}>ROOM</span>
+                          <span className={styles.roomSmall}>{host.room ?? '----'}</span>
+                        </div>
+                        <p className={styles.status} data-state={host.connection}>
+                          {CONNECTION_LABELS[host.connection]}
+                          {host.error && <span className={styles.error}>：{host.error}</span>}
+                        </p>
+                        {connectSteps}
+                        <div className={styles.buttonRow}>
+                          <button type="button" className={styles.restart} onClick={host.restart}>
+                            ルームを作り直す
+                          </button>
+                          {guideHidden && (
+                            <button type="button" className={styles.restart} onClick={() => setGuideHidden(false)}>
+                              接続案内を表示する
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <p className={styles.status} data-state={host.connection}>
-                      {CONNECTION_LABELS[host.connection]}
-                      {host.error && <span className={styles.error}>：{host.error}</span>}
-                    </p>
-                    <div className={styles.buttonRow}>
-                      <button type="button" className={styles.restart} onClick={host.restart}>
-                        ルームを作り直す
-                      </button>
-                      {guideHidden && (
-                        <button type="button" className={styles.restart} onClick={() => setGuideHidden(false)}>
-                          接続案内を表示する
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                {connectSteps}
-              </section>
-
-              <section aria-label="機体と練習" className={styles.modalSection}>
-                <h3 className={styles.heading}>機体と練習</h3>
-                <div className={styles.buttonRow}>
-                  <button type="button" className={styles.unitButton} onClick={() => setSelecting(true)}>
-                    機体: {unit.name}
-                  </button>
-                  <button type="button" className={styles.restart} onClick={toggleEnemyFire} aria-pressed={enemyFires}>
-                    敵の射撃: {enemyFires ? 'ON' : 'OFF'}
-                  </button>
-                  <button type="button" className={styles.restart} onClick={toggleEnemyMoves} aria-pressed={enemyMoves}>
-                    敵の移動: {enemyMoves ? 'ON' : 'OFF'}
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.restart}
-                    onClick={() => setTouchOverride(!touchControls)}
-                    aria-pressed={touchControls}
-                  >
-                    タッチ操作: {touchControls ? 'ON' : 'OFF'}
-                  </button>
-                </div>
-                <div className={styles.subToggles}>
-                  <button
-                    type="button"
-                    className={styles.restart}
-                    onClick={() => setTouchLever(!touchLever)}
-                    aria-pressed={showStick}
-                    disabled={!touchControls}
-                  >
-                    レバー: {showStick ? 'ON' : 'OFF'}
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.restart}
-                    onClick={() => setTouchButtons(!touchButtons)}
-                    aria-pressed={showTouchButtons}
-                    disabled={!touchControls}
-                  >
-                    ボタン: {showTouchButtons ? 'ON' : 'OFF'}
-                  </button>
-                </div>
-                <p className={styles.note}>
-                  タッチ操作は、この画面をスマホで開いて操作するとき用。左下にスティック、右下に射撃・格闘・ジャンプのボタンが出ます（別々に消せます）
-                </p>
-                <h4 className={styles.subHeading}>キーボード操作</h4>
-                <dl className={styles.keyList}>
-                  <dt>W A S D ／ 十字キー</dt>
-                  <dd>移動（同じ方向に 2 回でステップ）</dd>
-                  <dt>J</dt>
-                  <dd>射撃（長押しで射CS）</dd>
-                  <dt>O</dt>
-                  <dd>格闘（長押しで格CS）</dd>
-                  <dt>[</dt>
-                  <dd>ジャンプ（長押しで上昇、2 回で BD）</dd>
-                  <dt>J＋O ／ J＋[ ／ O＋[</dt>
-                  <dd>サブ ／ 特射 ／ 特格</dd>
-                </dl>
-                <h4 className={styles.subHeading}>技表</h4>
-                <CommandList unit={unit} />
-              </section>
-
-              <section aria-label="遅延と入力ログ" className={styles.modalSection}>
-                <h3 className={styles.heading}>遅延（ms）</h3>
-                <table className={styles.stats}>
-                  <thead>
-                    <tr>
-                      <th scope="col"></th>
-                      <th scope="col">直近</th>
-                      <th scope="col">平均</th>
-                      <th scope="col">p95</th>
-                      <th scope="col">最大</th>
-                      <th scope="col">件数</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <StatRow label="往復" summary={rtt} />
-                    <StatRow label="片道" summary={latency} />
-                  </tbody>
-                </table>
-                <p className={styles.note}>取りこぼし: {host.lostCount} 件</p>
-                <h4 className={styles.subHeading}>入力ログ</h4>
-                {host.log.length === 0 ? (
-                  <p className={styles.empty}>スマホから入力が届くとここに出ます</p>
-                ) : (
-                  <ol className={styles.log} data-testid="relay-log">
-                    {[...host.log].reverse().map((entry) => (
-                      <li key={entry.message.seq} className={styles.logItem} data-kind={entry.message.type}>
-                        <span className={styles.seq}>#{entry.message.seq}</span>
-                        <span className={styles.kind}>{entry.message.type === 'raw' ? 'RAW' : 'CMD'}</span>
-                        <span className={styles.input}>{describeEntry(entry)}</span>
-                        <span className={styles.latency}>
-                          {entry.latencyMs === null ? '—' : `${formatMs(entry.latencyMs)}`}
-                        </span>
-                      </li>
-                    ))}
-                  </ol>
+                  </section>
                 )}
-              </section>
+
+                {settingsTab === 'unit' && (
+                  <section aria-label="機体と練習" className={styles.modalSection}>
+                    <div className={styles.unitRow}>
+                      <span className={styles.unitName}>
+                        <span className={styles.caption}>MOBILE SUIT</span>
+                        {unit.name}
+                      </span>
+                      <button type="button" className={styles.restart} onClick={() => setSelecting(true)}>
+                        機体を変える
+                      </button>
+                    </div>
+                    <Toggle label="敵の射撃" checked={enemyFires} onChange={toggleEnemyFire} description="敵が撃ってくるビームを出す。誘導切りの練習に" />
+                    <Toggle label="敵の移動" checked={enemyMoves} onChange={toggleEnemyMoves} description="止めると敵はその場に立ったままになる" />
+                    <h3 className={styles.subHeading}>技表</h3>
+                    <CommandList unit={unit} />
+                  </section>
+                )}
+
+                {settingsTab === 'input' && (
+                  <section aria-label="操作" className={styles.modalSection}>
+                    <Toggle
+                      label="タッチ操作"
+                      checked={touchControls}
+                      onChange={setTouchOverride}
+                      description="この画面をスマホで開いて操作するとき用。左下にスティック、右下に射撃・格闘・ジャンプのボタンが出る"
+                    />
+                    <div className={styles.subToggles}>
+                      <Toggle label="レバー" checked={showStick} onChange={setTouchLever} disabled={!touchControls} />
+                      <Toggle label="ボタン" checked={showTouchButtons} onChange={setTouchButtons} disabled={!touchControls} />
+                    </div>
+                    <h3 className={styles.subHeading}>キーボード操作</h3>
+                    <dl className={styles.keyList}>
+                      <dt>W A S D ／ 十字キー</dt>
+                      <dd>移動（同じ方向に 2 回でステップ）</dd>
+                      <dt>J</dt>
+                      <dd>射撃（長押しで射CS）</dd>
+                      <dt>O</dt>
+                      <dd>格闘（長押しで格CS）</dd>
+                      <dt>[</dt>
+                      <dd>ジャンプ（長押しで上昇、2 回で BD）</dd>
+                      <dt>J＋O ／ J＋[ ／ O＋[</dt>
+                      <dd>サブ ／ 特射 ／ 特格</dd>
+                    </dl>
+                  </section>
+                )}
+
+                {settingsTab === 'log' && (
+                  <section aria-label="遅延と入力ログ" className={styles.modalSection}>
+                    <h3 className={styles.subHeading}>遅延（ms）</h3>
+                    <table className={styles.stats}>
+                      <thead>
+                        <tr>
+                          <th scope="col"></th>
+                          <th scope="col">直近</th>
+                          <th scope="col">平均</th>
+                          <th scope="col">p95</th>
+                          <th scope="col">最大</th>
+                          <th scope="col">件数</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <StatRow label="往復" summary={rtt} />
+                        <StatRow label="片道" summary={latency} />
+                      </tbody>
+                    </table>
+                    <p className={styles.note}>取りこぼし: {host.lostCount} 件</p>
+                    <h3 className={styles.subHeading}>入力ログ</h3>
+                    {host.log.length === 0 ? (
+                      <p className={styles.empty}>スマホから入力が届くとここに出ます</p>
+                    ) : (
+                      <ol className={styles.log} data-testid="relay-log">
+                        {[...host.log].reverse().map((entry) => (
+                          <li key={entry.message.seq} className={styles.logItem} data-kind={entry.message.type}>
+                            <span className={styles.seq}>#{entry.message.seq}</span>
+                            <span className={styles.kind}>{entry.message.type === 'raw' ? 'RAW' : 'CMD'}</span>
+                            <span className={styles.input}>{describeEntry(entry)}</span>
+                            <span className={styles.latency}>
+                              {entry.latencyMs === null ? '—' : `${formatMs(entry.latencyMs)}`}
+                            </span>
+                          </li>
+                        ))}
+                      </ol>
+                    )}
+                  </section>
+                )}
+
+                {/* 3D ビューはヘッダーを出さないので、ほかの画面へはここから移る */}
+                {settingsTab === 'pages' && (
+                  <nav aria-label="ほかの画面" className={styles.modalSection}>
+                    <div className={styles.navList}>
+                      <Link href="/practice" className={styles.navLink}>
+                        フリー練習（スマホ）
+                      </Link>
+                      <Link href="/commands" className={styles.navLink}>
+                        コマンド一覧・練習
+                      </Link>
+                      <Link href="/commands/new" className={styles.navLink}>
+                        コマンドを登録する
+                      </Link>
+                    </div>
+                    <AuthButton />
+                  </nav>
+                )}
+              </div>
             </div>
           </div>
         </div>

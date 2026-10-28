@@ -59,10 +59,28 @@ describe('盾（レバー後→前）', () => {
     expect(labels(world)).toContain('盾');
   });
 
-  it('後ろから前までが遅いと盾にならない', () => {
+  it('後ろを戻してから前までが遅いと盾にならない', () => {
     const world = createWorld({ enemyMoves: false });
     flick(world, 'back');
     run(world, GUARD_INPUT_WINDOW_S + 0.05);
+    expect(setLever(world, 'forward', true)).toBeNull();
+    expect(world.mech.action).toBe('idle');
+  });
+
+  it('後ろを長く倒していても、戻してからすぐ前に倒せば盾（猶予は後ろを戻した瞬間から数える）', () => {
+    const world = createWorld({ enemyMoves: false });
+    setLever(world, 'back', true);
+    run(world, 1);
+    setLever(world, 'back', false);
+    run(world, GUARD_INPUT_WINDOW_S - 0.05);
+    expect(setLever(world, 'forward', true)).toBe('started');
+    expect(world.mech.action).toBe('guard');
+  });
+
+  it('後ろを倒したまま前を倒しても盾にならない', () => {
+    const world = createWorld({ enemyMoves: false });
+    setLever(world, 'back', true);
+    run(world, 0.05);
     expect(setLever(world, 'forward', true)).toBeNull();
     expect(world.mech.action).toBe('idle');
   });

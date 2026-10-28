@@ -50,6 +50,13 @@ export function HamburgerMenu() {
             >
               コマンドを練習する
             </Link>
+            <Link
+              href="/3d"
+              className={`${styles.item} ${pathname === '/3d' ? styles.active : ''}`}
+              onClick={close}
+            >
+              3Dビュー（PC）
+            </Link>
             <div className={styles.item}>
               <AuthButton />
             </div>

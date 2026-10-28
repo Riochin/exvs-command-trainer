@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import type React from 'react';
 import { useControllerInput } from '@/hooks/useControllerInput';
 import { useChargeInput, type ChargeableButton } from '@/hooks/useChargeInput';
@@ -9,6 +9,14 @@ import type { ButtonType, CommandStep } from '@/types';
 import styles from './ArcadeController.module.css';
 
 export type ArcadePhysicalButton = 'shot' | 'melee' | 'jump';
+
+export type ArcadeRawInputPhase = 'down' | 'up' | 'cancel';
+
+/** チャージ・同時押し・BD の解釈前の、物理ボタンの押下・解放そのもの */
+export type ArcadeRawInput = {
+  button: ArcadePhysicalButton;
+  phase: ArcadeRawInputPhase;
+};
 
 /** 同時押し判定用の短い遅延（ジャンプ単独／射撃・格闘の tap・charge を、相手ボタンが続く場合に誤発火しないため） */
 export const SIMULTANEOUS_INPUT_DEFER_MS = 50;
@@ -36,18 +44,19 @@ function isEditableKeyboardTarget(target: EventTarget | null): boolean {
   return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
 }
 
-function debugKeyToPhysicalButton(key: string): ArcadePhysicalButton | null {
+/** PC デバッグ用キーの標準の割り当て（f / y / i） */
+export const DEFAULT_KEYBOARD_KEYS: Readonly<Record<string, ArcadePhysicalButton>> = {
+  f: 'shot',
+  y: 'melee',
+  i: 'jump',
+};
+
+function debugKeyToPhysicalButton(
+  key: string,
+  keys: Readonly<Record<string, ArcadePhysicalButton>>,
+): ArcadePhysicalButton | null {
   if (key.length !== 1) return null;
-  switch (key.toLowerCase()) {
-    case 'f':
-      return 'shot';
-    case 'y':
-      return 'melee';
-    case 'i':
-      return 'jump';
-    default:
-      return null;
-  }
+  return keys[key.toLowerCase()] ?? null;
 }
 
 function isChargeable(button: ButtonType): button is ChargeableButton {
@@ -76,6 +85,10 @@ export interface ArcadeControllerProps {
   highlightedPhysicalButtons?: ReadonlyArray<ArcadePhysicalButton> | null;
   /** 全ボタンに一括適用する状態フィードバック（success / fail / neutral） */
   buttonStateOverride?: import('./ControllerButton').ControllerButtonState;
+  /** 物理ボタンの押下・解放を解釈前にそのまま通知する（入力リレー等の外部送信用） */
+  onRawInput?: (input: ArcadeRawInput) => void;
+  /** キーボードで押せるキーの割り当て（小文字のキー → 物理ボタン）。省略時は f / y / i */
+  keyboardKeys?: Readonly<Record<string, ArcadePhysicalButton>>;
 }
 
 export function ArcadeController({
@@ -84,6 +97,8 @@ export function ArcadeController({
   highlightedButton,
   highlightedPhysicalButtons,
   buttonStateOverride,
+  onRawInput,
+  keyboardKeys = DEFAULT_KEYBOARD_KEYS,
 }: ArcadeControllerProps) {
   const { activeButtons, getButtonHandlers, setOnButtonPress, getHeldButtonsSync } = useControllerInput();
   const {
@@ -287,18 +302,40 @@ export function ArcadeController({
     emitJumpOrBd,
   ]);
 
+  const onRawInputRef = useRef(onRawInput);
+  useLayoutEffect(() => {
+    onRawInputRef.current = onRawInput;
+  }, [onRawInput]);
+
   const getHandlers = useCallback(
     (button: ButtonType) => {
-      if (button === 'shot') return wrapChargeHandlers('shot');
-      if (button === 'melee') return wrapChargeHandlers('melee');
-      if (button === 'jump') return wrapJumpHandlers();
-      return getButtonHandlers(button);
+      if (button !== 'shot' && button !== 'melee' && button !== 'jump') return getButtonHandlers(button);
+      const inner = button === 'jump' ? wrapJumpHandlers() : wrapChargeHandlers(button);
+      // 解釈の前に通知し、外部に送る時刻をできるだけ押した瞬間に近づける
+      return {
+        onPointerDown(event: React.PointerEvent<HTMLElement>) {
+          onRawInputRef.current?.({ button, phase: 'down' });
+          inner.onPointerDown(event);
+        },
+        onPointerUp(event: React.PointerEvent<HTMLElement>) {
+          onRawInputRef.current?.({ button, phase: 'up' });
+          inner.onPointerUp(event);
+        },
+        onPointerCancel(event: React.PointerEvent<HTMLElement>) {
+          onRawInputRef.current?.({ button, phase: 'cancel' });
+          inner.onPointerCancel(event);
+        },
+      };
     },
     [wrapChargeHandlers, wrapJumpHandlers, getButtonHandlers],
   );
 
   const getHandlersRef = useRef(getHandlers);
   getHandlersRef.current = getHandlers;
+  const keyboardKeysRef = useRef(keyboardKeys);
+  useLayoutEffect(() => {
+    keyboardKeysRef.current = keyboardKeys;
+  }, [keyboardKeys]);
 
   useEffect(() => {
     const pointerFor = (physical: ArcadePhysicalButton) =>
@@ -306,7 +343,7 @@ export function ArcadeController({
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (isEditableKeyboardTarget(e.target)) return;
-      const physical = debugKeyToPhysicalButton(e.key);
+      const physical = debugKeyToPhysicalButton(e.key, keyboardKeysRef.current);
       if (physical === null) return;
       if (e.repeat) return;
       e.preventDefault();
@@ -315,7 +352,7 @@ export function ArcadeController({
 
     const onKeyUp = (e: KeyboardEvent) => {
       if (isEditableKeyboardTarget(e.target)) return;
-      const physical = debugKeyToPhysicalButton(e.key);
+      const physical = debugKeyToPhysicalButton(e.key, keyboardKeysRef.current);
       if (physical === null) return;
       e.preventDefault();
       getHandlersRef.current(physical).onPointerUp(pointerFor(physical));

@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { ArcadeController } from '@/features/arcade-controller/ArcadeController';
+import { RelayControl } from '@/features/input-relay/RelayControl';
+import { useRelay } from '@/features/input-relay/RelayProvider';
 import type { ButtonType, CommandStep } from '@/types';
 import styles from './FreePlayForm.module.css';
 
@@ -45,6 +47,8 @@ function buildPreviewItems(sequence: CommandStep[]): PreviewItem[] {
 
 export function FreePlayForm() {
   const [sequence, setSequence] = useState<CommandStep[]>([]);
+  // PC 連携（3D 画面）。つないでいれば入力を PC へも送る
+  const relay = useRelay();
   const sequencePreviewRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -53,6 +57,7 @@ export function FreePlayForm() {
   }, [sequence]);
 
   const handleStepAdded = (step: CommandStep) => {
+    for (const button of step.buttons) relay?.sendButton(button);
     setSequence((prev) => [...prev, step]);
   };
 
@@ -62,6 +67,14 @@ export function FreePlayForm() {
     <div className={styles.form}>
       <header className={styles.header}>
         <h1 className={styles.title}>EXVSコマンド道場</h1>
+        {relay && (
+          <RelayControl
+            room={relay.room}
+            connection={relay.connection}
+            error={relay.error}
+            onRoomChange={relay.setRoom}
+          />
+        )}
       </header>
       <div className={styles.sequenceRow}>
         <div ref={sequencePreviewRef} data-testid="sequence-preview" className={styles.sequencePreview}>
@@ -92,7 +105,7 @@ export function FreePlayForm() {
         </button>
       </div>
       <div className={styles.controllerArea}>
-        <ArcadeController onStepAdded={handleStepAdded} />
+        <ArcadeController onStepAdded={handleStepAdded} onRawInput={relay?.room ? relay.sendRaw : undefined} />
       </div>
     </div>
   );

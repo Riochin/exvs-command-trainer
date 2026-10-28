@@ -12,8 +12,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem 1.25rem;
-  /* 右上の固定ハンバーガーメニューと重ならないよう右に余白を取る */
-  padding: 0.5rem 4rem 0.5rem 1rem;
+  padding: 0.5rem 1rem;
   background: linear-gradient(to bottom, #1f1f23, #121214);
   border-top: 1px solid #333338;
   border-bottom: 3px solid #000;
@@ -159,8 +158,6 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  /* 右上の固定メニューボタンと重ならないよう余白を取る */
-  padding-right: 2.5rem;
 }
 
 .modalTitle {
@@ -196,6 +193,27 @@
   flex-wrap: wrap;
   gap: 0.75rem;
   align-items: flex-start;
+}
+
+.navList {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.navLink {
+  display: block;
+  padding: 0.5rem 0.75rem;
+  background: var(--surface-plate-hi);
+  color: var(--color-text);
+  border: var(--border-plate);
+  border-radius: 4px;
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+
+.navLink:hover,
+.navLink:focus-visible {
+  color: var(--color-accent-primary);
 }
 
 .buttonRow {

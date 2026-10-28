@@ -100,16 +100,18 @@ const KEYBOARD_KEYS: Readonly<Record<string, ArcadePhysicalButton>> = {
 export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
   const worldRef = useRef<SimWorld>(createWorld({ enemyFires: true }));
   const [enemyFires, setEnemyFires] = useState(true);
+  // 敵が左右に動くとカメラも回り込む。落ち着いて練習したいときは止められる
+  const [enemyMoves, setEnemyMoves] = useState(true);
   const [unitId, setUnitId] = useState(GENERIC_UNIT.id);
   // 開いたときは機体選択から始める
   const [selecting, setSelecting] = useState(true);
   const selectUnit = useCallback(
     (id: string) => {
-      worldRef.current = createWorld({ enemyFires, unitId: id });
+      worldRef.current = createWorld({ enemyFires, enemyMoves, unitId: id });
       setUnitId(id);
       setSelecting(false);
     },
-    [enemyFires],
+    [enemyFires, enemyMoves],
   );
   const closeSelect = useCallback(() => setSelecting(false), []);
   // キーボードだけで練習するときは接続案内を閉じられる
@@ -132,6 +134,11 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
     worldRef.current.enemy.fireInterval = next ? ENEMY_FIRE_INTERVAL_S : 0;
     setEnemyFires(next);
   }, [enemyFires]);
+  const toggleEnemyMoves = useCallback(() => {
+    const next = !enemyMoves;
+    worldRef.current.enemy.moves = next;
+    setEnemyMoves(next);
+  }, [enemyMoves]);
   const handleInput = useCallback((message: RelayInputMessage) => {
     if (message.type === 'button') applyInput(worldRef.current, message.button);
     else applyRawInput(worldRef.current, message);
@@ -291,6 +298,9 @@ export function InputRelayHostApp({ lanOrigins }: InputRelayHostAppProps) {
                   </button>
                   <button type="button" className={styles.restart} onClick={toggleEnemyFire} aria-pressed={enemyFires}>
                     敵の射撃: {enemyFires ? 'ON' : 'OFF'}
+                  </button>
+                  <button type="button" className={styles.restart} onClick={toggleEnemyMoves} aria-pressed={enemyMoves}>
+                    敵の移動: {enemyMoves ? 'ON' : 'OFF'}
                   </button>
                 </div>
                 <h4 className={styles.subHeading}>キーボード操作</h4>

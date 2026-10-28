@@ -64,6 +64,23 @@ function tapLever(world: SimWorld, direction: LeverDirection) {
 }
 
 describe('sim', () => {
+  it('敵の移動を止めるとその場に留まり、動かし直すとそこから動き出す', () => {
+    const world = createWorld();
+    run(world, 1);
+    const moved = world.enemy.pos.x;
+    expect(Math.abs(moved)).toBeGreaterThan(1);
+    world.enemy.moves = false;
+    run(world, 2);
+    expect(world.enemy.pos.x).toBe(moved);
+    world.enemy.moves = true;
+    run(world, FIXED_DT * 2);
+    expect(Math.abs(world.enemy.pos.x - moved)).toBeLessThan(0.1);
+
+    const still = createWorld({ enemyMoves: false });
+    run(still, 2);
+    expect(still.enemy.pos.x).toBe(0);
+  });
+
   it('機体は常に敵の方を向く', () => {
     const world = createWorld();
     run(world, 2);

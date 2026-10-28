@@ -86,9 +86,15 @@ export type CreateWorldOptions = {
   enemyFires?: boolean;
   /** 使う機体。省略時は汎用機 */
   unitId?: string;
+  /** 敵が左右に動くか（省略時は動く） */
+  enemyMoves?: boolean;
 };
 
-export function createWorld({ enemyFires = false, unitId = GENERIC_UNIT.id }: CreateWorldOptions = {}): SimWorld {
+export function createWorld({
+  enemyFires = false,
+  unitId = GENERIC_UNIT.id,
+  enemyMoves = true,
+}: CreateWorldOptions = {}): SimWorld {
   const unit = unitById(unitId);
   const ammo: SimWorld['mech']['ammo'] = {};
   for (const [key, def] of Object.entries(unit.ammo)) ammo[key] = { count: def.max, timer: 0 };
@@ -138,6 +144,8 @@ export function createWorld({ enemyFires = false, unitId = GENERIC_UNIT.id }: Cr
     },
     enemy: {
       pos: { ...ENEMY_BASE },
+      moves: enemyMoves,
+      swayTime: 0,
       fireInterval: enemyFires ? ENEMY_FIRE_INTERVAL_S : 0,
       fireTimer: ENEMY_FIRE_INTERVAL_S,
       hitFlash: 0,
@@ -1080,7 +1088,11 @@ function stepMechPhysics(world: SimWorld, dt: number): void {
 
 function stepEnemy(world: SimWorld, dt: number): void {
   const { enemy } = world;
-  enemy.pos.x = ENEMY_BASE.x + Math.sin(world.time * ENEMY_SWAY_SPEED) * ENEMY_SWAY;
+  // 止めているあいだはその場に留まり、動かし直すとそこから左右に揺れ始める
+  if (enemy.moves) {
+    enemy.swayTime += dt;
+    enemy.pos.x = ENEMY_BASE.x + Math.sin(enemy.swayTime * ENEMY_SWAY_SPEED) * ENEMY_SWAY;
+  }
   enemy.hitFlash = Math.max(0, enemy.hitFlash - dt);
   world.mech.hitFlash = Math.max(0, world.mech.hitFlash - dt);
   if (enemy.fireInterval <= 0) return;

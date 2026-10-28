@@ -176,6 +176,10 @@ export type MechState = {
 
 export type EnemyState = {
   pos: Vec3;
+  /** 左右に動くか。止めるとカメラも回り込まない */
+  moves: boolean;
+  /** 左右の揺れの経過時間（秒）。止めている間は進まない */
+  swayTime: number;
   /** 射撃の間隔（秒）。0 なら撃たない */
   fireInterval: number;
   /** 次に撃つまでの残り（秒） */

@@ -177,24 +177,6 @@
   }
 }
 
-.charge {
-  position: absolute;
-  bottom: 6.5rem;
-  left: 50%;
-  display: flex;
-  gap: 0.75rem;
-  transform: translateX(-50%);
-  font-size: 0.9rem;
-}
-
-.chargeShot {
-  color: #7ef9ff;
-}
-
-.chargeMelee {
-  color: #ff6ad5;
-}
-
 .lever {
   position: absolute;
   /* 左下の隅は開発時の Next のバッジと重なるので少し内側に置く */
@@ -303,64 +285,201 @@
   right: 0.75rem;
   bottom: 1rem;
   display: grid;
-  gap: 0.35rem;
+  gap: 0.4rem;
   list-style: none;
 }
 
+/* 1 行 = 左に押すボタン、右にパネル */
 .weapon {
   display: grid;
-  grid-template-columns: 2.6rem 9rem;
+  grid-template-columns: auto 11.5rem;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.2rem 0.6rem 0.25rem 0.8rem;
+  gap: 0.35rem;
+}
+
+.command {
+  display: grid;
+  justify-items: end;
+  gap: 0.1rem;
+}
+
+.chargeTag {
+  font-family: var(--font-label);
+  font-size: 0.55rem;
+  font-style: italic;
+  letter-spacing: 0.08em;
+  color: #fff;
+  text-shadow: 0 0 2px #000, 0 0 4px #3d8fe8;
+}
+
+.buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.leverChip {
+  margin-right: 0.1rem;
+  padding: 0.1rem 0.2rem;
+  font-size: 0.55rem;
+  font-weight: 900;
+  line-height: 1;
+  color: #000;
+  background: #f39a2a;
+  border-radius: 2px;
+}
+
+/* アケコンのボタンを斜め上から見た楕円。押すボタンは青く光り、上にオレンジの矢印 */
+.button {
+  position: relative;
+  width: 1.05rem;
+  height: 0.72rem;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, #7b838d, #3a4048);
+  border: 2px solid rgba(200, 210, 222, 0.75);
+}
+
+.button[data-on='true'] {
+  background: radial-gradient(circle at 50% 35%, #8cc4ff, #3d8fe8);
+  border-color: #e6f2ff;
+}
+
+.button[data-on='true']::before {
+  content: '';
+  position: absolute;
+  top: -0.5rem;
+  left: 50%;
+  width: 0.58rem;
+  height: 0.42rem;
+  transform: translateX(-50%);
+  background: #f39a2a;
+  clip-path: polygon(0 0, 50% 55%, 100% 0, 100% 40%, 50% 100%, 0 40%);
+}
+
+.panel {
+  position: relative;
+  display: block;
+  height: 3.6rem;
+}
+
+/* 数字と名前の台。今までの札と同じ紺の半透明に水色の縁 */
+.panel::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 1rem 1.6rem;
   background: linear-gradient(to right, rgba(12, 18, 28, 0.35), rgba(12, 18, 28, 0.85));
   border-right: 3px solid rgba(120, 200, 255, 0.7);
   clip-path: polygon(0.9rem 0, 100% 0, 100% 100%, 0 100%);
 }
 
+.weapon[data-empty='true'] .panel::before {
+  border-right-color: var(--color-error);
+}
+
 .weaponCount {
+  position: absolute;
+  top: -0.1rem;
+  left: 2.7rem;
   font-family: var(--font-led);
-  font-size: 1.8rem;
+  font-size: 2rem;
   line-height: 1;
   color: #fff;
-  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .weapon[data-empty='true'] .weaponCount {
   color: var(--color-error);
 }
 
-.weaponBody {
-  display: grid;
-  gap: 0.15rem;
-}
-
 .weaponName {
-  font-size: 0.72rem;
-  color: rgba(255, 255, 255, 0.85);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  position: absolute;
+  top: 0.35rem;
+  right: 0.45rem;
+  max-width: 6rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.15;
+  text-align: right;
+  color: rgba(255, 255, 255, 0.9);
 }
 
-.weaponReload {
-  display: block;
-  height: 0.3rem;
-  background: rgba(0, 0, 0, 0.55);
-  overflow: hidden;
+/* 左下に食い込む斜めのゲージ。上が残弾・リロード、下がチャージ */
+.gauges {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  display: grid;
+  gap: 2px;
+  width: 8.8rem;
 }
 
-.weaponReload > span {
+.ammoGauge,
+.chargeGauge {
+  position: relative;
   display: block;
-  height: 100%;
-  background: linear-gradient(to right, #36c8f2, #b9f6ff);
+  height: 0.5rem;
+  overflow: hidden;
+  transform: skewX(-28deg);
+  background: rgba(10, 14, 22, 0.75);
+  border: 2px solid rgba(200, 225, 255, 0.55);
+}
+
+.ammoGauge {
+  margin-left: 1rem;
+}
+
+.ammoGauge > span,
+.chargeGauge > span {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, #b9f6ff, #36c8f2 55%, #1b8fd1);
   transform-origin: left center;
 }
 
-.weaponCaption {
+.weapon[data-empty='true'] .ammoGauge > span {
+  background: linear-gradient(to bottom, #ffb0aa, var(--color-error));
+}
+
+.chargeGauge {
+  height: 0.62rem;
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.chargeGauge > span {
+  background: linear-gradient(to bottom, #ffd08a, #ff8a1e);
+}
+
+.chargeGauge > b {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%) skewX(28deg);
   font-family: var(--font-label);
-  font-size: 0.55rem;
-  letter-spacing: 0.2em;
-  color: rgba(255, 255, 255, 0.5);
-  text-align: right;
+  font-size: 0.45rem;
+  font-style: italic;
+  letter-spacing: 0.12em;
+  color: rgba(220, 226, 234, 0.8);
+}
+
+.weapon[data-full='true'] .chargeGauge {
+  animation: chargeFull 0.5s steps(2) infinite;
+}
+
+.weapon[data-full='true'] .chargeGauge > b {
+  color: #fff;
+  text-shadow: 0 0 4px #fff;
+}
+
+@keyframes chargeFull {
+  50% {
+    border-color: #fff;
+    box-shadow: 0 0 6px #ff8a1e;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .weapon[data-full='true'] .chargeGauge {
+    animation: none;
+    border-color: #fff;
+  }
 }

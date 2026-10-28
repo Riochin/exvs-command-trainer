@@ -30,6 +30,11 @@ export const FACE_TURN_RATE = 9;
  * レバーなしのジャンプは慣性ジャンプにならない。
  */
 export const INERTIA_LEVER_WINDOW_S = 0.7;
+/**
+ * ジャンプを始めてからこの時間内に BD が届いたら、そのジャンプは BD の 1 回目の押下だったとみなす。
+ * アケコンの BD 判定の窓（2 回押し）と、射撃との同時押しを待つ遅れを足したくらい
+ */
+export const BD_FROM_JUMP_WINDOW_S = 0.3;
 /** BD・ステップが終わってから、次の行動をまだ連携（ズンダなど）としてつなげる時間 */
 export const CHAIN_GRACE_S = 0.2;
 /** レバーを戻さず入れっぱなしで出した慣性ジャンプは、飛距離が少し短い（速さの倍率） */

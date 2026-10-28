@@ -132,6 +132,27 @@ describe('キーボードで打つズンダ', () => {
     expect(labels().some((l) => l.startsWith('慣性ジャンプ'))).toBe(false);
   });
 
+  it('同じ方向に BD するたびにレバーを入れ直しても、BD のつもりのジャンプ押下は慣性ジャンプにならない', () => {
+    // 高く飛んでから、空中でズンダする
+    tap('[', 900);
+    lever('right', true);
+    tap('j');
+    wait(250);
+    bd();
+    lever('right', false);
+    wait(60);
+    tap('j');
+    // BR が終わってから、レバーを入れ直して次の BD
+    wait(450);
+    lever('right', true);
+    bd();
+    lever('right', false);
+    wait(60);
+    tap('j');
+    wait(400);
+    expect(labels().some((l) => l.startsWith('慣性ジャンプ'))).toBe(false);
+  });
+
   it('BD のあとにジャンプを 1 回だけ押してレバーを入れ直せば、今までどおり慣性ジャンプになる', () => {
     lever('right', true);
     bd(300);

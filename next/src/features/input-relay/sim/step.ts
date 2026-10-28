@@ -15,6 +15,7 @@ import {
   INERTIA_LEVER_ACCEL,
   INERTIA_LEVER_WINDOW_S,
   CHAIN_GRACE_S,
+  BD_FROM_JUMP_WINDOW_S,
   INERTIA_MAX_SPEED,
   LANDING_LAG_MAX_S,
   LANDING_LAG_PER_USE_S,
@@ -342,6 +343,25 @@ function establishInertiaJump(world: SimWorld, direction: LeverDirection, held =
   pushEvent(world, 'route', held ? '慣性ジャンプ（入れっぱ）' : '慣性ジャンプ');
 }
 
+/**
+ * ジャンプの直後に BD が届いたら、そのジャンプで成立した慣性ジャンプを取り消す。
+ * BD の 1 回目の押下はジャンプとして届くので、BD のつもりの入力が慣性ジャンプと表示されてしまう
+ */
+function cancelInertiaJump(world: SimWorld): void {
+  const mech = world.mech;
+  mech.inertiaPending = null;
+  if (!mech.inertiaFlight) return;
+  mech.inertiaFlight = false;
+  mech.carryInertia = false;
+  for (let i = world.events.length - 1; i >= 0; i--) {
+    const e = world.events[i];
+    if (e.kind === 'route' && e.label.startsWith('慣性ジャンプ')) {
+      world.events.splice(i, 1);
+      break;
+    }
+  }
+}
+
 /** 行動を始める（キャンセルかどうかの判定は済んでいる前提）。ブーストが足りなければ false */
 function startAction(world: SimWorld, kind: MechAction, def: ActionDef, canceled: boolean, quiet = false): boolean {
   const mech = world.mech;
@@ -385,6 +405,7 @@ function startAction(world: SimWorld, kind: MechAction, def: ActionDef, canceled
     mech.chainLabels = [...mech.chainLabels.slice(0, -1), def.label];
     // ジャンプ中の BD はただの BD。何かの行動からつないだときだけ BDC と呼ぶ
     namedCancel = before.length > 0 && before[before.length - 1] !== 'jump';
+    if (previousTime <= BD_FROM_JUMP_WINDOW_S) cancelInertiaJump(world);
   } else {
     mech.chain = linked ? [...mech.chain, kind] : [kind];
     mech.chainLabels = linked ? [...mech.chainLabels, def.label] : [def.label];

@@ -3,7 +3,8 @@
   /* 3D は画面の端まで描き、HUD だけ切り欠きとホームバーの内側に置く */
   inset: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   pointer-events: none;
-  font-family: var(--font-led);
+  font-family: var(--font-body);
+  font-weight: 700;
   color: #fff;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
 }
@@ -11,7 +12,7 @@
 .caption {
   font-family: var(--font-label);
   font-size: 0.75rem;
-  letter-spacing: var(--letter-spacing-ui);
+  letter-spacing: 0.12em;
   opacity: 0.85;
 }
 
@@ -27,6 +28,7 @@
 
 .unitName {
   font-family: var(--font-label);
+  font-weight: 800;
   font-size: 0.85rem;
   letter-spacing: 0.06em;
 }
@@ -50,6 +52,7 @@
 }
 
 .ammoCount {
+  font-family: var(--font-num);
   color: var(--led-on);
   text-align: right;
 }
@@ -78,7 +81,7 @@
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  color: #ff8fd0;
+  color: var(--awaken);
   font-weight: 700;
 }
 
@@ -87,7 +90,7 @@
 }
 
 .seedBar > span {
-  background: #ff8fd0;
+  background: var(--awaken);
 }
 
 .seedWait {
@@ -104,11 +107,13 @@
 }
 
 .hits {
+  font-family: var(--font-num);
   font-size: 1.6rem;
   color: var(--led-on);
 }
 
 .damage {
+  font-family: var(--font-num);
   font-size: 1.6rem;
   color: var(--color-error);
 }
@@ -142,9 +147,14 @@
   font-family: var(--font-label);
   font-size: 1.5rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  font-weight: 800;
+  letter-spacing: 0.08em;
   color: #fff;
-  background: linear-gradient(to right, transparent, rgba(216, 53, 44, 0.85) 20%, rgba(216, 53, 44, 0.85) 80%, transparent);
+  text-shadow: 0 0 12px rgba(54, 200, 242, 0.8);
+  /* 技名の帯は水色。左右を透明に抜いて 3D になじませる */
+  background: linear-gradient(to right, transparent, rgba(27, 143, 209, 0.75) 20%, rgba(27, 143, 209, 0.75) 80%, transparent);
+  border-top: 1px solid rgba(185, 246, 255, 0.5);
+  border-bottom: 1px solid rgba(185, 246, 255, 0.5);
   padding: 0.1rem 2.5rem;
   animation: pop 0.2s ease-out;
 }
@@ -229,14 +239,16 @@
 .boostLabel {
   font-family: var(--font-label);
   font-size: 0.7rem;
-  letter-spacing: 0.25em;
-  color: rgba(255, 255, 255, 0.75);
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: rgba(230, 243, 255, 0.8);
 }
 
 .status {
   font-size: 0.85rem;
+  font-weight: 800;
   letter-spacing: 0.1em;
-  color: var(--color-text-muted);
+  color: var(--cyan-hi);
 }
 
 .status[data-status='OVERHEAT'] {
@@ -269,7 +281,7 @@
 
 .fill {
   height: 100%;
-  background: linear-gradient(to bottom, #b9f6ff, #36c8f2 55%, #1b8fd1);
+  background: linear-gradient(to bottom, var(--cyan-hi), var(--cyan) 55%, var(--cyan-deep));
   transform-origin: left center;
   transition: transform 60ms linear;
 }
@@ -367,7 +379,7 @@
   position: absolute;
   inset: 0 0 1rem 1.6rem;
   background: linear-gradient(to right, rgba(12, 18, 28, 0.35), rgba(12, 18, 28, 0.85));
-  border-right: 3px solid rgba(120, 200, 255, 0.7);
+  border-right: 3px solid var(--cyan);
   clip-path: polygon(0.9rem 0, 100% 0, 100% 100%, 0 100%);
 }
 
@@ -379,7 +391,8 @@
   position: absolute;
   top: -0.1rem;
   left: 2.7rem;
-  font-family: var(--font-led);
+  font-family: var(--font-num);
+  font-weight: 700;
   font-size: 2rem;
   line-height: 1;
   color: #fff;
@@ -431,7 +444,7 @@
 .chargeGauge > span {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to bottom, #b9f6ff, #36c8f2 55%, #1b8fd1);
+  background: linear-gradient(to bottom, var(--cyan-hi), var(--cyan) 55%, var(--cyan-deep));
   transform-origin: left center;
 }
 

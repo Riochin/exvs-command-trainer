@@ -43,6 +43,8 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: "/favicon.ico",
+    // ホーム画面に追加したときのアイコン（iPhone）
+    apple: "/icons/apple-touch-icon.png",
   },
   // iPhone はホーム画面に追加して開いたときだけバーが消える。ステータスバーは 3D の上に透かして重ねる
   appleWebApp: {

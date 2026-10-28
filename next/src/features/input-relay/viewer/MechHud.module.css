@@ -394,3 +394,10 @@
 .hud[data-touch-buttons='true'] .boost {
   width: min(26rem, 30%);
 }
+
+/* 縦向きはタッチ用ボタンがブーストゲージより上に上がるので、ゲージは左下のスティックにかからない範囲で広げる */
+@media (orientation: portrait) {
+  .hud[data-touch-buttons='true'] .boost {
+    width: min(26rem, 38%);
+  }
+}

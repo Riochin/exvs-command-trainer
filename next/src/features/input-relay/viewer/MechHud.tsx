@@ -167,17 +167,18 @@ export function MechHud({ worldRef, showLever = true, compact = false }: MechHud
 
   return (
     <div className={styles.hud} data-testid="mech-hud" data-compact={compact}>
+      {/* HIT・被弾は、タッチ操作中も左上のまま */}
+      <div className={styles.topLeft}>
+        <span className={styles.caption}>HIT</span>
+        <span className={styles.hits}>{hud.hitCount}</span>
+        <span className={styles.caption}>被弾</span>
+        <span className={styles.damage}>{hud.mechHits}</span>
+      </div>
       {/*
-        HIT・ブースト・時限強化・武装。ふだんは画面の各所に置き（display: contents）、
-        タッチ操作中（compact）は 3D 画面の右上にまとめて縦に積む
+        ブースト・時限強化・武装。ふだんは画面の各所に置き（display: contents）、
+        タッチ操作中（compact）は 3D 画面の右に上から詰めて縦に積む
       */}
       <div className={styles.corner}>
-        <div className={styles.topLeft}>
-          <span className={styles.caption}>HIT</span>
-          <span className={styles.hits}>{hud.hitCount}</span>
-          <span className={styles.caption}>被弾</span>
-          <span className={styles.damage}>{hud.mechHits}</span>
-        </div>
         {/* ブーストゲージは EXVS と同じく画面中央下。斜めに切った横長のゲージ */}
         <div className={styles.boost}>
           {status && (

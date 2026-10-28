@@ -105,11 +105,15 @@ describe('MechHud のタッチ操作向けの出し分け', () => {
     expect(screen.getByText(/BOOST/)).not.toBeNull();
   });
 
-  it('HIT とブーストは 1 つのまとまりに入れる（タッチ操作中は右上にまとめて積むため）', () => {
+  it('HIT・被弾はブーストのまとまりの外に置く（タッチ操作中、HIT は左上・ブーストと武装は右に積むため）', () => {
     const hud = renderHud({ compact: true });
-    const corner = screen.getByText('HIT').closest('div')?.parentElement;
+    const hits = screen.getByText('HIT').closest('div');
+    expect(hits?.parentElement).toBe(hud);
+    expect(within(hits as HTMLElement).queryByText(/BOOST/)).toBeNull();
+
+    const corner = screen.getByText(/BOOST/).closest('div')?.parentElement;
     expect(corner?.parentElement).toBe(hud);
-    expect(within(corner as HTMLElement).getByText(/BOOST/)).not.toBeNull();
+    expect(within(corner as HTMLElement).getByLabelText('武装')).not.toBeNull();
   });
 });
 

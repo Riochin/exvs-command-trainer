@@ -118,10 +118,10 @@ describe('PracticePageContent', () => {
       expect(screen.getByText(/コマンドが見つかりません/)).toBeTruthy();
     });
 
-    it('/コマンド一覧へのリンクを表示する', () => {
+    it('コマンド一覧（/commands）へのリンクを表示する', () => {
       render(<PracticePageContent commandId="nonexistent" />);
       const links = screen.getAllByRole('link');
-      const homeLinks = links.filter((l) => l.getAttribute('href') === '/');
+      const homeLinks = links.filter((l) => l.getAttribute('href') === '/commands');
       expect(homeLinks.length).toBeGreaterThan(0);
     });
   });

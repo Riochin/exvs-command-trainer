@@ -2,14 +2,14 @@
 
 /**
  * スマホで読み取るとそのまま PC につながる QR コード。
- * 読み取り先は `<サイト>/?relay=<コード>`（フリー練習）。どのページでも ?relay= でつながる。
+ * 読み取り先は `<サイト>/practice?relay=<コード>`（フリー練習）。スマホ側のどのページでも ?relay= でつながる。
  */
 import { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
 import styles from './InputRelayHostApp.module.css';
 
 export function joinUrl(origin: string, room: string): string {
-  return `${origin}/?relay=${room}`;
+  return `${origin}/practice?relay=${room}`;
 }
 
 export function JoinQrCode({ origin, room }: { origin: string | null; room: string | null }) {
